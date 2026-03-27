@@ -17,12 +17,12 @@ type Page = 'dashboard' | 'catalogue' | 'promotions';
 const PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
   { id: 'flowers', name: 'Bunga Sakura', url: 'https://www.transparenttextures.com/patterns/flowers.png' },
-  { id: 'leaves', name: 'Daun Tropis', url: 'https://www.transparenttextures.com/patterns/leaves.png' },
-  { id: 'floral-vintage', name: 'Bunga Klasik', url: 'https://www.transparenttextures.com/patterns/floral-pattern.png' },
+  { id: 'woven', name: 'Kain Linen', url: 'https://www.transparenttextures.com/patterns/woven.png' },
   { id: 'paper', name: 'Tekstur Kertas', url: 'https://www.transparenttextures.com/patterns/cream-paper.png' },
   { id: 'dots', name: 'Titik Halus', url: 'https://www.transparenttextures.com/patterns/stardust.png' },
-  { id: 'woven', name: 'Kain Linen', url: 'https://www.transparenttextures.com/patterns/woven.png' },
-  { id: 'wall', name: 'Dinding Putih', url: 'https://www.transparenttextures.com/patterns/white-wall.png' }
+  { id: 'wall', name: 'Dinding Putih', url: 'https://www.transparenttextures.com/patterns/white-wall.png' },
+  { id: 'arabesque', name: 'Arabesque', url: 'https://www.transparenttextures.com/patterns/arabesque.png' },
+  { id: 'grid', name: 'Kotak Grid', url: 'https://www.transparenttextures.com/patterns/graphy.png' }
 ];
 
 function CatalogueEditor() {
@@ -274,76 +274,85 @@ function CatalogueEditor() {
                 )}
 
                 {activeTab === 'campaign' && (
-                  <motion.div key="campaign" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
-                    <h2 className="text-base font-bold">Informasi Kampanye</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                      {[
-                        { label: 'Nama Brand', key: 'brandName' },
-                        { label: 'Periode Promo', key: 'period' },
-                      ].map(f => (
-                        <div key={f.key} className="space-y-1.5">
-                          <label className="text-sm font-bold text-slate-700">{f.label}</label>
-                          <input value={(catalog as any)[f.key]} onChange={e => setCatalog(p => ({ ...p, [f.key]: e.target.value }))}
-                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-                      ))}
+                  <motion.div key="campaign" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5 h-full overflow-y-auto pr-2 pb-10">
+                    <h2 className="text-base font-bold">Informasi Header Kampanye</h2>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-bold text-slate-700">Periode Promo (Jangan Diubah Sesuai Permintaan)</label>
+                      <input value={catalog.period} onChange={e => setCatalog(p => ({ ...p, period: e.target.value }))}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
-                    {[
-                      { label: 'Judul Promo (Besar)', key: 'promoTitle' },
-                      { label: 'Tagline (Kanan)', key: 'tagline' },
-                    ].map(f => (
-                      <div key={f.key} className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">{f.label}</label>
-                        <input value={(catalog as any)[f.key]} onChange={e => setCatalog(p => ({ ...p, [f.key]: e.target.value }))}
-                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                    ))}
-                    <div className="space-y-3 pt-4 border-t border-slate-200">
-                      <h3 className="text-sm font-bold text-slate-700">Pengaturan Gratis Ongkir</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        {[
-                          { label: 'Judul Atas', key: 'shippingTitle' },
-                          { label: 'Nilai Tengah', key: 'shippingValue' },
-                          { label: 'Unit Tengah', key: 'shippingUnit' },
-                          { label: 'Subjudul Bawah', key: 'shippingSubtitle' },
-                        ].map(f => (
-                          <div key={f.key} className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500">{f.label}</label>
-                            <input value={(catalog as any)[f.key]} onChange={e => setCatalog(p => ({ ...p, [f.key]: e.target.value }))}
-                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-3 pt-4 border-t border-slate-200">
-                      <h3 className="text-sm font-bold text-slate-700">Head Banner</h3>
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input type="checkbox" checked={catalog.showHeadBanner} onChange={e => setCatalog(p => ({ ...p, showHeadBanner: e.target.checked }))}
-                          className="w-4 h-4 text-blue-600 rounded border-slate-300" />
-                        <span className="text-sm text-slate-700">Tampilkan Head Banner</span>
-                      </label>
-                      {catalog.showHeadBanner && (
-                        <div className="space-y-3 pl-7">
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-4">
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Logo Header (Upload)</label>
                           <input type="file" accept="image/*" onChange={e => {
                             const f = e.target.files?.[0];
-                            if (f) { const r = new FileReader(); r.onloadend = () => setCatalog(p => ({ ...p, headBannerImage: r.result as string })); r.readAsDataURL(f); }
-                          }} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                          {[{ label: 'Judul Banner', key: 'headBannerTitle' }, { label: 'Subjudul Banner', key: 'headBannerSubtitle' }].map(f => (
-                            <div key={f.key} className="space-y-1">
-                              <label className="text-xs font-bold text-slate-500">{f.label}</label>
-                              <input value={(catalog as any)[f.key] || ''} onChange={e => setCatalog(p => ({ ...p, [f.key]: e.target.value }))}
-                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            if (f) { const r = new FileReader(); r.onloadend = () => setCatalog(p => ({ ...p, headerLogoImage: r.result as string })); r.readAsDataURL(f); }
+                          }} className="w-full bg-white border border-slate-200 rounded-lg text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 placeholder-slate-400" />
+                       </div>
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Gaya Teks (Font Style)</label>
+                          <select value={catalog.headerFontFamily} onChange={e => setCatalog(p => ({ ...p, headerFontFamily: e.target.value }))}
+                            className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="font-black">Tebal / Extra Bold (Default)</option>
+                            <option value="font-sans font-bold">Sans-Serif Bold</option>
+                            <option value="font-serif font-black">Serif Black (Klasik)</option>
+                            <option value="font-mono font-bold">Monospace Bold</option>
+                          </select>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                       <div className="space-y-2">
+                          <h3 className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1.5 rounded uppercase tracking-widest">Teks Tengah</h3>
+                          <input value={catalog.headerMainText1} onChange={e => setCatalog(p => ({ ...p, headerMainText1: e.target.value }))} placeholder="PRODUK" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
+                          <input value={catalog.headerMainText2} onChange={e => setCatalog(p => ({ ...p, headerMainText2: e.target.value }))} placeholder="DISKON" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
+                       </div>
+                       <div className="space-y-2">
+                          <h3 className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1.5 rounded uppercase tracking-widest">Angka Promo</h3>
+                          <div className="flex gap-2">
+                             <input value={catalog.headerBadgeText} onChange={e => setCatalog(p => ({ ...p, headerBadgeText: e.target.value }))} placeholder="s/d" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs" title="Teks Kecil Atas" />
+                             <input value={catalog.headerNumber} onChange={e => setCatalog(p => ({ ...p, headerNumber: e.target.value }))} placeholder="70" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Angka Besar" />
+                             <input value={catalog.headerNumberUnit} onChange={e => setCatalog(p => ({ ...p, headerNumberUnit: e.target.value }))} placeholder="%" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Unit Angka" />
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2">
+                       <h3 className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1.5 rounded uppercase tracking-widest">Teks Sisi Kanan (Panggilan Aksi)</h3>
+                       <div className="grid grid-cols-2 gap-4">
+                          <input value={catalog.headerRightText1} onChange={e => setCatalog(p => ({ ...p, headerRightText1: e.target.value }))} placeholder="Borong" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
+                          <input value={catalog.headerRightText2} onChange={e => setCatalog(p => ({ ...p, headerRightText2: e.target.value }))} placeholder="Sekarang!" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Warna Background (Degradasi)</label>
+                          <select value={catalog.headerBgColor} onChange={e => setCatalog(p => ({ ...p, headerBgColor: e.target.value }))}
+                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="from-[#ed1c24] to-[#f45c62]">Merah Klasik</option>
+                            <option value="from-[#ffc312] to-[#ff9f43]">Emas Promo</option>
+                            <option value="from-blue-500 to-blue-400">Biru Retail</option>
+                            <option value="from-[#05c46b] to-[#0be881]">Hijau Segar</option>
+                            <option value="from-slate-700 to-slate-800 border-b-4 border-yellow-500">Hitam Premium</option>
+                          </select>
+                       </div>
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Motif Pattern (Background)</label>
+                          <select value={catalog.headerPatternId} onChange={e => setCatalog(p => ({ ...p, headerPatternId: e.target.value }))}
+                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                            {PATTERNS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                       </div>
                     </div>
                   </motion.div>
                 )}
 
                 {activeTab === 'template' && (
                   <motion.div key="template" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
-                    <h2 className="text-base font-bold">Pilih Tema Warna</h2>
+                    <h2 className="text-base font-bold">Pilih Tema Warna Box File</h2>
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         { id: 'indomaret-style', name: 'Biru Retail', desc: 'Modern', colors: ['bg-blue-600', 'bg-yellow-400', 'bg-red-500'] },
@@ -393,167 +402,116 @@ function CatalogueEditor() {
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-start justify-center min-h-[600px] overflow-auto max-h-[80vh]">
               {catalog.rows.some(row => row.items.length > 0) ? (
                 <div ref={previewRef} id="catalog-preview"
-                  className={cn("catalog-container relative",
+                  className={cn("catalog-container relative flex flex-col bg-white",
                     catalog.templateId === 'modern-dark' && "bg-slate-900 text-white",
                     catalog.templateId === 'vibrant-yellow' && "bg-yellow-50",
-                    catalog.templateId === 'eco-organic' && "bg-[#fdfcf0] text-emerald-900 font-serif",
+                    catalog.templateId === 'eco-organic' && "bg-[#fdfcf0] text-emerald-900",
                     catalog.templateId === 'floral-spring' && "bg-pink-50 text-rose-900",
                     catalog.templateId === 'floral-tropical' && "bg-emerald-50 text-emerald-950",
-                    catalog.templateId === 'floral-vintage' && "bg-amber-50 text-amber-950 font-serif"
-                  )}
-                  style={{ backgroundImage: catalog.patternId && catalog.patternId !== 'none' ? `url("${PATTERNS.find(p => p.id === catalog.patternId)?.url}")` : undefined }}>
-
-                  {/* Banner Header */}
-                  <div className={cn("relative border-b-4",
-                    catalog.templateId === 'indomaret-style' && "border-indomaret-yellow bg-white",
-                    catalog.templateId === 'modern-dark' && "border-slate-700 bg-slate-900 text-white",
-                    catalog.templateId === 'vibrant-yellow' && "border-yellow-400 bg-yellow-100",
-                    catalog.templateId === 'eco-organic' && "border-emerald-200 bg-[#fdfcf0]",
-                    catalog.templateId === 'floral-spring' && "border-pink-300 bg-white/80",
-                    catalog.templateId === 'floral-tropical' && "border-emerald-400 bg-white/90",
-                    catalog.templateId === 'floral-vintage' && "border-amber-300 bg-[#fffbf0]/90"
+                    catalog.templateId === 'floral-vintage' && "bg-amber-50 text-amber-950"
                   )}>
-                    <div className="p-4 flex items-center justify-between gap-4">
-                      <div className={cn("font-black italic text-3xl tracking-tighter leading-none",
-                        catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" :
-                        catalog.templateId === 'floral-spring' ? "text-pink-600" :
-                        catalog.templateId === 'floral-tropical' ? "text-emerald-700" :
-                        catalog.templateId === 'floral-vintage' ? "text-amber-800" : "text-current")}>
-                        {catalog.brandName}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center transform -rotate-12 shadow-sm relative",
-                          catalog.templateId === 'indomaret-style' ? "bg-indomaret-red" :
-                          catalog.templateId === 'floral-spring' ? "bg-pink-500" :
-                          catalog.templateId === 'floral-tropical' ? "bg-emerald-600" :
-                          catalog.templateId === 'floral-vintage' ? "bg-amber-700" : "bg-current opacity-90")}>
-                          <ArrowDown className="w-8 h-8 text-white" strokeWidth={3} />
-                          <span className="absolute bottom-1 right-1 text-white text-[10px] font-black">%</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <div className={cn("font-black text-xl leading-none uppercase italic tracking-tighter -mb-1",
-                            catalog.templateId === 'indomaret-style' ? "text-indomaret-red" :
-                            catalog.templateId === 'floral-spring' ? "text-pink-600" :
-                            catalog.templateId === 'floral-tropical' ? "text-emerald-700" :
-                            catalog.templateId === 'floral-vintage' ? "text-amber-800" : "text-current")}>
-                            {catalog.promoTitle.split(' ')[0]}
-                          </div>
-                          <div className={cn("font-black text-xl leading-none uppercase italic tracking-tighter",
-                            catalog.templateId === 'indomaret-style' ? "text-indomaret-yellow" :
-                            catalog.templateId === 'floral-spring' ? "text-rose-500" :
-                            catalog.templateId === 'floral-tropical' ? "text-teal-600" :
-                            catalog.templateId === 'floral-vintage' ? "text-orange-700" : "text-current opacity-80")}>
-                            {catalog.promoTitle.split(' ').slice(1).join(' ')}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex flex-col items-end">
-                          <div className={cn("font-black text-[10px] leading-none uppercase tracking-tighter",
-                            catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" : "text-current opacity-70")}>
-                            {catalog.shippingTitle}
-                          </div>
-                          <div className="flex items-center gap-1 leading-none">
-                            <span className={cn("font-black tracking-tighter leading-none",
-                              catalog.shippingValue.length > 2 ? "text-xl" : "text-2xl",
-                              catalog.templateId === 'indomaret-style' ? "text-indomaret-red" : "text-current")}>
-                              {catalog.shippingValue}
-                            </span>
-                            <div className="flex flex-col leading-none">
-                              <span className={cn("font-black tracking-tighter",
-                                catalog.shippingUnit.length > 3 ? "text-xs" : "text-sm",
-                                catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" : "text-current")}>
-                                {catalog.shippingUnit}
-                              </span>
-                              <span className={cn("font-black text-[10px] tracking-tighter",
-                                catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" : "text-current opacity-80")}>
-                                {catalog.shippingSubtitle}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <Bike className={cn("w-10 h-10",
-                          catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" :
-                          catalog.templateId === 'floral-spring' ? "text-pink-600" :
-                          catalog.templateId === 'floral-tropical' ? "text-emerald-700" :
-                          catalog.templateId === 'floral-vintage' ? "text-amber-800" : "text-current")} strokeWidth={2.5} />
-                      </div>
-                      <div className={cn("w-px h-12", catalog.templateId === 'modern-dark' ? "bg-slate-700" : "bg-slate-200")} />
-                      <div className="flex flex-col items-start">
-                        <div className="flex items-center gap-1">
-                          <span className={cn("font-black italic text-xl tracking-tighter",
-                            catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" :
-                            catalog.templateId === 'floral-spring' ? "text-pink-600" :
-                            catalog.templateId === 'floral-tropical' ? "text-emerald-700" :
-                            catalog.templateId === 'floral-vintage' ? "text-amber-800" : "text-current")}>
-                            {catalog.brandName}
-                          </span>
-                          <div className="flex flex-col">
-                            <div className="flex gap-0.5">
-                              <div className="w-3 h-1 bg-indomaret-red" />
-                              <div className="w-3 h-1 bg-indomaret-blue" />
-                              <div className="w-3 h-1 bg-indomaret-yellow" />
-                            </div>
-                            <span className={cn("text-[8px] font-black italic leading-none",
-                              catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" : "text-current opacity-60")}>Indomaret</span>
-                          </div>
-                        </div>
-                        <div className={cn("text-[8px] font-black italic leading-none mt-1",
-                          catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" : "text-current opacity-70")}>
-                          {catalog.tagline}
-                        </div>
-                      </div>
+
+                  {/* Banner Header Editable Styled */}
+                  <div className={cn("relative overflow-hidden w-full flex items-center justify-between px-6 pt-5 pb-8 shadow-sm z-10",
+                     catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-r ${catalog.headerBgColor}`
+                  )}>
+                    {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
+                       <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                    )}
+                    
+                    {/* Lighting Effects */}
+                    <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                    <div className="absolute -right-10 -top-20 w-64 h-64 bg-yellow-400/40 blur-[50px] rounded-full pointer-events-none" />
+                    <div className="absolute right-[40%] top-[-20px] w-32 h-32 bg-yellow-300/30 blur-[40px] rounded-full pointer-events-none mix-blend-screen" />
+
+                    {/* Logo (Left) */}
+                    <div className="relative z-10 bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] p-1.5 flex items-center justify-center min-w-[120px] h-[60px] transform hover:scale-105 transition-transform -mt-2">
+                       <img src={catalog.headerLogoImage} alt="Logo" className="max-w-[100px] max-h-[48px] object-contain" />
                     </div>
-                    {/* Period Badge */}
-                    <div className={cn("absolute -bottom-3 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 shadow-lg z-20 border",
-                      catalog.templateId === 'indomaret-style' && "bg-slate-700 text-white border-slate-600",
-                      catalog.templateId === 'modern-dark' && "bg-blue-600 text-white border-blue-500",
-                      catalog.templateId === 'vibrant-yellow' && "bg-red-600 text-white border-red-500",
-                      catalog.templateId === 'eco-organic' && "bg-emerald-700 text-white border-emerald-600",
-                      catalog.templateId === 'floral-spring' && "bg-pink-500 text-white border-pink-400",
-                      catalog.templateId === 'floral-tropical' && "bg-emerald-600 text-white border-emerald-500",
-                      catalog.templateId === 'floral-vintage' && "bg-amber-700 text-white border-amber-600"
-                    )}>
-                      <span className="opacity-70 uppercase tracking-widest text-[8px]">Periode</span>
-                      <div className="w-px h-3 bg-white/30" />
-                      <span>{catalog.period}</span>
+
+                    {/* Main Promotion (Center) */}
+                    <div className={cn("relative z-10 flex items-center shrink-0 ml-auto mr-auto pl-4 -mt-3", catalog.headerFontFamily)}>
+                       <div className="flex flex-col text-white transform -skew-x-[12deg] leading-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] mr-2 text-right">
+                          <span className="text-[16px] uppercase tracking-wide">{catalog.headerMainText1}</span>
+                          <span className="text-[26px] uppercase tracking-tighter text-yellow-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] mt-0.5">{catalog.headerMainText2}</span>
+                       </div>
+                       
+                       {/* Floating Small Badge */}
+                       <div className="w-7 h-7 bg-[#212121] rounded-full flex items-center justify-center z-20 text-white transform rotate-[-15deg] mt-[-25px] mr-[-8px] shadow-sm border border-white/20 text-center leading-none">
+                          <span className="text-[9px] font-sans font-black">{catalog.headerBadgeText}</span>
+                       </div>
+
+                       {/* Big Number */}
+                       <div className="flex items-start text-[#fff314] drop-shadow-[0_4px_0px_#7d0c0e]">
+                          <span className="text-[72px] leading-[0.75] uppercase italic tracking-tighter" style={{ WebkitTextStroke: '2px #ca141a' }}>{catalog.headerNumber}</span>
+                          <span className="text-[32px] leading-[0.8] uppercase italic font-sans font-black mt-1" style={{ WebkitTextStroke: '1px #ca141a' }}>{catalog.headerNumberUnit}</span>
+                       </div>
                     </div>
+
+                    {/* Standard Period Footer - Small at the bottom right */}
+                    <div className="absolute bottom-0 right-0 py-0.5 px-3 bg-black/40 text-[7px] text-white/90 font-sans z-20 flex gap-3 backdrop-blur-sm rounded-tl-lg font-medium">
+                       <span>Berlaku di toko tertentu | S&K Berlaku</span>
+                       <span className="font-bold">Periode: {catalog.period}</span>
+                    </div>
+
+                    {/* Call to action (Right) */}
+                    <div className={cn("relative z-10 flex flex-col items-center justify-center pr-2 text-white transform -rotate-[3deg] drop-shadow-[0_3px_2px_rgba(0,0,0,0.6)] -mt-2", catalog.headerFontFamily)}>
+                          <span className="text-[22px] leading-tight italic tracking-wide">{catalog.headerRightText1}</span>
+                          <span className="text-[28px] leading-none text-white italic -mt-1 tracking-tighter drop-shadow-[0_2px_0px_rgba(255,200,0,0.5)]">{catalog.headerRightText2}</span>
+                    </div>
+
                   </div>
 
-                  {/* Head Banner */}
-                  {catalog.showHeadBanner && (
-                    <div className="w-full h-36 relative overflow-hidden mt-6 shadow-sm border-y-4 border-yellow-400">
-                      <img src={catalog.headBannerImage || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop'}
-                        alt="Banner" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent flex items-center">
-                        <div className="p-6 text-white max-w-lg">
-                          {catalog.headBannerTitle && <h2 className="text-2xl font-black italic mb-1 text-yellow-400 drop-shadow-md">{catalog.headBannerTitle}</h2>}
-                          {catalog.headBannerSubtitle && <p className="text-xs drop-shadow-md text-slate-100 line-clamp-2">{catalog.headBannerSubtitle}</p>}
-                        </div>
+                  {/* Frame for Left Border, Content, Right Border */}
+                  <div className="flex w-full flex-1 relative z-0">
+                      {/* Left Border */}
+                      <div className={cn("w-[12px] shrink-0 relative shadow-[inset_-2px_0_4px_rgba(0,0,0,0.05)]",
+                         catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-b ${catalog.headerBgColor}`
+                      )}>
+                         {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
+                            <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                         )}
                       </div>
-                    </div>
-                  )}
 
-                  {/* Grid Section */}
-                  <div className={cn("p-2 flex flex-col gap-4", catalog.showHeadBanner ? "pt-4" : "pt-8")}>
-                    {(catalog.showHeadBanner ? catalog.rows.slice(0, 3) : catalog.rows.slice(0, 4)).map(row => (
-                      <div key={row.id} className="w-full">
-                        {row.title && (
-                          <div className="w-full mb-2 flex items-center">
-                            <div className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-r-full shadow-sm uppercase tracking-wider">{row.title}</div>
-                            <div className="flex-1 h-px bg-blue-100 ml-2" />
-                          </div>
-                        )}
-                        <div className={cn("grid gap-2",
-                          row.items.length === 2 ? "grid-cols-2" :
-                          row.items.length === 3 ? "grid-cols-3" : "grid-cols-4")}>
-                          {row.items.map(item => (
-                            <div key={item.id} className={cn("p-2 rounded-lg border flex flex-col items-start text-left relative overflow-hidden h-full",
-                              row.items.length === 2 ? "min-h-[240px]" : row.items.length === 3 ? "min-h-[210px]" : "min-h-[180px]",
-                              catalog.templateId === 'modern-dark' ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100",
-                              catalog.templateId === 'floral-spring' && "bg-white/90 border-pink-200 shadow-sm",
-                              catalog.templateId === 'floral-tropical' && "bg-white/90 border-emerald-200 shadow-sm",
-                              catalog.templateId === 'floral-vintage' && "bg-[#fffbf0]/90 border-amber-200 shadow-sm")}>
+                      {/* Main Center Area */}
+                      <div className="flex-1 flex flex-col min-w-0 pb-4 relative" style={{
+                         backgroundImage: catalog.patternId && catalog.patternId !== 'none' ? `url("${PATTERNS.find(p => p.id === catalog.patternId)?.url}")` : undefined,
+                      }}>
+                          {/* Head Banner */}
+                          {catalog.showHeadBanner && (
+                            <div className="w-full h-36 relative overflow-hidden shadow-sm border-b-4 border-yellow-400">
+                              <img src={catalog.headBannerImage || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop'}
+                                alt="Banner" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent flex items-center">
+                                <div className="p-6 text-white max-w-lg">
+                                  {catalog.headBannerTitle && <h2 className="text-2xl font-black italic mb-1 text-yellow-400 drop-shadow-md">{catalog.headBannerTitle}</h2>}
+                                  {catalog.headBannerSubtitle && <p className="text-xs drop-shadow-md text-slate-100 line-clamp-2">{catalog.headBannerSubtitle}</p>}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Grid Section */}
+                          <div className={cn("w-full px-2 flex flex-col gap-4 relative", catalog.showHeadBanner ? "pt-4" : "pt-8")}>
+                        {/* Grid Inner Content */}
+                        {(catalog.showHeadBanner ? catalog.rows.slice(0, 3) : catalog.rows.slice(0, 4)).map(row => (
+                          <div key={row.id} className="w-full">
+                            {row.title && (
+                              <div className="w-full mb-2 flex items-center z-10 relative">
+                                <div className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-r-full shadow-sm uppercase tracking-wider">{row.title}</div>
+                                <div className="flex-1 h-px bg-blue-100 ml-2" />
+                              </div>
+                            )}
+                            <div className={cn("grid gap-2 relative z-10",
+                              row.items.length === 2 ? "grid-cols-2" :
+                              row.items.length === 3 ? "grid-cols-3" : "grid-cols-4")}>
+                              {row.items.map(item => (
+                                <div key={item.id} className={cn("p-2 rounded-lg border flex flex-col items-start text-left relative overflow-hidden h-full",
+                                  row.items.length === 2 ? "min-h-[240px]" : row.items.length === 3 ? "min-h-[210px]" : "min-h-[180px]",
+                                  catalog.templateId === 'modern-dark' ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100",
+                                  catalog.templateId === 'floral-spring' && "bg-white/90 border-pink-200 shadow-sm",
+                                  catalog.templateId === 'floral-tropical' && "bg-white/90 border-emerald-200 shadow-sm",
+                                  catalog.templateId === 'floral-vintage' && "bg-[#fffbf0]/90 border-amber-200 shadow-sm")}>
                               <div className="w-full mb-1 h-10 overflow-hidden relative z-10">
                                 <h3 className={cn("text-[9px] font-black leading-none uppercase text-slate-900 truncate",
                                   catalog.templateId === 'modern-dark' && "text-white")}>{item.brand}</h3>
@@ -619,18 +577,40 @@ function CatalogueEditor() {
                         </div>
                       </div>
                     ))}
+                 </div>
+              </div>
+
+              {/* Right Border */}
+                      <div className={cn("w-[12px] shrink-0 relative shadow-[inset_2px_0_4px_rgba(0,0,0,0.05)]",
+                         catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-b ${catalog.headerBgColor}`
+                      )}>
+                         {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
+                            <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                         )}
+                      </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className={cn("mt-auto p-4 flex justify-between items-center border-t",
-                    catalog.templateId === 'indomaret-style' ? "bg-indomaret-blue text-white border-indomaret-yellow" : "bg-slate-100 text-slate-500 border-slate-200")}>
-                    <div className="text-[8px] font-medium">
-                      <p>Layanan Konsumen: kontak@promogen.co.id</p>
-                      <p>WhatsApp: 0811 1500 280</p>
+                  {/* Footer Editable Styled */}
+                  <div className={cn("mt-auto p-4 flex justify-between items-center z-10 relative overflow-hidden w-full text-white",
+                    catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-r ${catalog.headerBgColor}`
+                  )}>
+                    {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
+                       <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                    
+                    <div className={cn("text-[9px] font-medium relative z-10 text-white/90 drop-shadow-sm", catalog.headerFontFamily)}>
+                      <p>Layanan Konsumen: halo@promosikita.id</p>
+                      <p className="font-sans font-bold text-yellow-300">WhatsApp: 0811 1500 280</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-white p-1 rounded"><div className="w-full h-full bg-slate-800" /></div>
-                      <div className="text-[8px] font-black leading-none uppercase">Scan<br />Disini</div>
+                    <div className="flex items-center gap-2 relative z-10">
+                      <div className="w-10 h-10 bg-white p-1 rounded-md shadow-sm">
+                         <div className="w-full h-full bg-slate-900 rounded-sm" />
+                      </div>
+                      <div className={cn("text-[10px] leading-none text-white drop-shadow-md", catalog.headerFontFamily)}>
+                         <span className="italic block uppercase mb-0.5">{catalog.headerRightText1}</span>
+                         <span className="font-bold text-yellow-300 font-sans tracking-wide">DISKON</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -687,8 +667,8 @@ export default function App() {
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all",
               currentPage === 'dashboard'
-                ? "bg-[#8b7365] text-white shadow-sm"
-                : "text-slate-500 hover:bg-slate-100/50 hover:text-slate-800"
+                ? "bg-[#8b7365]/10 text-[#8b7365] border border-[#8b7365]/30 border-dashed"
+                : "text-slate-500 border border-transparent hover:bg-slate-100/50 hover:text-slate-800"
             )}
           >
             <LayoutDashboard className="w-4 h-4" />

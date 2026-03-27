@@ -29,6 +29,19 @@ export interface CatalogData {
   shippingSubtitle: string;
   tagline: string;
   period: string;
+
+  headerBgColor: string;
+  headerPatternId: string;
+  headerLogoImage: string;
+  headerMainText1: string; // e.g. "PRODUK"
+  headerMainText2: string; // e.g. "DISKON"
+  headerBadgeText: string; // e.g. "s/d"
+  headerNumber: string;    // e.g. "70"
+  headerNumberUnit: string;// e.g. "%"
+  headerRightText1: string;// e.g. "Borong"
+  headerRightText2: string;// e.g. "Sekarang!"
+  headerFontFamily: string;// 'sans', 'serif', 'rounded'
+
   showHeadBanner?: boolean;
   headBannerImage?: string;
   headBannerTitle?: string;
@@ -135,6 +148,20 @@ export const DEFAULT_CATALOG: CatalogData = {
   shippingSubtitle: 'S&K BERLAKU',
   tagline: 'Belanja Online Seperti di Toko',
   period: '19 MARET - 1 APRIL 2026',
+
+  // New Header Props
+  headerBgColor: 'from-[#ed1c24] to-[#c2141a]',
+  headerPatternId: 'none',
+  headerLogoImage: 'https://upload.wikimedia.org/wikipedia/commons/8/86/Alfamart_logo.svg',
+  headerMainText1: 'PRODUK',
+  headerMainText2: 'DISKON',
+  headerBadgeText: 's/d',
+  headerNumber: '70',
+  headerNumberUnit: '%',
+  headerRightText1: 'Borong',
+  headerRightText2: 'Sekarang!',
+  headerFontFamily: 'font-black',
+
   showHeadBanner: false,
   headBannerImage: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop',
   headBannerTitle: 'SPESIAL MINGGU INI',
