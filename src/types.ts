@@ -41,6 +41,19 @@ export interface CatalogData {
   headerRightText1: string;// e.g. "Borong"
   headerRightText2: string;// e.g. "Sekarang!"
   headerFontFamily: string;// 'sans', 'serif', 'rounded'
+  headerLogoSlogan: string;
+  headerSKText: string;
+
+  footerShopName: string;
+  footerFollowUsHandle: string;
+  footerSocialFB?: string;
+  footerSocialIG?: string;
+  footerSocialTiktok?: string;
+  footerSocialYoutube?: string;
+
+  showHeaderMainText?: boolean;
+  showHeaderNumber?: boolean;
+  showHeaderRightText?: boolean;
 
   showHeadBanner?: boolean;
   headBannerImage?: string;
@@ -161,6 +174,19 @@ export const DEFAULT_CATALOG: CatalogData = {
   headerRightText1: 'Borong',
   headerRightText2: 'Sekarang!',
   headerFontFamily: 'font-black',
+  headerLogoSlogan: 'belanja puas harga hemat',
+  headerSKText: 'S&K BERLAKU',
+
+  footerShopName: 'LILY MART',
+  footerFollowUsHandle: '@lilymart',
+  footerSocialFB: 'lilymart',
+  footerSocialIG: 'lilymart_official',
+  footerSocialTiktok: 'lilymart.tiktok',
+  footerSocialYoutube: 'Lily Mart TV',
+
+  showHeaderMainText: true,
+  showHeaderNumber: true,
+  showHeaderRightText: true,
 
   showHeadBanner: false,
   headBannerImage: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop',

@@ -3,7 +3,9 @@ import { toJpeg, toPng } from 'html-to-image';
 import { 
   Plus, Trash2, Download, Upload, Package, FileText,
   Palette, CheckCircle2, Bike, ArrowDown,
-  BookOpen, Megaphone, LayoutDashboard, Home, Search
+  BookOpen, Megaphone, LayoutDashboard, Home, Search,
+  Facebook, Twitter, Instagram, Youtube, Music, QrCode,
+  Menu, LogOut, Bell, Settings, User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -14,15 +16,24 @@ import Login from './pages/Login';
 
 type Page = 'dashboard' | 'catalogue' | 'promotions';
 
-const PATTERNS = [
+const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
-  { id: 'flowers', name: 'Bunga Sakura', url: 'https://www.transparenttextures.com/patterns/flowers.png' },
-  { id: 'woven', name: 'Kain Linen', url: 'https://www.transparenttextures.com/patterns/woven.png' },
-  { id: 'paper', name: 'Tekstur Kertas', url: 'https://www.transparenttextures.com/patterns/cream-paper.png' },
-  { id: 'dots', name: 'Titik Halus', url: 'https://www.transparenttextures.com/patterns/stardust.png' },
-  { id: 'wall', name: 'Dinding Putih', url: 'https://www.transparenttextures.com/patterns/white-wall.png' },
   { id: 'arabesque', name: 'Arabesque', url: 'https://www.transparenttextures.com/patterns/arabesque.png' },
-  { id: 'grid', name: 'Kotak Grid', url: 'https://www.transparenttextures.com/patterns/graphy.png' }
+  { id: 'linen', name: 'Linen', url: 'https://www.transparenttextures.com/patterns/linen-paper.png' },
+  { id: 'black-thread', name: 'Black Thread', url: 'https://www.transparenttextures.com/patterns/black-thread.png' },
+  { id: 'escheresque', name: 'Escheresque', url: 'https://www.transparenttextures.com/patterns/escheresque.png' },
+  { id: 'fake-luxury', name: 'Fake Luxury', url: 'https://www.transparenttextures.com/patterns/fake-luxury.png' },
+  { id: 'food', name: 'Food', url: 'https://www.transparenttextures.com/patterns/food.png' },
+  { id: 'hoffman', name: 'Hoffman', url: 'https://www.transparenttextures.com/patterns/hoffman.png' },
+  { id: 'lyonnette', name: 'Lyonnette', url: 'https://www.transparenttextures.com/patterns/lyonnette.png' },
+  { id: 'merely-cubed', name: 'Merely Cubed', url: 'https://www.transparenttextures.com/patterns/merely-cubed.png' },
+  { id: 'nami', name: 'Nami', url: 'https://www.transparenttextures.com/patterns/nami.png' }
+];
+
+const BODY_PATTERNS = [
+  { id: 'none', name: 'Polos', url: '' },
+  { id: 'food', name: 'Food', url: 'https://www.transparenttextures.com/patterns/food.png' },
+  { id: 'lil-fiber', name: 'Graphcoders Lil Fiber', url: 'https://www.transparenttextures.com/patterns/graphcoders-lil-fiber.png' }
 ];
 
 function CatalogueEditor() {
@@ -130,7 +141,7 @@ function CatalogueEditor() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col">
       {/* Catalogue Header */}
       <div className="px-8 pt-8 pb-4 flex items-center justify-between">
         <div>
@@ -138,16 +149,16 @@ function CatalogueEditor() {
           <p className="text-sm text-slate-500 mt-0.5">Buat katalog promosi profesional dengan mudah</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => handleExport('jpg')} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm text-sm">
+          <button onClick={() => handleExport('jpg')} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm text-sm cursor-pointer">
             <Download className="w-4 h-4" /> Ekspor JPG
           </button>
-          <button onClick={() => handleExport('png')} className="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm text-sm">
+          <button onClick={() => handleExport('png')} className="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm text-sm cursor-pointer">
             <Download className="w-4 h-4" /> Ekspor PNG
           </button>
         </div>
       </div>
 
-      <div className="flex-1 px-8 pb-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex-1 px-8 pb-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Editor */}
         <div className="lg:col-span-5 space-y-4">
           {/* Tab Switcher */}
@@ -278,7 +289,7 @@ function CatalogueEditor() {
                     <h2 className="text-base font-bold">Informasi Header Kampanye</h2>
                     
                     <div className="space-y-1.5">
-                      <label className="text-sm font-bold text-slate-700">Periode Promo (Jangan Diubah Sesuai Permintaan)</label>
+                      <label className="text-sm font-bold text-slate-700">Periode Promo</label>
                       <input value={catalog.period} onChange={e => setCatalog(p => ({ ...p, period: e.target.value }))}
                         className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
@@ -290,6 +301,28 @@ function CatalogueEditor() {
                             const f = e.target.files?.[0];
                             if (f) { const r = new FileReader(); r.onloadend = () => setCatalog(p => ({ ...p, headerLogoImage: r.result as string })); r.readAsDataURL(f); }
                           }} className="w-full bg-white border border-slate-200 rounded-lg text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 placeholder-slate-400" />
+                       </div>
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Slogan Logo (Italic)</label>
+                          <input value={catalog.headerLogoSlogan} onChange={e => setCatalog(p => ({ ...p, headerLogoSlogan: e.target.value }))} placeholder="Slogan di bawah logo" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Nama Toko (Footer)</label>
+                          <input value={catalog.footerShopName} onChange={e => setCatalog(p => ({ ...p, footerShopName: e.target.value }))} placeholder="Nama Toko Lily Mart" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
+                       </div>
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Follow Handle (Footer)</label>
+                          <input value={catalog.footerFollowUsHandle} onChange={e => setCatalog(p => ({ ...p, footerFollowUsHandle: e.target.value }))} placeholder="@lilymart" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
+                       </div>
+                    </div>
+                
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                       <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Teks S&K Header</label>
+                          <input value={catalog.headerSKText} onChange={e => setCatalog(p => ({ ...p, headerSKText: e.target.value }))} placeholder="*s&k berlaku  | hanya untuk di toko tertentu" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
                        </div>
                        <div className="space-y-1.5">
                           <label className="text-xs font-bold text-slate-500">Gaya Teks (Font Style)</label>
@@ -304,26 +337,35 @@ function CatalogueEditor() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 pt-2">
-                       <div className="space-y-2">
-                          <h3 className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1.5 rounded uppercase tracking-widest">Teks Tengah</h3>
-                          <input value={catalog.headerMainText1} onChange={e => setCatalog(p => ({ ...p, headerMainText1: e.target.value }))} placeholder="PRODUK" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
-                          <input value={catalog.headerMainText2} onChange={e => setCatalog(p => ({ ...p, headerMainText2: e.target.value }))} placeholder="DISKON" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
-                       </div>
-                       <div className="space-y-2">
-                          <h3 className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1.5 rounded uppercase tracking-widest">Angka Promo</h3>
-                          <div className="flex gap-2">
-                             <input value={catalog.headerBadgeText} onChange={e => setCatalog(p => ({ ...p, headerBadgeText: e.target.value }))} placeholder="s/d" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs" title="Teks Kecil Atas" />
-                             <input value={catalog.headerNumber} onChange={e => setCatalog(p => ({ ...p, headerNumber: e.target.value }))} placeholder="70" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Angka Besar" />
-                             <input value={catalog.headerNumberUnit} onChange={e => setCatalog(p => ({ ...p, headerNumberUnit: e.target.value }))} placeholder="%" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Unit Angka" />
-                          </div>
-                       </div>
+                        <div className="space-y-2">
+                           <div className="flex items-center justify-between bg-slate-100 px-2 py-1.5 rounded">
+                              <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Teks Tengah</h3>
+                              <input type="checkbox" checked={catalog.showHeaderMainText} onChange={e => setCatalog(p => ({ ...p, showHeaderMainText: e.target.checked }))} className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                           </div>
+                           <input value={catalog.headerMainText1} onChange={e => setCatalog(p => ({ ...p, headerMainText1: e.target.value }))} disabled={!catalog.showHeaderMainText} placeholder="PRODUK" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
+                           <input value={catalog.headerMainText2} onChange={e => setCatalog(p => ({ ...p, headerMainText2: e.target.value }))} disabled={!catalog.showHeaderMainText} placeholder="DISKON" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
+                        </div>
+                        <div className="space-y-2">
+                           <div className="flex items-center justify-between bg-slate-100 px-2 py-1.5 rounded">
+                              <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Angka Promo</h3>
+                              <input type="checkbox" checked={catalog.showHeaderNumber} onChange={e => setCatalog(p => ({ ...p, showHeaderNumber: e.target.checked }))} className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                           </div>
+                           <div className={cn("flex gap-2", !catalog.showHeaderNumber && "opacity-50 pointer-events-none")}>
+                              <input value={catalog.headerBadgeText} onChange={e => setCatalog(p => ({ ...p, headerBadgeText: e.target.value }))} placeholder="s/d" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs" title="Teks Kecil Atas" />
+                              <input value={catalog.headerNumber} onChange={e => setCatalog(p => ({ ...p, headerNumber: e.target.value }))} placeholder="70" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Angka Besar" />
+                              <input value={catalog.headerNumberUnit} onChange={e => setCatalog(p => ({ ...p, headerNumberUnit: e.target.value }))} placeholder="%" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Unit Angka" />
+                           </div>
+                        </div>
                     </div>
 
                     <div className="space-y-2 pt-2">
-                       <h3 className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1.5 rounded uppercase tracking-widest">Teks Sisi Kanan (Panggilan Aksi)</h3>
+                       <div className="flex items-center justify-between bg-slate-100 px-2 py-1.5 rounded">
+                          <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Teks Sisi Kanan (Panggilan Aksi)</h3>
+                          <input type="checkbox" checked={catalog.showHeaderRightText} onChange={e => setCatalog(p => ({ ...p, showHeaderRightText: e.target.checked }))} className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                       </div>
                        <div className="grid grid-cols-2 gap-4">
-                          <input value={catalog.headerRightText1} onChange={e => setCatalog(p => ({ ...p, headerRightText1: e.target.value }))} placeholder="Borong" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
-                          <input value={catalog.headerRightText2} onChange={e => setCatalog(p => ({ ...p, headerRightText2: e.target.value }))} placeholder="Sekarang!" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" />
+                          <input value={catalog.headerRightText1} onChange={e => setCatalog(p => ({ ...p, headerRightText1: e.target.value }))} disabled={!catalog.showHeaderRightText} placeholder="Borong" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
+                          <input value={catalog.headerRightText2} onChange={e => setCatalog(p => ({ ...p, headerRightText2: e.target.value }))} disabled={!catalog.showHeaderRightText} placeholder="Sekarang!" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
                        </div>
                     </div>
 
@@ -343,7 +385,7 @@ function CatalogueEditor() {
                           <label className="text-xs font-bold text-slate-500">Motif Pattern (Background)</label>
                           <select value={catalog.headerPatternId} onChange={e => setCatalog(p => ({ ...p, headerPatternId: e.target.value }))}
                             className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
-                            {PATTERNS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            {HEADER_PATTERNS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                           </select>
                        </div>
                     </div>
@@ -356,7 +398,6 @@ function CatalogueEditor() {
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         { id: 'indomaret-style', name: 'Biru Retail', desc: 'Modern', colors: ['bg-blue-600', 'bg-yellow-400', 'bg-red-500'] },
-                        { id: 'modern-dark', name: 'Merah Promo', desc: 'Classic', colors: ['bg-red-600', 'bg-yellow-400', 'bg-green-500'] },
                         { id: 'eco-organic', name: 'Hijau Segar', desc: 'Minimal', colors: ['bg-green-600', 'bg-orange-500'] },
                         { id: 'vibrant-yellow', name: 'Oranye Sale', desc: 'Modern', colors: ['bg-orange-500', 'bg-blue-600'] },
                         { id: 'floral-spring', name: 'Pastel Pink', desc: 'Soft', colors: ['bg-pink-300', 'bg-rose-400'] },
@@ -376,13 +417,13 @@ function CatalogueEditor() {
                     <div className="pt-4 border-t border-slate-200">
                       <h2 className="text-base font-bold mb-3">Pola Latar (Pattern)</h2>
                       <div className="grid grid-cols-4 gap-2">
-                        {PATTERNS.map(p => (
+                        {BODY_PATTERNS.map(p => (
                           <button key={p.id} onClick={() => setCatalog(prev => ({ ...prev, patternId: p.id }))}
                             className={cn("p-2 rounded-xl border-2 transition-all text-center relative h-20 flex flex-col items-center justify-center gap-1",
                               catalog.patternId === p.id ? "border-blue-500 bg-blue-50/30" : "border-slate-100 hover:border-slate-200 bg-white")}>
                             {catalog.patternId === p.id && <CheckCircle2 className="absolute top-1 right-1 w-3.5 h-3.5 text-blue-500" />}
                             <div className="w-full h-8 rounded bg-slate-100 border border-slate-200"
-                              style={{ backgroundImage: p.url ? `url("${p.url}")` : 'none' }} />
+                              style={{ backgroundImage: p.url ? `url("${p.url}")` : 'none', backgroundSize: 'cover' }} />
                             <p className="text-[9px] font-bold text-slate-800 leading-tight">{p.name}</p>
                           </button>
                         ))}
@@ -416,7 +457,7 @@ function CatalogueEditor() {
                      catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-r ${catalog.headerBgColor}`
                   )}>
                     {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
-                       <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                       <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${HEADER_PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
                     )}
                     
                     {/* Lighting Effects */}
@@ -425,40 +466,51 @@ function CatalogueEditor() {
                     <div className="absolute right-[40%] top-[-20px] w-32 h-32 bg-yellow-300/30 blur-[40px] rounded-full pointer-events-none mix-blend-screen" />
 
                     {/* Logo (Left) */}
-                    <div className="relative z-10 bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] p-1.5 flex items-center justify-center min-w-[120px] h-[60px] transform hover:scale-105 transition-transform -mt-2">
-                       <img src={catalog.headerLogoImage} alt="Logo" className="max-w-[100px] max-h-[48px] object-contain" />
+                    <div className="flex flex-col items-center gap-1 group text-center px-1">
+                      <div className="relative z-10 bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] p-1.5 flex items-center justify-center min-w-[120px] h-[55px] transform hover:scale-105 transition-transform border border-slate-100">
+                         <img src={catalog.headerLogoImage} alt="Logo" className="max-w-[100px] max-h-[42px] object-contain" />
+                      </div>
+                      <span className="text-[9px] text-white/90 italic font-medium drop-shadow-sm mt-0 tracking-tight leading-tight">{catalog.headerLogoSlogan}</span>
                     </div>
 
                     {/* Main Promotion (Center) */}
-                    <div className={cn("relative z-10 flex items-center shrink-0 ml-auto mr-auto pl-4 -mt-3", catalog.headerFontFamily)}>
-                       <div className="flex flex-col text-white transform -skew-x-[12deg] leading-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] mr-2 text-right">
-                          <span className="text-[16px] uppercase tracking-wide">{catalog.headerMainText1}</span>
-                          <span className="text-[26px] uppercase tracking-tighter text-yellow-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] mt-0.5">{catalog.headerMainText2}</span>
-                       </div>
+                    <div className={cn("relative z-10 flex items-center shrink-0 ml-auto mr-auto pl-4 -mt-1", catalog.headerFontFamily)}>
+                       {catalog.showHeaderMainText && (
+                         <div className="flex flex-col text-white transform -skew-x-[12deg] leading-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] mr-2 text-right">
+                            <span className="text-[16px] uppercase tracking-wide">{catalog.headerMainText1}</span>
+                            <span className="text-[26px] uppercase tracking-tighter text-yellow-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] mt-0.5">{catalog.headerMainText2}</span>
+                         </div>
+                       )}
                        
-                       {/* Floating Small Badge */}
-                       <div className="w-7 h-7 bg-[#212121] rounded-full flex items-center justify-center z-20 text-white transform rotate-[-15deg] mt-[-25px] mr-[-8px] shadow-sm border border-white/20 text-center leading-none">
-                          <span className="text-[9px] font-sans font-black">{catalog.headerBadgeText}</span>
-                       </div>
+                       {catalog.showHeaderNumber && (
+                         <>
+                           {/* Floating Small Badge */}
+                           <div className="w-7 h-7 bg-[#212121] rounded-full flex items-center justify-center z-20 text-white transform rotate-[-15deg] mt-[-25px] mr-[-8px] shadow-sm border border-white/20 text-center leading-none">
+                              <span className="text-[9px] font-sans font-black">{catalog.headerBadgeText}</span>
+                           </div>
 
-                       {/* Big Number */}
-                       <div className="flex items-start text-[#fff314] drop-shadow-[0_4px_0px_#7d0c0e]">
-                          <span className="text-[72px] leading-[0.75] uppercase italic tracking-tighter" style={{ WebkitTextStroke: '2px #ca141a' }}>{catalog.headerNumber}</span>
-                          <span className="text-[32px] leading-[0.8] uppercase italic font-sans font-black mt-1" style={{ WebkitTextStroke: '1px #ca141a' }}>{catalog.headerNumberUnit}</span>
-                       </div>
+                           {/* Big Number */}
+                           <div className="flex items-start text-[#fff314] drop-shadow-[0_4px_0px_#7d0c0e]">
+                              <span className="text-[72px] leading-[0.75] uppercase italic tracking-tighter" style={{ WebkitTextStroke: '2px #ca141a' }}>{catalog.headerNumber}</span>
+                              <span className="text-[32px] leading-[0.8] uppercase italic font-sans font-black mt-1" style={{ WebkitTextStroke: '1px #ca141a' }}>{catalog.headerNumberUnit}</span>
+                           </div>
+                         </>
+                       )}
                     </div>
 
                     {/* Standard Period Footer - Small at the bottom right */}
-                    <div className="absolute bottom-0 right-0 py-0.5 px-3 bg-black/40 text-[7px] text-white/90 font-sans z-20 flex gap-3 backdrop-blur-sm rounded-tl-lg font-medium">
-                       <span>Berlaku di toko tertentu | S&K Berlaku</span>
-                       <span className="font-bold">Periode: {catalog.period}</span>
+                    <div className="absolute bottom-0 right-0 py-0.5 px-4 bg-black/40 text-[9px] text-white/90 font-sans z-20 flex gap-4 backdrop-blur-sm rounded-tl-lg font-bold">
+                       <span className="opacity-70 mr-1">{catalog.headerSKText}</span>
+                       <span className="text-yellow-300 tracking-wider"> PERIODE: {catalog.period} </span>
                     </div>
 
                     {/* Call to action (Right) */}
-                    <div className={cn("relative z-10 flex flex-col items-center justify-center pr-2 text-white transform -rotate-[3deg] drop-shadow-[0_3px_2px_rgba(0,0,0,0.6)] -mt-2", catalog.headerFontFamily)}>
-                          <span className="text-[22px] leading-tight italic tracking-wide">{catalog.headerRightText1}</span>
-                          <span className="text-[28px] leading-none text-white italic -mt-1 tracking-tighter drop-shadow-[0_2px_0px_rgba(255,200,0,0.5)]">{catalog.headerRightText2}</span>
-                    </div>
+                    {catalog.showHeaderRightText && (
+                      <div className={cn("relative z-10 flex flex-col items-center justify-center pr-2 text-white transform -rotate-[3deg] drop-shadow-[0_3px_2px_rgba(0,0,0,0.6)] -mt-1", catalog.headerFontFamily)}>
+                            <span className="text-[22px] leading-tight italic tracking-wide">{catalog.headerRightText1}</span>
+                            <span className="text-[28px] leading-none text-white italic -mt-1 tracking-tighter drop-shadow-[0_2px_0px_rgba(255,200,0,0.5)]">{catalog.headerRightText2}</span>
+                      </div>
+                    )}
 
                   </div>
 
@@ -469,13 +521,13 @@ function CatalogueEditor() {
                          catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-b ${catalog.headerBgColor}`
                       )}>
                          {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
-                            <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                            <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${HEADER_PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
                          )}
                       </div>
 
                       {/* Main Center Area */}
                       <div className="flex-1 flex flex-col min-w-0 pb-4 relative" style={{
-                         backgroundImage: catalog.patternId && catalog.patternId !== 'none' ? `url("${PATTERNS.find(p => p.id === catalog.patternId)?.url}")` : undefined,
+                         backgroundImage: catalog.patternId && catalog.patternId !== 'none' ? `url("${BODY_PATTERNS.find(p => p.id === catalog.patternId)?.url}")` : undefined,
                       }}>
                           {/* Head Banner */}
                           {catalog.showHeadBanner && (
@@ -498,20 +550,39 @@ function CatalogueEditor() {
                           <div key={row.id} className="w-full">
                             {row.title && (
                               <div className="w-full mb-2 flex items-center z-10 relative">
-                                <div className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-r-full shadow-sm uppercase tracking-wider">{row.title}</div>
-                                <div className="flex-1 h-px bg-blue-100 ml-2" />
+                                <div className={cn("text-white text-[10px] font-bold px-3 py-1 rounded-r-full shadow-sm uppercase tracking-wider",
+                                  catalog.templateId === 'indomaret-style' && "bg-blue-600",
+                                  catalog.templateId === 'modern-dark' && "bg-red-600",
+                                  catalog.templateId === 'eco-organic' && "bg-green-600",
+                                  catalog.templateId === 'vibrant-yellow' && "bg-orange-500",
+                                  catalog.templateId === 'floral-spring' && "bg-rose-500",
+                                  catalog.templateId === 'floral-tropical' && "bg-teal-600",
+                                  catalog.templateId === 'floral-vintage' && "bg-amber-800"
+                                )}>{row.title}</div>
+                                <div className={cn("flex-1 h-px ml-2 opacity-30",
+                                  catalog.templateId === 'indomaret-style' && "bg-blue-600",
+                                  catalog.templateId === 'modern-dark' && "bg-red-600",
+                                  catalog.templateId === 'eco-organic' && "bg-green-600",
+                                  catalog.templateId === 'vibrant-yellow' && "bg-orange-500",
+                                  catalog.templateId === 'floral-spring' && "bg-rose-500",
+                                  catalog.templateId === 'floral-tropical' && "bg-teal-600",
+                                  catalog.templateId === 'floral-vintage' && "bg-amber-800"
+                                )} />
                               </div>
                             )}
                             <div className={cn("grid gap-2 relative z-10",
                               row.items.length === 2 ? "grid-cols-2" :
                               row.items.length === 3 ? "grid-cols-3" : "grid-cols-4")}>
                               {row.items.map(item => (
-                                <div key={item.id} className={cn("p-2 rounded-lg border flex flex-col items-start text-left relative overflow-hidden h-full",
+                                <div key={item.id} className={cn("p-2 rounded-lg border-2 flex flex-col items-start text-left relative overflow-hidden h-full",
                                   row.items.length === 2 ? "min-h-[240px]" : row.items.length === 3 ? "min-h-[210px]" : "min-h-[180px]",
-                                  catalog.templateId === 'modern-dark' ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100",
-                                  catalog.templateId === 'floral-spring' && "bg-white/90 border-pink-200 shadow-sm",
-                                  catalog.templateId === 'floral-tropical' && "bg-white/90 border-emerald-200 shadow-sm",
-                                  catalog.templateId === 'floral-vintage' && "bg-[#fffbf0]/90 border-amber-200 shadow-sm")}>
+                                  catalog.templateId === 'modern-dark' ? "bg-slate-800 border-slate-700 shadow-md" : "bg-white border-slate-100 shadow-sm",
+                                  catalog.templateId === 'indomaret-style' && "border-blue-200 shadow-blue-50/50",
+                                  catalog.templateId === 'eco-organic' && "border-green-200 shadow-green-50/50",
+                                  catalog.templateId === 'vibrant-yellow' && "border-orange-200 shadow-orange-50/50",
+                                  catalog.templateId === 'floral-spring' && "bg-white/90 border-pink-200 shadow-pink-50/50",
+                                  catalog.templateId === 'floral-tropical' && "bg-white/90 border-emerald-200 shadow-emerald-50/50",
+                                  catalog.templateId === 'floral-vintage' && "bg-[#fffbf0]/90 border-amber-200 shadow-amber-50/50")}>
                               <div className="w-full mb-1 h-10 overflow-hidden relative z-10">
                                 <h3 className={cn("text-[9px] font-black leading-none uppercase text-slate-900 truncate",
                                   catalog.templateId === 'modern-dark' && "text-white")}>{item.brand}</h3>
@@ -585,32 +656,51 @@ function CatalogueEditor() {
                          catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-b ${catalog.headerBgColor}`
                       )}>
                          {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
-                            <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                            <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${HEADER_PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
                          )}
                       </div>
                   </div>
 
                   {/* Footer Editable Styled */}
-                  <div className={cn("mt-auto p-4 flex justify-between items-center z-10 relative overflow-hidden w-full text-white",
+                  <div className={cn("mt-auto flex flex-col z-10 relative overflow-hidden w-full text-white",
                     catalog.headerBgColor.includes('bg-') ? catalog.headerBgColor : `bg-gradient-to-r ${catalog.headerBgColor}`
                   )}>
                     {catalog.headerPatternId && catalog.headerPatternId !== 'none' && (
-                       <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
+                       <div className="absolute inset-0 opacity-25 mix-blend-color-burn pointer-events-none" style={{ backgroundImage: `url("${HEADER_PATTERNS.find(p => p.id === catalog.headerPatternId)?.url}")` }}></div>
                     )}
                     <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                     
-                    <div className={cn("text-[9px] font-medium relative z-10 text-white/90 drop-shadow-sm", catalog.headerFontFamily)}>
-                      <p>Layanan Konsumen: halo@promosikita.id</p>
-                      <p className="font-sans font-bold text-yellow-300">WhatsApp: 0811 1500 280</p>
+                    {/* Social Media Bar (Top of Footer) */}
+                    <div className="flex border-b border-white/20 px-6 py-1.5 gap-4 items-center relative z-10 bg-black/5">
+                        <span className="text-[10px] font-black tracking-tighter uppercase opacity-80 shrink-0">Follow Us : {catalog.footerFollowUsHandle}</span>
+                        <div className="flex gap-1.5">
+                           <div className="w-4 h-4 bg-white rounded flex items-center justify-center shadow-sm"><Facebook className="w-2.5 h-2.5 text-blue-600" /></div>
+                           <div className="w-4 h-4 bg-white rounded flex items-center justify-center shadow-sm"><Twitter className="w-2.5 h-2.5 text-blue-400" /></div>
+                           <div className="w-4 h-4 bg-white rounded flex items-center justify-center shadow-sm"><Instagram className="w-2.5 h-2.5 text-pink-600" /></div>
+                           <div className="w-4 h-4 bg-white rounded flex items-center justify-center shadow-sm"><Youtube className="w-2.5 h-2.5 text-red-600" /></div>
+                           <div className="w-4 h-4 bg-white rounded flex items-center justify-center shadow-sm"><Music className="w-2.5 h-2.5 text-black" /></div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2 relative z-10">
-                      <div className="w-10 h-10 bg-white p-1 rounded-md shadow-sm">
-                         <div className="w-full h-full bg-slate-900 rounded-sm" />
-                      </div>
-                      <div className={cn("text-[10px] leading-none text-white drop-shadow-md", catalog.headerFontFamily)}>
-                         <span className="italic block uppercase mb-0.5">{catalog.headerRightText1}</span>
-                         <span className="font-bold text-yellow-300 font-sans tracking-wide">DISKON</span>
-                      </div>
+
+                    <div className="p-4 px-6 flex justify-between items-center relative z-10">
+                        <div className={cn("text-[9px] font-medium relative z-10 text-white/90 drop-shadow-sm", catalog.headerFontFamily)}>
+                          <p>Layanan Konsumen: halo@promosikita.id</p>
+                          <div className="mt-1 flex flex-col leading-none">
+                             <p className="font-sans font-black text-yellow-300 text-[11px]">WhatsApp: 0811 1500 280</p>
+                             <p className="text-[10px] uppercase font-bold text-white tracking-widest mt-1 opacity-90">{catalog.footerShopName}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                            {/* QR Section (Now on the right with stylized text) */}
+                            <div className={cn("text-right drop-shadow-md", catalog.headerFontFamily)}>
+                                <span className="text-[11px] italic block uppercase leading-none mb-0.5 tracking-tight">SCAN</span>
+                                <span className="text-[14px] font-bold text-yellow-300 font-sans tracking-tighter leading-none block">ME</span>
+                            </div>
+                            <div className="w-12 h-12 bg-white p-1 rounded-sm shadow-md flex items-center justify-center">
+                               <QrCode className="w-full h-full text-slate-900" />
+                            </div>
+                        </div>
                     </div>
                   </div>
                 </div>
@@ -633,110 +723,186 @@ function CatalogueEditor() {
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   if (!isLoggedIn) {
      return <Login onLogin={() => setIsLoggedIn(true)} />;
   }
 
   const navItems = [
-    { id: 'catalogue' as Page, label: 'Catalogue', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'promotions' as Page, label: 'Promotions', icon: <Megaphone className="w-4 h-4" /> },
+    { id: 'dashboard' as Page, label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+    { id: 'catalogue' as Page, label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
+    { id: 'promotions' as Page, label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
   ];
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] flex flex-row-reverse font-sans text-slate-800">
-      {/* Right Sidebar */}
-      <aside className="w-[280px] bg-[#fdfbf7] border-l border-slate-200 flex flex-col shadow-sm flex-shrink-0">
-        {/* User Profile in Sidebar */}
-        <div className="px-6 py-8">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-white overflow-hidden shadow-sm">
-                Hi
-             </div>
-             <div>
-               <p className="font-bold text-slate-800 text-sm">Hi, User!</p>
-               <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-0.5">Master Curator</p>
-             </div>
-          </div>
+    <div className="flex h-screen w-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased overflow-hidden">
+      {/* Left Sidebar Fixed Width */}
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarExpanded ? 260 : 72 }}
+        className="h-full flex flex-col bg-white border-r border-slate-200 flex-shrink-0 z-[100] relative"
+      >
+        {/* Toggle Button Container for Alignment */}
+        <div className={cn("flex items-center px-6 py-8 transition-all duration-300", 
+           isSidebarExpanded ? "justify-between" : "justify-center")}>
+          
+          <AnimatePresence mode="wait">
+            {isSidebarExpanded && (
+              <motion.div 
+                key="avatar"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex items-center gap-3 overflow-hidden"
+              >
+                 <div className="w-10 h-10 rounded-xl bg-[#6d4d42] flex items-center justify-center text-white shrink-0 shadow-lg ring-1 ring-white/20 overflow-hidden">
+                    <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-110" />
+                 </div>
+                 <div className="flex flex-col min-w-0">
+                   <p className="font-black text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis">Hi, User!</p>
+                   <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5 whitespace-nowrap">Master Curator</p>
+                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button 
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="p-2.5 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800 group relative cursor-pointer active:scale-95 z-[110]"
+          >
+            <Menu className="w-5 h-5" />
+            {!isSidebarExpanded && (
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-3 py-2 bg-slate-800 text-white text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700">
+                    Expand Menu
+                    <div className="absolute top-1/2 -left-1.5 transform -translate-y-1/2 border-y-[5px] border-y-transparent border-r-[6px] border-r-slate-800" />
+                </div>
+            )}
+          </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-4 py-2 space-y-2">
-          <button
-            onClick={() => setCurrentPage('dashboard')}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all",
-              currentPage === 'dashboard'
-                ? "bg-[#8b7365]/10 text-[#8b7365] border border-[#8b7365]/30 border-dashed"
-                : "text-slate-500 border border-transparent hover:bg-slate-100/50 hover:text-slate-800"
-            )}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </button>
-
-          <div className="py-2">
-             <div className="border-t border-dashed border-slate-300 mx-2" />
-          </div>
-
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-visible">
           {navItems.map(item => (
             <button
               key={item.id}
               onClick={() => setCurrentPage(item.id)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all",
+                "w-full flex items-center group relative transition-all duration-200 rounded-xl px-4 py-3.5",
+                isSidebarExpanded ? "justify-start" : "justify-center",
                 currentPage === item.id
-                  ? "bg-[#8b7365]/10 text-[#8b7365] border border-[#8b7365]/30 border-dashed"
-                  : "text-slate-500 border border-transparent hover:bg-slate-100/50 hover:text-slate-800"
+                  ? "bg-[#8b7365] text-white shadow-lg shadow-[#8b7365]/20 translate-x-1"
+                  : "text-slate-400 hover:bg-slate-100 hover:text-slate-800"
               )}
             >
               {item.icon}
-              {item.label}
+              <AnimatePresence>
+                {isSidebarExpanded && (
+                  <motion.span 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="ml-3 font-bold text-sm whitespace-nowrap"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+
+              {/* Tooltip for Collapsed State */}
+              {!isSidebarExpanded && (
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-3 py-2 bg-slate-800 text-white text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 group-hover:translate-x-1 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700">
+                    {item.label}
+                    <div className="absolute top-1/2 -left-1.5 transform -translate-y-1/2 border-y-[5px] border-y-transparent border-r-[6px] border-r-slate-800" />
+                </div>
+              )}
+              
+              {/* Active Indicator Line */}
+              {currentPage === item.id && isSidebarExpanded && (
+                <div className="absolute left-0 w-1.5 h-6 bg-yellow-400 rounded-full my-auto inset-y-0 -translate-x-1/2" />
+              )}
             </button>
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="px-4 py-6">
-           <button onClick={() => setIsLoggedIn(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 border border-dashed border-slate-300 hover:bg-slate-50 transition-colors">
-              Logout
+        {/* Bottom Section */}
+        <div className="px-4 py-6 border-t border-slate-100">
+           <button 
+             onClick={() => setIsLoggedIn(false)} 
+             className={cn(
+               "w-full flex items-center group relative p-3.5 rounded-xl transition-all duration-200",
+               isSidebarExpanded ? "justify-start gap-3 bg-red-50 text-red-600 hover:bg-red-100" : "justify-center text-slate-400 hover:text-red-500 hover:bg-red-50"
+             )}
+           >
+              <LogOut className="w-5 h-5 shrink-0" />
+              {isSidebarExpanded && <span className="text-sm font-bold">Logout</span>}
+              
+              {!isSidebarExpanded && (
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-3 py-2 bg-slate-800 text-white text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 group-hover:translate-x-1 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700">
+                    Keluar Sistem
+                    <div className="absolute top-1/2 -left-1.5 transform -translate-y-1/2 border-y-[5px] border-y-transparent border-r-[6px] border-r-slate-800" />
+                </div>
+              )}
            </button>
         </div>
-      </aside>
+      </motion.aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-[#f3f4f6]">
-        {/* Top Bar */}
-        <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between flex-shrink-0 shadow-sm z-10">
-          <div className="flex items-center gap-8">
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full">
+        {/* Top Header - Redesigned Sticky */}
+        <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-10 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
+          <div className="flex items-center gap-12 flex-1">
             <div className="flex flex-col">
-               <h1 className="text-xl font-black text-[#8b7365] tracking-tight leading-none">PromoContent</h1>
-               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Studio</span>
+               <h1 className="text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">PromoContent</h1>
+               <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.3em] mt-1 ml-0.5">Studio Management</span>
             </div>
-            <div className="relative w-96 hidden md:block">
-               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                 <Search className="h-4 w-4 text-slate-400" />
+            
+            <div className="relative w-full max-w-lg hidden lg:flex items-center">
+               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                 <Search className="h-4 w-4 text-[#6d4d42]/50" />
                </div>
-               <input type="text" className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] text-sm placeholder-slate-400 transition-all" placeholder="Cari kampanye atau alat..." />
+               <input 
+                 type="text" 
+                 className="w-full pl-11 pr-4 py-2 bg-[#f4f4f2] border-none rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6d4d42]/10 text-sm placeholder-slate-400 font-medium transition-all" 
+                 placeholder="Search inventory or tools..." 
+               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-5 text-[#6d4d42]/70 ml-8">
+             <button className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100">
+                <Bell className="w-5 h-5 group-hover:text-[#6d4d42]" />
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white ring-1 ring-rose-300 shadow-sm" />
+             </button>
+             
+             <button className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group transform active:scale-95 shadow-sm bg-white border border-slate-100">
+                <Settings className="w-5 h-5 group-hover:text-[#6d4d42]" />
+             </button>
+
+             <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+             <button className="flex items-center justify-center w-11 h-11 bg-[#f4f4f2] text-[#6d4d42]/80 rounded-full border border-slate-200/50 hover:bg-white transition-all transform active:scale-95 shadow-sm group">
+                <User className="w-5.5 h-5.5 group-hover:scale-110 transition-transform" />
+             </button>
           </div>
         </header>
 
-        {/* Page Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentPage}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1 flex flex-col overflow-hidden"
-          >
-            {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} />}
-            {currentPage === 'catalogue' && <CatalogueEditor />}
-            {currentPage === 'promotions' && <Promotions />}
-          </motion.div>
-        </AnimatePresence>
+        {/* Workspace Content */}
+        <section className="relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentPage}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              >
+                {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} />}
+                {currentPage === 'catalogue' && <CatalogueEditor />}
+                {currentPage === 'promotions' && <Promotions />}
+              </motion.div>
+            </AnimatePresence>
+        </section>
       </main>
     </div>
   );
