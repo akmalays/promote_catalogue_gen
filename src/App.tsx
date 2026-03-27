@@ -43,19 +43,38 @@ export default function App() {
   const handleExport = useCallback((format: 'jpg' | 'png') => {
     if (previewRef.current === null) return;
 
-    const fn = format === 'jpg' ? toJpeg : toPng;
-    const options = format === 'jpg' ? { quality: 0.95, cacheBust: true } : { cacheBust: true };
+    // Ensure the element is fully rendered and styles are applied
+    const el = previewRef.current;
+    
+    // Use a small timeout to let the browser settle
+    setTimeout(() => {
+      const options = {
+        quality: 0.95,
+        cacheBust: true,
+        pixelRatio: 3, // High quality
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        backgroundColor: '#ffffff',
+        style: {
+          transform: 'scale(1)',
+          margin: '0',
+          padding: '0',
+        }
+      };
 
-    fn(previewRef.current, options)
-      .then((dataUrl) => {
-        const link = document.createElement('a');
-        link.download = `katalog-promosi-${Date.now()}.${format}`;
-        link.href = dataUrl;
-        link.click();
-      })
-      .catch((err) => {
-        console.error('Export failed', err);
-      });
+      const fn = format === 'jpg' ? toJpeg : toPng;
+
+      fn(el, options)
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = `katalog-promosi-${Date.now()}.${format}`;
+          link.href = dataUrl;
+          link.click();
+        })
+        .catch((err) => {
+          console.error('Export failed', err);
+        });
+    }, 100);
   }, [previewRef]);
 
   const updateItem = (rowId: string, itemId: string, updates: Partial<CatalogItem>) => {
@@ -453,6 +472,44 @@ export default function App() {
                       </div>
 
                       <div className="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 className="text-sm font-bold text-slate-700">Pengaturan Gratis Ongkir</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500">Judul Atas</label>
+                            <input 
+                              value={catalog.shippingTitle}
+                              onChange={(e) => setCatalog(prev => ({ ...prev, shippingTitle: e.target.value }))}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500">Nilai Tengah (Besar)</label>
+                            <input 
+                              value={catalog.shippingValue}
+                              onChange={(e) => setCatalog(prev => ({ ...prev, shippingValue: e.target.value }))}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500">Unit Tengah (Biru)</label>
+                            <input 
+                              value={catalog.shippingUnit}
+                              onChange={(e) => setCatalog(prev => ({ ...prev, shippingUnit: e.target.value }))}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500">Subjudul Bawah</label>
+                            <input 
+                              value={catalog.shippingSubtitle}
+                              onChange={(e) => setCatalog(prev => ({ ...prev, shippingSubtitle: e.target.value }))}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t border-slate-200">
                         <h3 className="text-sm font-bold text-slate-700">Pengaturan Head Banner</h3>
                         <label className="flex items-center space-x-3 cursor-pointer">
                           <input 
@@ -585,7 +642,7 @@ export default function App() {
         <div className="lg:col-span-7 space-y-6">
           <div className="sticky top-8 space-y-6">
             <h2 className="text-xl font-bold text-slate-800">Preview Katalog</h2>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center min-h-[600px]">
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-start justify-center min-h-[600px] overflow-auto max-h-[85vh]">
               {catalog.rows.some(row => row.items.length > 0) ? (
                 <div 
                   ref={previewRef}
@@ -681,7 +738,8 @@ export default function App() {
                           </div>
                           <div className="flex items-center gap-1 leading-none">
                             <span className={cn(
-                              "font-black text-2xl tracking-tighter",
+                              "font-black tracking-tighter leading-none",
+                              catalog.shippingValue.length > 2 ? "text-xl" : "text-2xl",
                               catalog.templateId === 'indomaret-style' ? "text-indomaret-red" : 
                               catalog.templateId === 'floral-spring' ? "text-rose-500" :
                               catalog.templateId === 'floral-tropical' ? "text-teal-600" :
@@ -689,7 +747,8 @@ export default function App() {
                             )}>{catalog.shippingValue}</span>
                             <div className="flex flex-col leading-none">
                               <span className={cn(
-                                "font-black text-sm tracking-tighter",
+                                "font-black tracking-tighter",
+                                catalog.shippingUnit.length > 3 ? "text-xs" : "text-sm",
                                 catalog.templateId === 'indomaret-style' ? "text-indomaret-blue" : 
                                 catalog.templateId === 'floral-spring' ? "text-pink-600" :
                                 catalog.templateId === 'floral-tropical' ? "text-emerald-700" :
@@ -777,7 +836,7 @@ export default function App() {
 
                 {/* Head Banner Section */}
                 {catalog.showHeadBanner && (
-                  <div className="w-full h-40 relative overflow-hidden mt-6 mb-2 shadow-sm border-y-4 border-yellow-400">
+                  <div className="w-full h-36 relative overflow-hidden mt-6 mb-0 shadow-sm border-y-4 border-yellow-400">
                     <img 
                       src={catalog.headBannerImage || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop'} 
                       alt="Campaign Banner" 
@@ -802,7 +861,8 @@ export default function App() {
 
                 {/* Grid Section */}
                 <div className={cn(
-                  "p-2 pt-8 flex flex-col gap-4",
+                  "p-2 flex flex-col gap-4",
+                  catalog.showHeadBanner ? "pt-4" : "pt-8",
                   catalog.templateId === 'brutalist-retro' && "gap-0 p-0"
                 )}>
                   {(catalog.showHeadBanner ? catalog.rows.slice(0, 3) : catalog.rows.slice(0, 4)).map((row, rowIndex) => (
@@ -824,7 +884,10 @@ export default function App() {
                       )}>
                         {row.items.map((item) => (
                           <div key={item.id} className={cn(
-                            "p-2 rounded-lg border flex flex-col items-start text-left relative overflow-hidden h-full min-h-[160px]",
+                            "p-2 rounded-lg border flex flex-col items-start text-left relative overflow-hidden h-full",
+                            row.items.length === 2 ? "min-h-[240px]" :
+                            row.items.length === 3 ? "min-h-[210px]" :
+                            "min-h-[180px]",
                             catalog.templateId === 'modern-dark' ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100",
                             catalog.templateId === 'eco-organic' && "bg-white border-emerald-100 rounded-xl shadow-sm",
                             catalog.templateId === 'brutalist-retro' && "bg-white border-black border-2 rounded-none m-[-1px]",
@@ -833,7 +896,7 @@ export default function App() {
                             catalog.templateId === 'floral-vintage' && "bg-[#fffbf0]/90 border-amber-200 shadow-sm backdrop-blur-sm"
                           )}>
                             {/* Product Info at Top */}
-                            <div className="w-full mb-1 h-10 overflow-hidden">
+                            <div className="w-full mb-1 h-10 overflow-hidden relative z-10">
                               <h3 className={cn(
                                 "text-[9px] font-black leading-none uppercase text-slate-900 truncate",
                                 catalog.templateId === 'modern-dark' && "text-white"
@@ -848,53 +911,74 @@ export default function App() {
                               )} title={item.description}>{item.description}</p>
                             </div>
                             
-                            {/* Product Image */}
-                            <div className="w-full h-20 mb-2 flex items-center justify-center relative">
-                              <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
+                            {/* Product Image Area - Positioned behind text */}
+                            <div className="absolute inset-0 z-0 flex items-center justify-center p-2 pt-12 pb-4">
+                              <img 
+                                src={item.image} 
+                                alt={item.name} 
+                                className="w-full h-full object-contain" 
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer"
+                              />
                               
-                              {item.discountPercentage && (
+                              {item.discountPercentage && !item.isBuyXGetY && (
                                 <div className={cn(
-                                  "absolute top-0 right-0 bg-red-600 text-white w-8 h-8 rounded-full flex flex-col items-center justify-center shadow-sm z-10 leading-none",
+                                  "absolute top-10 right-2 bg-red-600 text-white rounded-full flex flex-col items-center justify-center shadow-sm z-10 leading-none",
+                                  row.items.length === 4 ? "w-8 h-8" : row.items.length === 3 ? "w-9 h-9" : "w-10 h-10",
                                   catalog.templateId === 'eco-organic' && "bg-emerald-600",
                                   catalog.templateId === 'brutalist-retro' && "bg-black rounded-none",
                                   catalog.templateId === 'floral-spring' && "bg-rose-500",
                                   catalog.templateId === 'floral-tropical' && "bg-teal-600",
                                   catalog.templateId === 'floral-vintage' && "bg-orange-700"
                                 )}>
-                                  <span className="text-[5px] font-bold uppercase tracking-tighter">Hemat</span>
-                                  <span className="text-[9px] font-black">{item.discountPercentage}%</span>
+                                  <span className={cn(
+                                    "font-bold uppercase tracking-tighter",
+                                    row.items.length === 4 ? "text-[4.5px]" : row.items.length === 3 ? "text-[5.5px]" : "text-[6.5px]"
+                                  )}>Hemat</span>
+                                  <span className={cn(
+                                    "font-black",
+                                    row.items.length === 4 ? "text-[9px]" : row.items.length === 3 ? "text-[10px]" : "text-[11px]"
+                                  )}>{item.discountPercentage}%</span>
                                 </div>
                               )}
                             </div>
                             
-                            {/* Skewed Price Tag at Bottom - "Menempel" Style */}
-                            <div className="w-full mt-auto flex flex-col items-start pt-2">
+                            {/* Skewed Price Tag at Bottom - Absolute Positioned to overlap image */}
+                            <div className="absolute bottom-0 left-0 flex flex-col items-start z-20 p-1">
                               {item.isBuyXGetY ? (
                                 <>
                                   {/* Buy X Tag (Yellow) */}
                                   <div className={cn(
-                                    "bg-[#ffcc00] px-2 py-0.5 transform -skew-x-[15deg] origin-bottom-left rounded-t-sm shadow-sm inline-flex items-center gap-1 relative z-0 translate-y-[2px] ml-1",
+                                    "bg-[#ffcc00] transform -skew-x-[15deg] origin-bottom-left rounded-t-sm shadow-sm inline-flex items-center justify-center gap-1 relative z-0 translate-y-[2px] ml-1",
+                                    row.items.length === 4 ? "px-2.5 py-0.5 min-w-[65px]" : row.items.length === 3 ? "px-4 py-0.5 min-w-[70px]" : "px-5 py-1 min-w-[80px]",
                                     catalog.templateId === 'modern-dark' && "bg-slate-600",
                                     catalog.templateId === 'eco-organic' && "bg-emerald-100",
                                     catalog.templateId === 'floral-spring' && "bg-pink-100",
                                     catalog.templateId === 'floral-tropical' && "bg-emerald-100",
                                     catalog.templateId === 'floral-vintage' && "bg-amber-100"
                                   )}>
-                                    <span className="text-[8px] font-black text-slate-800 skew-x-[15deg] uppercase">
+                                    <span className={cn(
+                                      "font-black text-slate-800 skew-x-[15deg] uppercase leading-none whitespace-nowrap",
+                                      row.items.length === 4 ? "text-[10px]" : row.items.length === 3 ? "text-[11px]" : "text-[12px]"
+                                    )}>
                                       Beli {item.buyQuantity || 2}
                                     </span>
                                   </div>
 
                                   {/* Get Y Tag (Red) */}
                                   <div className={cn(
-                                    "bg-[#ed1c24] px-2 py-1 transform -skew-x-[15deg] origin-top-left rounded-sm shadow-md inline-flex items-center gap-0.5 relative z-10",
+                                    "bg-[#ed1c24] transform -skew-x-[15deg] origin-top-left rounded-sm shadow-md inline-flex items-center justify-center gap-0.5 relative z-10",
+                                    row.items.length === 4 ? "px-3.5 py-1 min-w-[95px]" : row.items.length === 3 ? "px-5 py-1.5 min-w-[100px]" : "px-6 py-2 min-w-[110px]",
                                     catalog.templateId === 'eco-organic' && "bg-emerald-600",
                                     catalog.templateId === 'brutalist-retro' && "bg-black rounded-none",
                                     catalog.templateId === 'floral-spring' && "bg-rose-500",
                                     catalog.templateId === 'floral-tropical' && "bg-teal-600",
                                     catalog.templateId === 'floral-vintage' && "bg-orange-700"
                                   )}>
-                                    <span className="text-[10px] font-black text-white skew-x-[15deg] uppercase tracking-tighter leading-none">
+                                    <span className={cn(
+                                      "font-black text-white skew-x-[15deg] uppercase tracking-tighter leading-none whitespace-nowrap",
+                                      row.items.length === 4 ? "text-[13px]" : row.items.length === 3 ? "text-[14px]" : "text-[16px]"
+                                    )}>
                                       Gratis {item.getQuantity || 1}
                                     </span>
                                   </div>
@@ -903,7 +987,7 @@ export default function App() {
                                 <>
                                   {/* Original Price Tag (Yellow) - Stuck to the red one */}
                                   <div className={cn(
-                                    "bg-[#ffcc00] px-2 py-0.5 transform -skew-x-[15deg] origin-bottom-left rounded-t-sm shadow-sm inline-flex items-center gap-1 relative z-0 translate-y-[2px] ml-1",
+                                    "bg-[#ffcc00] px-3 py-0.5 transform -skew-x-[15deg] origin-bottom-left rounded-t-sm shadow-sm inline-flex items-center gap-1 relative z-0 translate-y-[2px] ml-1 min-w-[60px]",
                                     catalog.templateId === 'modern-dark' && "bg-slate-600",
                                     catalog.templateId === 'eco-organic' && "bg-emerald-100",
                                     catalog.templateId === 'floral-spring' && "bg-pink-100",
@@ -920,7 +1004,7 @@ export default function App() {
 
                                   {/* Discounted Price Tag (Red) - Larger font and compact */}
                                   <div className={cn(
-                                    "bg-[#ed1c24] px-2 py-1 transform -skew-x-[15deg] origin-top-left rounded-sm shadow-md inline-flex items-center gap-0.5 relative z-10",
+                                    "bg-[#ed1c24] px-4 py-1 transform -skew-x-[15deg] origin-top-left rounded-sm shadow-md inline-flex items-center gap-0.5 relative z-10 min-w-[90px]",
                                     catalog.templateId === 'eco-organic' && "bg-emerald-600",
                                     catalog.templateId === 'brutalist-retro' && "bg-black rounded-none",
                                     catalog.templateId === 'floral-spring' && "bg-rose-500",
@@ -947,7 +1031,7 @@ export default function App() {
 
                 {/* Footer */}
                 <div className={cn(
-                  "absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center border-t",
+                  "mt-auto p-4 flex justify-between items-center border-t",
                   catalog.templateId === 'indomaret-style' ? "bg-indomaret-blue text-white border-indomaret-yellow" : "bg-slate-100 text-slate-500 border-slate-200",
                   catalog.templateId === 'eco-organic' && "bg-emerald-900 text-emerald-50 border-none",
                   catalog.templateId === 'brutalist-retro' && "bg-black text-white border-none"
