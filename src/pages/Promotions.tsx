@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   Users, Plus, Trash2, Send, MessageSquare,
   Phone, User, Search, CheckSquare, Square,
-  Megaphone, X, Edit2, Check
+  Megaphone, X, Edit2, Check,
+  Image as ImageIcon, Paperclip, XCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -33,6 +34,30 @@ export default function Promotions() {
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [blastSent, setBlastSent] = useState<string[]>([]);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const copyImageToClipboard = async () => {
+    if (!attachedImage) return;
+    try {
+      const response = await fetch(attachedImage);
+      const blob = await response.blob();
+      const item = new ClipboardItem({ [blob.type]: blob });
+      await navigator.clipboard.write([item]);
+    } catch (err) {
+      console.error('Gagal menyalin gambar:', err);
+    }
+  };
 
   const filtered = visitors.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -311,21 +336,82 @@ export default function Promotions() {
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                rows={9}
+                rows={7}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none font-[inherit] leading-relaxed"
                 placeholder="Tulis pesan promosi di sini..."
               />
-              <p className="text-xs text-slate-400 text-right">{message.length} karakter</p>
+              
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Lampiran</span>
+                  <p className="text-[10px] text-slate-400">{message.length} karakter</p>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                   <label className="flex items-center gap-2 px-3 py-2 bg-[#f4f4f2] hover:bg-slate-200 text-[#6d4d42] rounded-xl text-xs font-bold cursor-pointer transition-all border border-slate-200/50 shadow-sm active:scale-95">
+                      <ImageIcon className="w-4 h-4" />
+                      {attachedImage ? 'Ganti Katalog' : 'Lampirkan Katalog'}
+                      <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                   </label>
+                   
+                   {attachedImage && (
+                     <div className="flex gap-2">
+                        <button 
+                          onClick={copyImageToClipboard}
+                          className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all border border-emerald-100 shadow-sm active:scale-95"
+                        >
+                          <Paperclip className="w-4 h-4" /> Salin Katalog
+                        </button>
+                        <button 
+                            onClick={() => setAttachedImage(null)}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm active:scale-95"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" /> Hapus
+                        </button>
+                     </div>
+                   )}
+                </div>
+
+                {attachedImage && (
+                  <>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 aspect-video group"
+                    >
+                      <img src={attachedImage} alt="Katalog" className="w-full h-full object-contain" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                         <p className="text-white text-[10px] font-bold px-3 py-1.5 bg-black/60 rounded-full">Pratinjau Katalog</p>
+                      </div>
+                    </motion.div>
+
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                         <span className="text-blue-600 font-bold text-xs">!</span>
+                      </div>
+                      <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                        <span className="font-bold uppercase block mb-0.5">🚀 Workflow Super Cepat:</span> 
+                        Klik <span className="font-bold">"Salin Katalog"</span> di atas sekali saja, lalu untuk setiap jendela WhatsApp yang terbuka nanti, Bapak cukup tekan <span className="font-bold text-blue-900 underline">Ctrl+V (Paste)</span> lalu <span className="font-bold">Enter</span>. Jadi prosesnya jauh lebih cepat dan tidak ribet!
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Preview */}
             <div className="px-4 pb-4">
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Preview Pesan</p>
               <div className="bg-[#e5ddd5] rounded-xl p-4">
-                <div className="bg-white rounded-xl rounded-tl-none p-3 shadow-sm max-w-xs ml-auto">
-                  <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed">
-                    {message.replace('{nama}', selectedVisitors[0]?.name || 'Pelanggan')}
-                  </p>
+                  <div className="bg-white rounded-xl rounded-tl-none p-3 shadow-sm max-w-xs ml-auto">
+                    {attachedImage && (
+                      <div className="mb-2 rounded-lg overflow-hidden border border-slate-100">
+                        <img src={attachedImage} alt="Katalog Attached" className="w-full h-24 object-cover" />
+                      </div>
+                    )}
+                    <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed">
+                      {message.replace('{nama}', selectedVisitors[0]?.name || 'Pelanggan')}
+                    </p>
                   <p className="text-[10px] text-slate-400 text-right mt-1">
                     {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                   </p>
