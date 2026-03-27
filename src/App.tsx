@@ -5,7 +5,7 @@ import {
   Palette, CheckCircle2, Bike, ArrowDown,
   BookOpen, Megaphone, LayoutDashboard, Home, Search,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
-  Menu, LogOut, Bell, Settings, User
+  Menu, LogOut, Bell, Settings, User, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -736,12 +736,32 @@ export default function App() {
   ];
 
   return (
-    <div className="flex h-screen w-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased overflow-hidden">
-      {/* Left Sidebar Fixed Width */}
+    <div className="flex h-screen w-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased overflow-hidden relative">
+      {/* Mobile Sidebar Backdrop */}
+      <AnimatePresence>
+        {isSidebarExpanded && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarExpanded(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Left Sidebar - Responsive */}
       <motion.aside 
         initial={false}
-        animate={{ width: isSidebarExpanded ? 260 : 72 }}
-        className="h-full flex flex-col bg-white border-r border-slate-200 flex-shrink-0 z-[100] relative"
+        animate={{ 
+          width: isSidebarExpanded ? 260 : 72,
+          x: (typeof window !== 'undefined' && window.innerWidth < 1024 && !isSidebarExpanded) ? -260 : 0
+        }}
+        className={cn(
+          "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative transition-all duration-300",
+          "fixed lg:relative top-0 left-0",
+          !isSidebarExpanded && "lg:flex hidden"
+        )}
       >
         {/* Toggle Button Container for Alignment */}
         <div className={cn("flex items-center px-6 py-8 transition-all duration-300", 
@@ -769,7 +789,7 @@ export default function App() {
 
           <button 
             onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            className="p-2.5 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800 group relative cursor-pointer active:scale-95 z-[110]"
+            className="p-2.5 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800 group relative cursor-pointer active:scale-95 z-[110] lg:flex hidden items-center justify-center"
           >
             <Menu className="w-5 h-5" />
             {!isSidebarExpanded && (
@@ -778,6 +798,13 @@ export default function App() {
                     <div className="absolute top-1/2 -left-1.5 transform -translate-y-1/2 border-y-[5px] border-y-transparent border-r-[6px] border-r-slate-800" />
                 </div>
             )}
+          </button>
+          
+          <button 
+            onClick={() => setIsSidebarExpanded(false)}
+            className="p-2 lg:hidden text-slate-500 hover:text-slate-800"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -848,13 +875,20 @@ export default function App() {
       </motion.aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full">
+      <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
         {/* Top Header - Redesigned Sticky */}
-        <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-10 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
-          <div className="flex items-center gap-12 flex-1">
+        <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
+          <div className="flex items-center gap-3 md:gap-12 flex-1">
+            <button 
+              onClick={() => setIsSidebarExpanded(true)}
+              className="p-2 lg:hidden text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
             <div className="flex flex-col">
-               <h1 className="text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">PromoContent</h1>
-               <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.3em] mt-1 ml-0.5">Studio Management</span>
+               <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">PromoContent</h1>
+               <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.2em] mt-1 ml-0.5">Studio</span>
             </div>
             
             <div className="relative w-full max-w-lg hidden lg:flex items-center">
@@ -869,26 +903,26 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-5 text-[#6d4d42]/70 ml-8">
+          <div className="flex items-center gap-2 md:gap-5 text-[#6d4d42]/70 ml-2 md:ml-8">
              <button className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100">
                 <Bell className="w-5 h-5 group-hover:text-[#6d4d42]" />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white ring-1 ring-rose-300 shadow-sm" />
+                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
              </button>
              
-             <button className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group transform active:scale-95 shadow-sm bg-white border border-slate-100">
+             <button className="hidden sm:flex p-2.5 rounded-full hover:bg-slate-100 transition-all items-center justify-center group transform active:scale-95 shadow-sm bg-white border border-slate-100">
                 <Settings className="w-5 h-5 group-hover:text-[#6d4d42]" />
              </button>
 
-             <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block" />
+             <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block" />
 
-             <button className="flex items-center justify-center w-11 h-11 bg-[#f4f4f2] text-[#6d4d42]/80 rounded-full border border-slate-200/50 hover:bg-white transition-all transform active:scale-95 shadow-sm group">
-                <User className="w-5.5 h-5.5 group-hover:scale-110 transition-transform" />
+             <button className="flex items-center justify-center w-10 h-10 md:w-11 md:h-11 bg-[#f4f4f2] text-[#6d4d42]/80 rounded-full border border-slate-200/50 hover:bg-white transition-all transform active:scale-95 shadow-sm group">
+                <User className="w-5 h-5 md:w-5.5 md:h-5.5 group-hover:scale-110 transition-transform" />
              </button>
           </div>
         </header>
 
         {/* Workspace Content */}
-        <section className="relative">
+        <section className="relative p-0 transition-all duration-300">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentPage}

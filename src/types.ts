@@ -175,7 +175,7 @@ export const DEFAULT_CATALOG: CatalogData = {
   headerRightText2: 'Sekarang!',
   headerFontFamily: 'font-black',
   headerLogoSlogan: 'belanja puas harga hemat',
-  headerSKText: 'S&K BERLAKU',
+  headerSKText: '*s&k berlaku  | hanya untuk di toko tertentu' ,
 
   footerShopName: 'LILY MART',
   footerFollowUsHandle: '@lilymart',
