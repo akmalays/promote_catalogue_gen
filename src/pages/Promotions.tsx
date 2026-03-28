@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Users, Plus, Trash2, Send, MessageSquare,
-  Phone, User, Search, CheckSquare, Square,
-  Megaphone, X, Edit2, Check,
-  Image as ImageIcon, Paperclip, XCircle
-} from 'lucide-react';
+import { Users, Plus, Trash2, Send, MessageSquare, Phone, User, Search, CheckSquare, Square, Megaphone, X, Edit2, Check, ArrowDown, Image as ImageIcon, Paperclip, XCircle } from 'lucide-react';
+
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -28,13 +24,14 @@ export default function Promotions() {
   const [newPhone, setNewPhone] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [message, setMessage] = useState(
-    'Halo {nama}! 👋\n\nKami punya promo spesial untuk Anda minggu ini! 🎉\n\nCek katalog terbaru kami dan dapatkan diskon eksklusif. Jangan sampai kehabisan ya!\n\n*KLIK* - Belanja Online Seperti di Toko'
+    "Halo {nama}! \uD83D\uDE0A Ada kabar gembira pelanggan toko kami! \uD83D\uDCE2\n\nKatalog promo terbaru kita sudah rilis lho. Cek yuk lewat gambar di bawah ini, banyak diskon menarik yang sayang banget kalau dilewatkan! \u2728\n\nYuk, amankan promonya sebelum kehabisan ya! Happy shopping! \uD83D\uDECD"
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [blastSent, setBlastSent] = useState<string[]>([]);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -50,10 +47,35 @@ export default function Promotions() {
   const copyImageToClipboard = async () => {
     if (!attachedImage) return;
     try {
-      const response = await fetch(attachedImage);
-      const blob = await response.blob();
-      const item = new ClipboardItem({ [blob.type]: blob });
-      await navigator.clipboard.write([item]);
+      // First, we need to convert the image to PNG because most browsers 
+      // only support 'image/png' for Clipboard API write
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = attachedImage;
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get canvas context');
+      ctx.drawImage(img, 0, 0);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        try {
+          const item = new ClipboardItem({ [blob.type]: blob });
+          await navigator.clipboard.write([item]);
+          setCopySuccess(true);
+          setTimeout(() => setCopySuccess(false), 2000);
+        } catch (err) {
+          console.error('Final clipboard write fail:', err);
+        }
+      }, 'image/png');
     } catch (err) {
       console.error('Gagal menyalin gambar:', err);
     }
@@ -112,7 +134,9 @@ export default function Promotions() {
 
   const buildWhatsAppUrl = (visitor: Visitor) => {
     const personalizedMsg = message.replace('{nama}', visitor.name);
-    return `https://wa.me/${visitor.phone}?text=${encodeURIComponent(personalizedMsg)}`;
+    const params = new URLSearchParams();
+    params.append('text', personalizedMsg);
+    return `https://wa.me/${visitor.phone}?${params.toString()}`;
   };
 
   const handleBlastOne = (visitor: Visitor) => {
@@ -358,15 +382,32 @@ export default function Promotions() {
                      <div className="flex gap-2">
                         <button 
                           onClick={copyImageToClipboard}
-                          className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all border border-emerald-100 shadow-sm active:scale-95"
+                          className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm active:scale-95",
+                            copySuccess 
+                              ? "bg-emerald-600 text-white border-emerald-600" 
+                              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
+                          )}
+                          title="Salin gambar untuk di-paste langsung di WA"
                         >
-                          <Paperclip className="w-4 h-4" /> Salin Katalog
+                          {copySuccess ? <Check className="w-4 h-4" /> : <Paperclip className="w-4 h-4" />}
+                          {copySuccess ? 'Berhasil Disalin!' : 'Salin Katalog (Paste)'}
                         </button>
+
+                        <a 
+                           href={attachedImage} 
+                           download="Katalog-Promo.png"
+                           className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 border border-slate-200 shadow-sm active:scale-95 transition-all"
+                           title="Download gambar jika copy-paste tidak didukung browser"
+                        >
+                           <ArrowDown className="w-4 h-4" /> Download
+                        </a>
+
                         <button 
                             onClick={() => setAttachedImage(null)}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm active:scale-95"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm active:scale-95 ml-auto"
                         >
-                            <Trash2 className="w-3.5 h-3.5" /> Hapus
+                            <Trash2 className="w-3.5 h-3.5" />
                         </button>
                      </div>
                    )}
@@ -391,7 +432,7 @@ export default function Promotions() {
                       </div>
                       <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
                         <span className="font-bold uppercase block mb-0.5">🚀 Workflow Super Cepat:</span> 
-                        Klik <span className="font-bold">"Salin Katalog"</span> di atas sekali saja, lalu untuk setiap jendela WhatsApp yang terbuka nanti, Bapak cukup tekan <span className="font-bold text-blue-900 underline">Ctrl+V (Paste)</span> lalu <span className="font-bold">Enter</span>. Jadi prosesnya jauh lebih cepat dan tidak ribet!
+                        Klik <span className="font-bold">"Salin Katalog"</span> di atas sekali saja, lalu untuk setiap jendela WhatsApp yang terbuka nanti, cukup tekan <span className="font-bold text-blue-900 underline">Ctrl+V (Paste)</span> lalu <span className="font-bold">Enter</span>. Jadi prosesnya jauh lebih cepat dan tidak ribet!
                       </p>
                     </div>
                   </>
