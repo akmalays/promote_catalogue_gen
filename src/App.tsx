@@ -1,11 +1,11 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { toJpeg, toPng } from 'html-to-image';
 import { 
   Plus, Trash2, Download, Upload, Package, FileText,
   Palette, CheckCircle2, Bike, ArrowDown,
   BookOpen, Megaphone, LayoutDashboard, Home, Search,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
-  Menu, LogOut, Bell, Settings, User, X
+  Menu, LogOut, Bell, Settings as SettingsIcon, User, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -14,8 +14,11 @@ import logoAsset from './assets/img/pcs_logo.png';
 import Dashboard from './pages/Dashboard';
 import Promotions from './pages/Promotions';
 import Login from './pages/Login';
+import CatalogueHistory from './pages/CatalogueHistory';
+import SettingsPage from './pages/Settings';
+import { UserProfile } from './types';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -58,6 +61,21 @@ function CatalogueEditor() {
         link.download = `katalog-promosi-${Date.now()}.${format}`;
         link.href = dataUrl;
         link.click();
+        
+        try {
+          const raw = localStorage.getItem('saved_catalogues');
+          const savedCatalogues = raw ? JSON.parse(raw) : [];
+          savedCatalogues.unshift({
+            id: Date.now().toString(),
+            name: catalog.promoTitle ? `Promo ${catalog.promoTitle}` : 'Katalog Promo',
+            createdAt: Date.now(),
+            catalogData: catalog
+          });
+          localStorage.setItem('saved_catalogues', JSON.stringify(savedCatalogues));
+        } catch(e) {
+          console.error('Gagal simpan riwayat ke local storage', e);
+        }
+
       }).catch(console.error);
     }, 100);
   }, [previewRef]);
@@ -725,16 +743,72 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('user_profile');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Gagal memuat profil:', e);
+      }
+    }
+    return {
+      username: 'admin',
+      nickname: 'Master Curator',
+      role: 'admin',
+      password: 'password123'
+    };
+  });
+
+  const handleUpdateProfile = (newProfile: UserProfile) => {
+    setUserProfile(newProfile);
+    localStorage.setItem('user_profile', JSON.stringify(newProfile));
+  };
+
+  // RBAC: Redirect if unauthorized page access
+  useEffect(() => {
+    const role = userProfile.role?.toLowerCase() || 'editor';
+    const isAdmin = role.includes('admin');
+    const isManager = role.includes('manager');
+    
+    const allowed: Page[] = ['dashboard', 'catalogue', 'settings'];
+    if (isManager) allowed.push('promotions', 'history' as any);
+    if (isAdmin) allowed.push('promotions', 'history');
+    
+    if (!allowed.includes(currentPage)) {
+      setCurrentPage('dashboard');
+    }
+  }, [userProfile.role, currentPage]);
 
   if (!isLoggedIn) {
-     return <Login onLogin={() => setIsLoggedIn(true)} />;
+     return <Login onLogin={(user) => {
+       setUserProfile(user);
+       localStorage.setItem('user_profile', JSON.stringify(user));
+       setIsLoggedIn(true);
+     }} />;
   }
 
-  const navItems = [
-    { id: 'dashboard' as Page, label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
-    { id: 'catalogue' as Page, label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
-    { id: 'promotions' as Page, label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
+  const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+    { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
+    { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
+    { id: 'history', label: 'History Catalogue', icon: <FileText className="w-5 h-5 shrink-0" /> },
+    { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5 shrink-0" /> },
   ];
+
+  const navItems = allNavItems.filter(item => {
+    const role = userProfile.role?.toLowerCase() || 'editor';
+    const isAdmin = role.includes('admin');
+    const isManager = role.includes('manager');
+
+    // Semua role bisa akses settings & Admin akses semua
+    if (item.id === 'settings' || isAdmin) return true;
+    
+    // Role lainnya (Manager/Editor)
+    if (isManager) return ['dashboard', 'catalogue', 'promotions', 'history'].includes(item.id);
+    return ['dashboard', 'catalogue'].includes(item.id);
+  });
 
   return (
     <div className="flex h-screen w-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased overflow-hidden relative">
@@ -781,8 +855,8 @@ export default function App() {
                     <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
                  </div>
                  <div className="flex flex-col min-w-0">
-                   <p className="font-black text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis uppercase tracking-tighter">PROMO CONTENT</p>
-                   <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5 whitespace-nowrap">STUDIO MANAGEMENT</p>
+                   <p className="font-black text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis uppercase tracking-tighter">MY STORE</p>
+                   <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5 whitespace-nowrap">STUDIO</p>
                  </div>
               </motion.div>
             )}
@@ -815,6 +889,7 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setCurrentPage(item.id)}
+              title={item.label}
               className={cn(
                 "w-full flex items-center group relative transition-all duration-200 rounded-xl px-4 py-3.5",
                 isSidebarExpanded ? "justify-start" : "justify-center",
@@ -892,7 +967,7 @@ export default function App() {
                 <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col">
-                 <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">PromoContent</h1>
+                 <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">myStore</h1>
                  <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.2em] mt-1 ml-0.5">Studio</span>
               </div>
             </div>
@@ -910,19 +985,43 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-5 text-[#6d4d42]/70 ml-2 md:ml-8">
-             <button className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100">
+             <button 
+               title="Notifikasi"
+               className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100"
+             >
                 <Bell className="w-5 h-5 group-hover:text-[#6d4d42]" />
                 <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
              </button>
              
-             <button className="hidden sm:flex p-2.5 rounded-full hover:bg-slate-100 transition-all items-center justify-center group transform active:scale-95 shadow-sm bg-white border border-slate-100">
-                <Settings className="w-5 h-5 group-hover:text-[#6d4d42]" />
+             <button 
+               onClick={() => setCurrentPage('settings')}
+               title="Pengaturan Profil"
+               className={cn(
+                 "hidden sm:flex p-2.5 rounded-full hover:bg-slate-100 transition-all items-center justify-center group transform active:scale-95 shadow-sm border",
+                 currentPage === 'settings' ? "bg-[#8b7365] text-white border-[#8b7365]" : "bg-white border-slate-100 text-[#6d4d42]/70"
+               )}
+             >
+                <SettingsIcon className="w-5 h-5 group-hover:text-inherit" />
              </button>
 
              <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block" />
 
-             <button className="flex items-center justify-center w-10 h-10 md:w-11 md:h-11 bg-[#f4f4f2] text-[#6d4d42]/80 rounded-full border border-slate-200/50 hover:bg-white transition-all transform active:scale-95 shadow-sm group">
-                <User className="w-5 h-5 md:w-5.5 md:h-5.5 group-hover:scale-110 transition-transform" />
+             <button 
+               onClick={() => setCurrentPage('settings')}
+               title={`Profil: ${userProfile.nickname}`}
+               className="flex items-center gap-3 p-1.5 pr-4 rounded-full bg-[#f4f4f2]/50 hover:bg-white border border-slate-200/50 transition-all transform active:scale-95 shadow-sm group"
+             >
+                <div className="w-9 h-9 md:w-10 md:h-10 bg-[#8b7365] text-white rounded-full flex items-center justify-center shadow-inner">
+                   <User className="w-5 h-5 md:w-6 md:h-6" />
+                </div>
+                <div className="hidden md:flex flex-col items-start leading-tight">
+                   <span className="text-xs font-black text-slate-800 uppercase tracking-tighter truncate max-w-[100px]">
+                      {userProfile.nickname}
+                   </span>
+                   <span className="text-[9px] font-bold text-[#8b7365] uppercase tracking-widest truncate max-w-[100px]">
+                      {userProfile.role}
+                   </span>
+                </div>
              </button>
           </div>
         </header>
@@ -937,9 +1036,11 @@ export default function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
               >
-                {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} />}
+                {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} userProfile={userProfile} />}
                 {currentPage === 'catalogue' && <CatalogueEditor />}
                 {currentPage === 'promotions' && <Promotions />}
+                {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} />}
+                {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}
               </motion.div>
             </AnimatePresence>
         </section>

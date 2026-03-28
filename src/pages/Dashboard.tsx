@@ -1,16 +1,19 @@
 import React from 'react';
 import { BookOpen, Megaphone, ArrowRight, Book, Activity, AlertTriangle } from 'lucide-react';
 
+import { UserProfile } from '../types';
+
 interface DashboardProps {
-  onNavigate: (page: 'catalogue' | 'promotions') => void;
+  onNavigate: (page: 'catalogue' | 'promotions' | 'history') => void;
+  userProfile: UserProfile;
 }
 
-export default function Dashboard({ onNavigate }: DashboardProps) {
+export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
   return (
     <div className="flex-1 p-8 overflow-y-auto">
       {/* Greeting */}
       <div className="mb-10">
-        <h1 className="text-4xl font-bold font-serif text-slate-800 mb-3 tracking-tight">Hi, User!</h1>
+        <h1 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">Hi, {userProfile.nickname || 'User'}!</h1>
         <p className="text-slate-500 text-sm max-w-lg leading-relaxed font-medium">
           Sistem Anda telah siap! Berikut adalah ringkasan dari performa pembuatan katalog, draf kampanye promosi, dan metrik audiens saat ini.
         </p>

@@ -2,12 +2,48 @@ import { supabase } from './supabase';
 
 export const api = {
   login: async (credentials: any) => {
-    // For now, retaining a simple hardcoded auth to avoid breaking the login flow.
-    // In the future, this should be replaced with `supabase.auth.signInWithPassword`.
-    if (credentials.username === 'admin' && credentials.password === 'password123') {
-      return { success: true, user: { id: '1', username: 'admin', name: 'Administrator' } };
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', credentials.username)
+      .eq('password', credentials.password)
+      .single();
+    
+    if (error || !data) {
+      throw new Error('Username atau password salah.');
     }
-    throw new Error('Username atau password salah.');
+    
+    return { success: true, user: data };
+  },
+  updateProfile: async (id: string, profile: any) => {
+    const { data, error } = await supabase
+      .from('users')
+      .update(profile)
+      .eq('id', id)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  },
+  getUsers: async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+    return data || [];
+  },
+  addUser: async (user: any) => {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([user])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
   },
   getVisitors: async () => {
     const { data, error } = await supabase

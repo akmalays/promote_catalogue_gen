@@ -19,6 +19,21 @@ export interface CatalogRow {
   items: CatalogItem[];
 }
 
+export interface SavedCatalogue {
+  id: string;
+  name: string;
+  createdAt: number;
+  catalogData: CatalogData;
+}
+
+export interface UserProfile {
+  id?: string;
+  username: string;
+  nickname: string;
+  role: string;
+  password?: string;
+}
+
 export interface CatalogData {
   brandName: string;
   promoTitle: string;

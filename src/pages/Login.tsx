@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { BookOpen, AlertCircle, ArrowRight } from 'lucide-react';
+import { BookOpen, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
 import logoAsset from '../assets/img/pcs_logo.png';
 
+import { UserProfile } from '../types';
+
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: UserProfile) => void;
 }
 
 export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,8 +24,8 @@ export default function Login({ onLogin }: LoginProps) {
 
     try {
       const result = await api.login({ username: email, password });
-      if (result.success) {
-        onLogin();
+      if (result.success && result.user) {
+        onLogin(result.user);
       } else {
         setError('Username atau password salah.');
       }
@@ -86,7 +89,7 @@ export default function Login({ onLogin }: LoginProps) {
             <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
               <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">PromoContent Studio</h1>
+            <h1 className="text-xl font-bold text-slate-900">myStore Studio</h1>
           </div>
 
           <div className="mb-10 text-center lg:text-left">
@@ -122,13 +125,22 @@ export default function Login({ onLogin }: LoginProps) {
                 <label className="text-sm font-bold text-slate-700 block">Kata Sandi</label>
                 <a href="#" className="text-xs font-bold text-[#8b7365] hover:text-[#7a6458]">Lupa sandi?</a>
               </div>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all placeholder:text-slate-400 text-sm"
-              />
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all placeholder:text-slate-400 text-sm"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="pt-2">
