@@ -27,7 +27,7 @@ export default function Login({ onLogin }: LoginProps) {
         setError('Username atau password salah.');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal menyambung ke server.');
+      setError(err.message || 'Gagal menyambung ke server.');
     } finally {
       setIsLoading(false);
     }

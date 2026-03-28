@@ -79,8 +79,8 @@ export default function Promotions() {
   };
 
   const filtered = visitors.filter(v =>
-    v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.phone.includes(searchQuery)
+    (v.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (v.phone || '').includes(searchQuery)
   );
 
   const selectedVisitors = visitors.filter(v => v.selected);
@@ -156,7 +156,7 @@ export default function Promotions() {
   };
 
   const buildWhatsAppUrl = (visitor: Visitor) => {
-    const personalizedMsg = message.replace('{nama}', visitor.name);
+    const personalizedMsg = message.replace('{nama}', visitor.name || 'Pelanggan');
     const params = new URLSearchParams();
     params.append('text', personalizedMsg);
     return `https://wa.me/${visitor.phone}?${params.toString()}`;
@@ -323,7 +323,7 @@ export default function Promotions() {
                       ) : (
                         <>
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-xs font-black flex-shrink-0">
-                            {visitor.name.charAt(0).toUpperCase()}
+                            {(visitor.name || '?').charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-slate-800 truncate">{visitor.name}</p>
