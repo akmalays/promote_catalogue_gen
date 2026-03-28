@@ -81,6 +81,59 @@ export const api = {
       
     if (error) throw error;
     return { success: true };
+  },
+  saveCatalogue: async (catalogue: { name: string, data: any, creator_name: string, thumbnail?: string }) => {
+    const { data, error } = await supabase
+      .from('catalogues')
+      .insert([{
+        name: catalogue.name,
+        catalog_data: catalogue.data,
+        creator_name: catalogue.creator_name,
+        thumbnail: catalogue.thumbnail,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  getCatalogues: async () => {
+    const { data, error } = await supabase
+      .from('catalogues')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+  deleteCatalogueFromDB: async (id: string) => {
+    const { error } = await supabase
+      .from('catalogues')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return { success: true };
+  },
+
+  // Blast Activity History tracking
+  saveBlastHistory: async (history: { promo_name: string; sender_name: string; recipient_count: number }) => {
+    const { error } = await supabase.from('blast_history').insert([
+      { 
+        promo_name: history.promo_name, 
+        sender_name: history.sender_name, 
+        recipient_count: history.recipient_count 
+      }
+    ]);
+    if (error) throw error;
+    return { success: true };
+  },
+
+  getBlastLogs: async () => {
+    const { data, error } = await supabase
+      .from('blast_history')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   }
 };
 

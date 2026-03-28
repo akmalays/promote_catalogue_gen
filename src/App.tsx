@@ -5,7 +5,8 @@ import {
   Palette, CheckCircle2, Bike, ArrowDown,
   BookOpen, Megaphone, LayoutDashboard, Home, Search,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
-  Menu, LogOut, Bell, Settings as SettingsIcon, User, X
+  Menu, LogOut, Bell, Settings as SettingsIcon, User, X,
+  AlertCircle, History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -16,9 +17,10 @@ import Promotions from './pages/Promotions';
 import Login from './pages/Login';
 import CatalogueHistory from './pages/CatalogueHistory';
 import SettingsPage from './pages/Settings';
+import Activity from './pages/Activity';
 import { UserProfile } from './types';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -40,10 +42,80 @@ const BODY_PATTERNS = [
   { id: 'lil-fiber', name: 'Graphcoders Lil Fiber', url: 'https://www.transparenttextures.com/patterns/graphcoders-lil-fiber.png' }
 ];
 
-function CatalogueEditor() {
-  const [catalog, setCatalog] = useState<CatalogData>(DEFAULT_CATALOG);
+import { api } from './lib/api';
+
+function SaveDraftModal({ isOpen, onCancel, onConfirm, initialName }: { 
+  isOpen: boolean; 
+  onCancel: () => void; 
+  onConfirm: (name: string) => void;
+  initialName: string;
+}) {
+  const [name, setName] = useState(initialName);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100"
+      >
+        <div className="mb-6">
+          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+            <Plus className="w-6 h-6 text-emerald-600" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Simpan Draft</h2>
+          <p className="text-slate-500 text-sm mt-1">Beri nama atau tema untuk draf katalog ini.</p>
+        </div>
+
+        <div className="space-y-4 mb-8">
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tema / Nama Draft</label>
+            <input 
+              autoFocus
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Contoh: Promo Lebaran 2026"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-bold text-slate-800"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button 
+            onClick={onCancel}
+            className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+          >
+            Batal
+          </button>
+          <button 
+            onClick={() => onConfirm(name)}
+            className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/20"
+          >
+            Simpan Sekarang
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function CatalogueEditor({ userProfile, showToast, editData }: { 
+  userProfile: UserProfile, 
+  showToast: (msg: string, type?: 'success' | 'error') => void,
+  editData?: CatalogData
+}) {
+  const [catalog, setCatalog] = useState<CatalogData>(editData || DEFAULT_CATALOG);
   const [activeTab, setActiveTab] = useState<'items' | 'campaign' | 'template'>('template');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Sync state if editData changes
+  useEffect(() => {
+    if (editData) setCatalog(editData);
+  }, [editData]);
 
   const handleExport = useCallback((format: 'jpg' | 'png') => {
     if (previewRef.current === null) return;
@@ -62,23 +134,54 @@ function CatalogueEditor() {
         link.href = dataUrl;
         link.click();
         
-        try {
-          const raw = localStorage.getItem('saved_catalogues');
-          const savedCatalogues = raw ? JSON.parse(raw) : [];
-          savedCatalogues.unshift({
-            id: Date.now().toString(),
-            name: catalog.promoTitle ? `Promo ${catalog.promoTitle}` : 'Katalog Promo',
-            createdAt: Date.now(),
-            catalogData: catalog
-          });
-          localStorage.setItem('saved_catalogues', JSON.stringify(savedCatalogues));
-        } catch(e) {
-          console.error('Gagal simpan riwayat ke local storage', e);
-        }
-
+        // Auto-save to DB also on export
+        api.saveCatalogue({
+          name: catalog.promoTitle || 'Katalog Promo',
+          data: catalog,
+          creator_name: userProfile.nickname || userProfile.username,
+          thumbnail: dataUrl.substring(0, 100000) // Basic optimization
+        }).catch(console.error);
+        
       }).catch(console.error);
     }, 100);
-  }, [previewRef]);
+  }, [previewRef, catalog, userProfile]);
+
+  const handleSaveToDraft = async (draftName: string) => {
+    if (previewRef.current === null) return;
+    setIsModalOpen(false);
+    setIsSaving(true);
+    try {
+      // Update promoSubtitle to reflect the theme name (requirement)
+      const finalCatalog = { ...catalog, promoSubtitle: draftName };
+      setCatalog(finalCatalog);
+
+      // Wait a tick for state update to render
+      await new Promise(r => setTimeout(r, 100));
+
+      const thumbnailWidth = previewRef.current.scrollWidth;
+      const thumbnailHeight = previewRef.current.scrollHeight;
+      const dataUrl = await toJpeg(previewRef.current, { 
+        quality: 0.6, 
+        pixelRatio: 0.8,
+        width: thumbnailWidth,
+        height: thumbnailHeight,
+        style: { transform: 'scale(1)' }
+      });
+      
+      await api.saveCatalogue({
+        name: draftName,
+        data: finalCatalog,
+        creator_name: userProfile.nickname || userProfile.username,
+        thumbnail: dataUrl
+      });
+      showToast('Draft katalog berhasil diamankan ke database!');
+    } catch (err: any) {
+      console.error('Gagal simpan ke DB:', err);
+      showToast('Gagal menyimpan: ' + (err.message?.includes('catalogues' as any) ? 'Tabel belum dibuat di database' : err.message), 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const updateItem = (rowId: string, itemId: string, updates: Partial<CatalogItem>) => {
     setCatalog(prev => ({
@@ -168,6 +271,20 @@ function CatalogueEditor() {
           <p className="text-sm text-slate-500 mt-0.5">Buat katalog promosi profesional dengan mudah</p>
         </div>
         <div className="flex gap-3">
+          <button 
+            onClick={() => setIsModalOpen(true)} 
+            disabled={isSaving}
+            className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
+          >
+            {isSaving ? 'Menyimpan...' : <><Plus className="w-4 h-4" /> Add to Draft</>}
+          </button>
+          
+          <SaveDraftModal 
+            isOpen={isModalOpen}
+            initialName={catalog.promoTitle || ''}
+            onCancel={() => setIsModalOpen(false)}
+            onConfirm={handleSaveToDraft}
+          />
           <button onClick={() => handleExport('jpg')} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm text-sm cursor-pointer">
             <Download className="w-4 h-4" /> Ekspor JPG
           </button>
@@ -743,7 +860,20 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const [editData, setEditData] = useState<CatalogData | undefined>(undefined);
+
+  const handleContinueEdit = (data: CatalogData) => {
+    setEditData(data);
+    setCurrentPage('catalogue');
+  };
+
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('user_profile');
     if (saved) {
@@ -773,8 +903,8 @@ export default function App() {
     const isManager = role.includes('manager');
     
     const allowed: Page[] = ['dashboard', 'catalogue', 'settings'];
-    if (isManager) allowed.push('promotions', 'history' as any);
-    if (isAdmin) allowed.push('promotions', 'history');
+    if (isManager) allowed.push('promotions', 'history');
+    if (isAdmin) allowed.push('promotions', 'history', 'activity');
     
     if (!allowed.includes(currentPage)) {
       setCurrentPage('dashboard');
@@ -791,9 +921,10 @@ export default function App() {
 
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+    { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
     { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
-    { id: 'history', label: 'History Catalogue', icon: <FileText className="w-5 h-5 shrink-0" /> },
+    { id: 'history', label: 'Drafts', icon: <Plus className="w-5 h-5 shrink-0" /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5 shrink-0" /> },
   ];
 
@@ -812,6 +943,24 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased overflow-hidden relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            className={cn(
+              "fixed top-8 left-1/2 z-[1000] px-6 py-3 rounded-2xl shadow-2xl font-bold flex items-center gap-2 border border-white/20 backdrop-blur-md transition-all",
+              notification.type === 'success' ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
+            )}
+          >
+            {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-200" /> : <AlertCircle className="w-5 h-5 text-rose-200" />}
+            {notification.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Sidebar Backdrop */}
       <AnimatePresence>
         {isSidebarExpanded && (
@@ -1037,9 +1186,10 @@ export default function App() {
                 transition={{ duration: 0.3, ease: 'easeOut' }}
               >
                 {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} userProfile={userProfile} />}
-                {currentPage === 'catalogue' && <CatalogueEditor />}
-                {currentPage === 'promotions' && <Promotions />}
-                {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} />}
+                {currentPage === 'activity' && <Activity />}
+                {currentPage === 'catalogue' && <CatalogueEditor userProfile={userProfile} showToast={showToast} editData={editData} />}
+                {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
+                {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}
               </motion.div>
             </AnimatePresence>

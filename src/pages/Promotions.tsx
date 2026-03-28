@@ -14,7 +14,9 @@ interface Visitor {
 
 const DEFAULT_VISITORS: Visitor[] = [];
 
-export default function Promotions() {
+import { UserProfile } from '../types';
+
+export default function Promotions({ userProfile }: { userProfile: UserProfile }) {
   const [visitors, setVisitors] = useState<Visitor[]>(DEFAULT_VISITORS);
   const [searchQuery, setSearchQuery] = useState('');
   const [newName, setNewName] = useState('');
@@ -167,7 +169,18 @@ export default function Promotions() {
     setBlastSent(prev => [...prev, visitor.id]);
   };
 
-  const handleBlastSelected = () => {
+  const handleBlastSelected = async () => {
+    // Record to history
+    try {
+      await api.saveBlastHistory({
+        promo_name: attachedImage ? "Katalog Blast" : "Pesan Promosi",
+        sender_name: userProfile.nickname || userProfile.username,
+        recipient_count: selectedVisitors.length
+      });
+    } catch (e) {
+      console.error('Gagal simpan log blast:', e);
+    }
+
     selectedVisitors.forEach((v, i) => {
       setTimeout(() => {
         window.open(buildWhatsAppUrl(v), '_blank');

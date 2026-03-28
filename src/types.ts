@@ -22,8 +22,10 @@ export interface CatalogRow {
 export interface SavedCatalogue {
   id: string;
   name: string;
-  createdAt: number;
+  createdAt: number | string;
   catalogData: CatalogData;
+  creator_name?: string;
+  thumbnail?: string;
 }
 
 export interface UserProfile {
