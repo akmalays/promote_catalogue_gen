@@ -10,6 +10,44 @@ interface LoginProps {
   onLogin: (user: UserProfile) => void;
 }
 
+const TypingText = ({ texts }: { texts: string[] }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [index, setIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [speed, setSpeed] = useState(150);
+
+  React.useEffect(() => {
+    const handleTyping = () => {
+      const fullText = texts[index % texts.length];
+      
+      if (isDeleting) {
+        setDisplayText(fullText.substring(0, displayText.length - 1));
+        setSpeed(50);
+      } else {
+        setDisplayText(fullText.substring(0, displayText.length + 1));
+        setSpeed(150);
+      }
+
+      if (!isDeleting && displayText === fullText) {
+        setTimeout(() => setIsDeleting(true), 2000);
+      } else if (isDeleting && displayText === '') {
+        setIsDeleting(false);
+        setIndex(index + 1);
+      }
+    };
+
+    const timer = setTimeout(handleTyping, speed);
+    return () => clearTimeout(timer);
+  }, [displayText, isDeleting, index, speed, texts]);
+
+  return (
+    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e3d1c7] to-[#8b7365]">
+      {displayText}
+      <span className="animate-pulse ml-0.5 border-r-2 border-slate-400 opacity-50"></span>
+    </span>
+  );
+};
+
 export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,40 +79,47 @@ export default function Login({ onLogin }: LoginProps) {
       {/* Left side - Marketing/Image */}
       <div className="hidden lg:flex w-1/2 bg-slate-900 flex-col relative overflow-hidden">
         {/* Abstract background decorative elements */}
+        {/* Background Pattern & Decorative elements */}
+        <div className="absolute inset-0 z-0 opacity-40 shadow-inner" style={{ backgroundImage: 'radial-gradient(#8b7365 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#8b7365]/20 blur-[100px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#8b7365]/10 blur-[100px]" />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#8b7365]/30 blur-[100px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#8b7365]/20 blur-[100px]" />
         </div>
         
         <div className="relative z-10 flex flex-col justify-center flex-1 px-16 py-20 text-white">
           <div className="mb-12">
-            <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-6 overflow-hidden bg-white/10 backdrop-blur-md p-1">
-              <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black font-serif leading-tight mb-6">
-              Pusat Kendali<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e3d1c7] to-[#a28a7e]">Promosi & Konten</span><br />
-              Bisnis Anda.
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8, y: 50 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1, 
+                y: [0, -15, 0] 
+              }}
+              transition={{ 
+                opacity: { duration: 0.8 },
+                scale: { type: 'spring', damping: 12 },
+                y: { repeat: Infinity, duration: 6, ease: "easeInOut" }
+              }}
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              className="w-64 h-64 md:w-80 md:h-80 flex items-center justify-center -mb-12 shrink-0 cursor-pointer drop-shadow-[0_45px_90px_rgba(139,115,101,0.5)]"
+            >
+              <img 
+                src={logoAsset} 
+                alt="myStore Studio Logo" 
+                className="w-full h-full object-contain filter brightness-125 saturate-110"
+              />
+            </motion.div>
+            <h1 className="text-4xl md:text-6xl font-black leading-none mb-8 tracking-tighter min-h-[4em]">
+              <span className="text-white">myStore Studio</span><br />
+              <span className="text-2xl md:text-3xl text-slate-500 font-bold block my-4 lowercase italic opacity-80">untuk</span>
+              <TypingText texts={["Promosi & Konten", "Desain Katalog Otomatis", "WhatsApp Blast Terintegrasi"]} /><br />
+              <span className="text-white">Bisnis Anda.</span>
             </h1>
-            <p className="text-slate-400 text-lg max-w-md leading-relaxed">
+            <p className="text-slate-400 text-lg max-w-md leading-relaxed font-medium">
               Buat katalog menawan dan sebarkan kampanye promosi langsung ke pelanggan Anda dalam hitungan menit.
             </p>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 backdrop-blur-sm max-w-md">
-              <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-400 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-              </div>
-              <p className="text-sm font-medium text-slate-300">Desain Katalog Otomatis</p>
-            </div>
-            <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 backdrop-blur-sm max-w-md">
-              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              </div>
-              <p className="text-sm font-medium text-slate-300">WhatsApp Blast Terintegrasi</p>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -85,16 +130,26 @@ export default function Login({ onLogin }: LoginProps) {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md"
         >
-          <div className="flex items-center gap-2 mb-10 lg:hidden">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-              <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
+          <div className="flex flex-col items-center gap-0 mb-8 lg:hidden">
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+              className="w-24 h-24 flex items-center justify-center shrink-0 -mb-2"
+            >
+              <img src={logoAsset} alt="Logo" className="w-full h-full object-contain drop-shadow-lg" />
+            </motion.div>
+            <div className="text-center">
+              <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase leading-none">myStore</h1>
+              <span className="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase block mb-3">Studio</span>
+              <div className="text-[11px] font-bold text-[#8b7365]">
+                <TypingText texts={["Promosi & Konten", "Desain Katalog Otomatis", "WhatsApp Blast Terintegrasi"]} />
+              </div>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">myStore Studio</h1>
           </div>
 
           <div className="mb-10 text-center lg:text-left">
             <h2 className="text-3xl font-bold text-slate-800 mb-2">Selamat Datang</h2>
-            <p className="text-slate-500 text-sm">Masuk ke akun Anda untuk mulai mengelola kampanye promosi.</p>
+            <p className="text-slate-500 text-sm">Silahkan login untuk masuk ke akun anda</p>
           </div>
 
           {error && (

@@ -179,31 +179,42 @@ export default function Promotions() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-8 pt-8 pb-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="px-8 pt-8 pb-4"
+      >
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black text-slate-800">Promotions Blast</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Kelola pengunjung dan kirim pesan promosi via WhatsApp</p>
+            <p className="text-sm text-slate-500 mt-0.5 font-medium">Kelola pengunjung dan kirim pesan promosi via WhatsApp</p>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleBlastSelected}
             disabled={selectedVisitors.length === 0}
             className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm",
+              "flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm",
               selectedVisitors.length > 0
-                ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md"
-                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg translate-y-[-2px]"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed grayscale"
             )}
           >
             <Send className="w-4 h-4" />
             Blast WA ({selectedVisitors.length})
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="flex-1 px-8 pb-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex-1 px-8 pb-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Visitor List */}
-        <div className="flex flex-col gap-4">
+        <motion.div 
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="lg:col-span-5 flex flex-col gap-4"
+        >
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Toolbar */}
             <div className="p-4 border-b border-slate-100 flex items-center gap-3">
@@ -363,10 +374,15 @@ export default function Promotions() {
               </AnimatePresence>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right: Message Composer */}
-        <div className="flex flex-col gap-4">
+        <motion.div 
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+          className="lg:col-span-7 flex flex-col gap-4"
+        >
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-emerald-600" />
@@ -506,7 +522,7 @@ export default function Promotions() {
               WhatsApp akan terbuka satu per satu untuk setiap pengunjung yang dipilih
             </p>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

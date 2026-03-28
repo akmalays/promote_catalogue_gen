@@ -849,9 +849,9 @@ export default function App() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 key="logo-expanded"
-                className="flex items-center gap-3 overflow-hidden ml-1"
+                className="flex items-center gap-0 overflow-hidden ml-0"
               >
-                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-slate-50 p-1 border border-slate-100 shadow-sm">
+                 <div className="w-14 h-14 shrink-0 flex items-center justify-center">
                     <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
                  </div>
                  <div className="flex flex-col min-w-0">
@@ -953,8 +953,8 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
         {/* Top Header - Redesigned Sticky */}
-        <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-10 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
-          <div className="flex items-center gap-3 md:gap-12 flex-1">
+        <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
+          <div className="flex items-center gap-3 md:gap-8 flex-1">
             <button 
               onClick={() => setIsSidebarExpanded(true)}
               className="p-2 lg:hidden text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
@@ -962,9 +962,9 @@ export default function App() {
               <Menu className="w-6 h-6" />
             </button>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 hidden md:block border border-slate-100 p-0.5">
-                <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
+            <div className="flex items-center gap-0 -ml-2">
+              <div className="h-16 shrink-0 hidden md:flex items-center justify-center">
+                <img src={logoAsset} alt="Logo" className="h-full w-auto object-contain" />
               </div>
               <div className="flex flex-col">
                  <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">myStore</h1>
