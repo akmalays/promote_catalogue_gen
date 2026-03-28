@@ -1,0 +1,30 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "admin",
+      "password": "password123",
+      "name": "Administrator"
+    }
+  ],
+  "visitors": [
+    {
+      "id": "1",
+      "name": "Budi Santoso",
+      "phone": "6281234567890",
+      "selected": false
+    },
+    {
+      "id": "2",
+      "name": "Siti Rahayu",
+      "phone": "6285678901234",
+      "selected": false
+    },
+    {
+      "id": "3",
+      "name": "Andi Kurniawan",
+      "phone": "6287890123456",
+      "selected": false
+    }
+  ]
+}

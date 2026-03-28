@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, Send, MessageSquare, Phone, User, Search, CheckSquare, Square, Megaphone, X, Edit2, Check, ArrowDown, Image as ImageIcon, Paperclip, XCircle } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { api } from '../lib/api';
 
 interface Visitor {
   id: string;
@@ -11,11 +12,7 @@ interface Visitor {
   selected: boolean;
 }
 
-const DEFAULT_VISITORS: Visitor[] = [
-  { id: '1', name: 'Budi Santoso', phone: '6281234567890', selected: false },
-  { id: '2', name: 'Siti Rahayu', phone: '6285678901234', selected: false },
-  { id: '3', name: 'Andi Kurniawan', phone: '6287890123456', selected: false },
-];
+const DEFAULT_VISITORS: Visitor[] = [];
 
 export default function Promotions() {
   const [visitors, setVisitors] = useState<Visitor[]>(DEFAULT_VISITORS);
@@ -100,23 +97,44 @@ export default function Promotions() {
     ));
   };
 
-  const addVisitor = () => {
-    if (!newName.trim() || !newPhone.trim()) return;
-    const phone = newPhone.replace(/\D/g, '').replace(/^0/, '62');
-    const newV: Visitor = {
-      id: Date.now().toString(),
-      name: newName.trim(),
-      phone,
-      selected: false,
-    };
-    setVisitors(prev => [...prev, newV]);
-    setNewName('');
-    setNewPhone('');
-    setShowAddForm(false);
+  useEffect(() => {
+    fetchVisitors();
+  }, []);
+
+  const fetchVisitors = async () => {
+    try {
+      const data = await api.getVisitors();
+      setVisitors(data);
+    } catch (err) {
+      console.error('Gagal mengambil data pengunjung:', err);
+    }
   };
 
-  const removeVisitor = (id: string) => {
-    setVisitors(prev => prev.filter(v => v.id !== id));
+  const addVisitor = async () => {
+    if (!newName.trim() || !newPhone.trim()) return;
+    const phone = newPhone.replace(/\D/g, '').replace(/^0/, '62');
+    const newV = {
+      name: newName.trim(),
+      phone,
+    };
+    try {
+      await api.addVisitor(newV);
+      fetchVisitors();
+      setNewName('');
+      setNewPhone('');
+      setShowAddForm(false);
+    } catch (err) {
+      console.error('Gagal tambah pengunjung:', err);
+    }
+  };
+
+  const removeVisitor = async (id: string) => {
+    try {
+      await api.deleteVisitor(id);
+      fetchVisitors();
+    } catch (err) {
+      console.error('Gagal hapus pengunjung:', err);
+    }
   };
 
   const startEdit = (v: Visitor) => {
@@ -125,11 +143,16 @@ export default function Promotions() {
     setEditPhone(v.phone);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editingId) return;
     const phone = editPhone.replace(/\D/g, '').replace(/^0/, '62');
-    setVisitors(prev => prev.map(v => v.id === editingId ? { ...v, name: editName, phone } : v));
-    setEditingId(null);
+    try {
+      await api.updateVisitor(editingId, { name: editName, phone });
+      setEditingId(null);
+      fetchVisitors();
+    } catch (err) {
+      console.error('Gagal simpan edit:', err);
+    }
   };
 
   const buildWhatsAppUrl = (visitor: Visitor) => {

@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 import { CatalogData, CatalogItem, CatalogRow, DEFAULT_CATALOG, DEFAULT_ITEMS } from './types';
+import logoAsset from './assets/img/pcs_logo.png';
 import Dashboard from './pages/Dashboard';
 import Promotions from './pages/Promotions';
 import Login from './pages/Login';
@@ -770,18 +771,18 @@ export default function App() {
           <AnimatePresence mode="wait">
             {isSidebarExpanded && (
               <motion.div 
-                key="avatar"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex items-center gap-3 overflow-hidden"
+                key="logo-expanded"
+                className="flex items-center gap-3 overflow-hidden ml-1"
               >
-                 <div className="w-10 h-10 rounded-xl bg-[#6d4d42] flex items-center justify-center text-white shrink-0 shadow-lg ring-1 ring-white/20 overflow-hidden">
-                    <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-110" />
+                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-slate-50 p-1 border border-slate-100 shadow-sm">
+                    <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
                  </div>
                  <div className="flex flex-col min-w-0">
-                   <p className="font-black text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis">Hi, User!</p>
-                   <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5 whitespace-nowrap">Master Curator</p>
+                   <p className="font-black text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis uppercase tracking-tighter">PROMO CONTENT</p>
+                   <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5 whitespace-nowrap">STUDIO MANAGEMENT</p>
                  </div>
               </motion.div>
             )}
@@ -886,9 +887,14 @@ export default function App() {
               <Menu className="w-6 h-6" />
             </button>
 
-            <div className="flex flex-col">
-               <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">PromoContent</h1>
-               <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.2em] mt-1 ml-0.5">Studio</span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 hidden md:block border border-slate-100 p-0.5">
+                <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex flex-col">
+                 <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">PromoContent</h1>
+                 <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.2em] mt-1 ml-0.5">Studio</span>
+              </div>
             </div>
             
             <div className="relative w-full max-w-lg hidden lg:flex items-center">

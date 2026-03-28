@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { BookOpen, AlertCircle, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { api } from '../lib/api';
+import logoAsset from '../assets/img/pcs_logo.png';
 
 interface LoginProps {
   onLogin: () => void;
@@ -12,20 +14,23 @@ export default function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      if (email && password) {
+    try {
+      const result = await api.login({ username: email, password });
+      if (result.success) {
         onLogin();
       } else {
-        setError('Harap masukkan email dan password yang valid.');
-        setIsLoading(false);
+        setError('Username atau password salah.');
       }
-    }, 1000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Gagal menyambung ke server.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -40,8 +45,8 @@ export default function Login({ onLogin }: LoginProps) {
         
         <div className="relative z-10 flex flex-col justify-center flex-1 px-16 py-20 text-white">
           <div className="mb-12">
-            <div className="w-12 h-12 bg-[#8b7365] rounded-xl flex items-center justify-center mb-6">
-              <BookOpen className="w-6 h-6 text-white" />
+            <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-6 overflow-hidden bg-white/10 backdrop-blur-md p-1">
+              <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-4xl md:text-5xl font-black font-serif leading-tight mb-6">
               Pusat Kendali<br />
@@ -78,8 +83,8 @@ export default function Login({ onLogin }: LoginProps) {
           className="w-full max-w-md"
         >
           <div className="flex items-center gap-2 mb-10 lg:hidden">
-            <div className="w-8 h-8 bg-[#8b7365] rounded-lg flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4 text-white" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+              <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-xl font-bold text-slate-900">PromoContent Studio</h1>
           </div>
@@ -102,12 +107,12 @@ export default function Login({ onLogin }: LoginProps) {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 block">Alamat Email</label>
+              <label className="text-sm font-bold text-slate-700 block">Username / Email</label>
               <input 
-                type="email" 
+                type="text" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="nama@perusahaan.com"
+                placeholder="Masukkan username atau email"
                 className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all placeholder:text-slate-400 text-sm"
               />
             </div>
