@@ -9,6 +9,7 @@ import {
   AlertCircle, History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import toast, { Toaster } from 'react-hot-toast';
 import { cn } from './lib/utils';
 import { CatalogData, CatalogItem, CatalogRow, DEFAULT_CATALOG, DEFAULT_ITEMS } from './types';
 import logoAsset from './assets/img/pcs_logo.png';
@@ -24,22 +25,18 @@ type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
-  { id: 'arabesque', name: 'Arabesque', url: 'https://www.transparenttextures.com/patterns/arabesque.png' },
-  { id: 'linen', name: 'Linen', url: 'https://www.transparenttextures.com/patterns/linen-paper.png' },
-  { id: 'black-thread', name: 'Black Thread', url: 'https://www.transparenttextures.com/patterns/black-thread.png' },
-  { id: 'escheresque', name: 'Escheresque', url: 'https://www.transparenttextures.com/patterns/escheresque.png' },
-  { id: 'fake-luxury', name: 'Fake Luxury', url: 'https://www.transparenttextures.com/patterns/fake-luxury.png' },
-  { id: 'food', name: 'Food', url: 'https://www.transparenttextures.com/patterns/food.png' },
-  { id: 'hoffman', name: 'Hoffman', url: 'https://www.transparenttextures.com/patterns/hoffman.png' },
-  { id: 'lyonnette', name: 'Lyonnette', url: 'https://www.transparenttextures.com/patterns/lyonnette.png' },
-  { id: 'merely-cubed', name: 'Merely Cubed', url: 'https://www.transparenttextures.com/patterns/merely-cubed.png' },
-  { id: 'nami', name: 'Nami', url: 'https://www.transparenttextures.com/patterns/nami.png' }
+  { id: 'linen', name: 'Linen Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9IjAuMiIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMCA0MEw0MCAwSDIwTDAgMjBNNDAgNDBWMjBMMjAgNDAiLz48L2c+PC9zdmc+' },
+  { id: 'dots', name: 'Polka Dots Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9IjAuMjUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+PGNpcmNsZSBjeD0iMyIgY3k9IjMiIHI9IjMiLz48L2c+PC9zdmc+' },
+  { id: 'carbon', name: 'Grid Lines Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDQwaDQwVjBIMHoiLz48cGF0aCBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9IjAuMTUiIGQ9Ik0wIDM5aDM5VjBIMHoiLz48L2c+PC9zdmc+' },
+  { id: 'escher', name: 'Diamond Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMjAgMEw0MCAyMEwyMCA0MEwwIDIwWiIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIwLjE1Ii8+PC9zdmc+' },
+  { id: 'chevron', name: 'Chevron Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMCAyMEwyMCAwTDQwIDIwTDIwIDQwTDAgMjBaIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMTAxMDEiIHN0cm9rZS1vcGFjaXR5PSIwLjMwIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=' },
 ];
 
 const BODY_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
-  { id: 'food', name: 'Food', url: 'https://www.transparenttextures.com/patterns/food.png' },
-  { id: 'lil-fiber', name: 'Graphcoders Lil Fiber', url: 'https://www.transparenttextures.com/patterns/graphcoders-lil-fiber.png' }
+  { id: 'dots', name: 'Soft Dots Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iMC4xMCI+PGNpcmNsZSBjeD0iMyIgY3k9IjMiIHI9IjMiLz48Y2lyY2xlIGN4PSIzMyIgY3k9IjMzIiByPSIzIi8+PC9nPjwvZz48L3N2Zz4=' },
+  { id: 'linen', name: 'Fine Linen Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9IjAuMTUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+PHBhdGggZD0iTTAgNDBMNDAgMEgyMEwwIDIwTTQwIDQwVjI0TDI0IDQwIi8+PC9nPjwvc3ZnPg==' },
+  { id: 'grid', name: 'Fine Grid Bold', url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNTAgMUgwVjBoNTB2MXpNMSA1MFYwSDB2NTBoMXoiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iMC4xNSIvPjwvc3ZnPg==' }
 ];
 
 import { api } from './lib/api';
@@ -101,14 +98,14 @@ function SaveDraftModal({ isOpen, onCancel, onConfirm, initialName }: {
   );
 }
 
-function CatalogueEditor({ userProfile, showToast, editData }: { 
+function CatalogueEditor({ userProfile, editData }: { 
   userProfile: UserProfile, 
-  showToast: (msg: string, type?: 'success' | 'error') => void,
   editData?: CatalogData
 }) {
   const [catalog, setCatalog] = useState<CatalogData>(editData || DEFAULT_CATALOG);
   const [activeTab, setActiveTab] = useState<'items' | 'campaign' | 'template'>('template');
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -122,11 +119,16 @@ function CatalogueEditor({ userProfile, showToast, editData }: {
     const el = previewRef.current;
     setTimeout(() => {
       const options = {
-        quality: 0.95, cacheBust: true, pixelRatio: 3,
-        width: el.scrollWidth, height: el.scrollHeight,
+        quality: 0.95, 
+        cacheBust: true, 
+        pixelRatio: 3,
+        includeQueryParams: true, 
+        width: el.scrollWidth, 
+        height: el.scrollHeight,
         backgroundColor: '#ffffff',
         style: { transform: 'scale(1)', margin: '0', padding: '0' }
       };
+      setIsExporting(true);
       const fn = format === 'jpg' ? toJpeg : toPng;
       fn(el, options).then((dataUrl) => {
         const link = document.createElement('a');
@@ -134,16 +136,14 @@ function CatalogueEditor({ userProfile, showToast, editData }: {
         link.href = dataUrl;
         link.click();
         
-        // Auto-save to DB also on export
-        api.saveCatalogue({
-          name: catalog.promoTitle || 'Katalog Promo',
-          data: catalog,
-          creator_name: userProfile.nickname || userProfile.username,
-          thumbnail: dataUrl.substring(0, 100000) // Basic optimization
-        }).catch(console.error);
-        
-      }).catch(console.error);
-    }, 100);
+        toast.success(`Katalog berhasil di-ekspor sebagai ${format.toUpperCase()}!`);
+      }).catch(err => {
+        console.error('Ekspor gagal:', err);
+        toast.error('Gagal mengekspor katalog: ' + err.message);
+      }).finally(() => {
+        setIsExporting(false);
+      });
+    }, 500);
   }, [previewRef, catalog, userProfile]);
 
   const handleSaveToDraft = async (draftName: string) => {
@@ -155,14 +155,16 @@ function CatalogueEditor({ userProfile, showToast, editData }: {
       const finalCatalog = { ...catalog, promoSubtitle: draftName };
       setCatalog(finalCatalog);
 
-      // Wait a tick for state update to render
-      await new Promise(r => setTimeout(r, 100));
+      // Wait a tick for state update and images to settle
+      await new Promise(r => setTimeout(r, 500));
 
       const thumbnailWidth = previewRef.current.scrollWidth;
       const thumbnailHeight = previewRef.current.scrollHeight;
       const dataUrl = await toJpeg(previewRef.current, { 
         quality: 0.6, 
         pixelRatio: 0.8,
+        cacheBust: true,
+        includeQueryParams: true,
         width: thumbnailWidth,
         height: thumbnailHeight,
         style: { transform: 'scale(1)' }
@@ -174,10 +176,10 @@ function CatalogueEditor({ userProfile, showToast, editData }: {
         creator_name: userProfile.nickname || userProfile.username,
         thumbnail: dataUrl
       });
-      showToast('Draft katalog berhasil diamankan ke database!');
+      toast.success('Draft katalog berhasil disimpan!');
     } catch (err: any) {
       console.error('Gagal simpan ke DB:', err);
-      showToast('Gagal menyimpan: ' + (err.message?.includes('catalogues' as any) ? 'Tabel belum dibuat di database' : err.message), 'error');
+      toast.error('Gagal menyimpan: ' + (err.message?.includes('catalogues' as any) ? 'Tabel belum dibuat di database' : err.message));
     } finally {
       setIsSaving(false);
     }
@@ -273,10 +275,10 @@ function CatalogueEditor({ userProfile, showToast, editData }: {
         <div className="flex gap-3">
           <button 
             onClick={() => setIsModalOpen(true)} 
-            disabled={isSaving}
+            disabled={isSaving || isExporting}
             className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
           >
-            {isSaving ? 'Menyimpan...' : <><Plus className="w-4 h-4" /> Add to Draft</>}
+            <Plus className="w-4 h-4" /> Add to Draft
           </button>
           
           <SaveDraftModal 
@@ -285,10 +287,18 @@ function CatalogueEditor({ userProfile, showToast, editData }: {
             onCancel={() => setIsModalOpen(false)}
             onConfirm={handleSaveToDraft}
           />
-          <button onClick={() => handleExport('jpg')} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm text-sm cursor-pointer">
-            <Download className="w-4 h-4" /> Ekspor JPG
+          <button 
+            disabled={isExporting || isSaving}
+            onClick={() => handleExport('jpg')} 
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
+          >
+            {isExporting ? 'Processing...' : <><Download className="w-4 h-4" /> Ekspor JPG</>}
           </button>
-          <button onClick={() => handleExport('png')} className="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm text-sm cursor-pointer">
+          <button 
+            disabled={isExporting || isSaving}
+            onClick={() => handleExport('png')} 
+            className="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
+          >
             <Download className="w-4 h-4" /> Ekspor PNG
           </button>
         </div>
@@ -860,13 +870,6 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
   const [editData, setEditData] = useState<CatalogData | undefined>(undefined);
 
   const handleContinueEdit = (data: CatalogData) => {
@@ -943,23 +946,32 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased overflow-hidden relative">
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20, x: '-50%' }}
-            animate={{ opacity: 1, y: 0, x: '-50%' }}
-            exit={{ opacity: 0, y: -20, x: '-50%' }}
-            className={cn(
-              "fixed top-8 left-1/2 z-[1000] px-6 py-3 rounded-2xl shadow-2xl font-bold flex items-center gap-2 border border-white/20 backdrop-blur-md transition-all",
-              notification.type === 'success' ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
-            )}
-          >
-            {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-200" /> : <AlertCircle className="w-5 h-5 text-rose-200" />}
-            {notification.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Toaster 
+        position="bottom-right" 
+        reverseOrder={false} 
+        containerStyle={{ zIndex: 99999 }}
+        toastOptions={{ 
+          duration: 4000,
+          style: {
+            borderRadius: '12px',
+            background: '#333',
+            color: '#fff',
+            fontSize: '13px',
+            fontWeight: '600',
+            padding: '12px 16px',
+          },
+          success: {
+            style: {
+              background: '#059669', // Emerald 600
+            },
+          },
+          error: {
+            style: {
+              background: '#e11d48', // Rose 600
+            },
+          },
+        }} 
+      />
 
       {/* Mobile Sidebar Backdrop */}
       <AnimatePresence>
@@ -1187,7 +1199,7 @@ export default function App() {
               >
                 {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} userProfile={userProfile} />}
                 {currentPage === 'activity' && <Activity />}
-                {currentPage === 'catalogue' && <CatalogueEditor userProfile={userProfile} showToast={showToast} editData={editData} />}
+                {currentPage === 'catalogue' && <CatalogueEditor userProfile={userProfile} editData={editData} />}
                 {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}

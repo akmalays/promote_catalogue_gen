@@ -2,7 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Package, Plus, Search, Trash2, User, Calendar, ExternalLink, X, Edit, Eye } from 'lucide-react';
 import { SavedCatalogue, UserProfile, CatalogData } from '../types';
 import { api } from '../lib/api';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
+
+function DeleteConfirmModal({ isOpen, onCancel, onConfirm }: { isOpen: boolean; onCancel: () => void; onConfirm: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[4000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-100 text-center"
+      >
+        <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Trash2 className="w-8 h-8 text-rose-500" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Hapus Draft?</h2>
+        <p className="text-slate-500 text-sm mb-8">Katalog ini akan dihapus permanen dari database cloud dan tidak bisa dikembalikan.</p>
+        
+        <div className="flex gap-3">
+          <button 
+            onClick={onCancel}
+            className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+          >
+            Batal
+          </button>
+          <button 
+            onClick={onConfirm}
+            className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-colors shadow-lg shadow-rose-600/20"
+          >
+            Hapus
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 interface CatalogueHistoryProps {
   onNavigate: (page: any) => void;
@@ -15,6 +51,7 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchHistory = async () => {
     setIsLoading(true);
@@ -42,15 +79,20 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
     fetchHistory();
   }, []);
 
-  const deleteCatalogue = async (id: string) => {
-    if (!window.confirm('Hapus riwayat katalog ini?')) return;
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
-      await api.deleteCatalogueFromDB(id);
-      setCatalogues(prev => prev.filter(c => c.id !== id));
-    } catch (e) {
-      const newData = catalogues.filter(c => c.id !== id);
+      await api.deleteCatalogueFromDB(deleteId);
+      setCatalogues(prev => prev.filter(c => c.id !== deleteId));
+      setDeleteId(null);
+      toast.success('Draft berhasil dihapus permanen!');
+    } catch (e: any) {
+      console.error('Delete error:', e);
+      const newData = catalogues.filter(c => c.id !== deleteId);
       setCatalogues(newData);
       localStorage.setItem('saved_catalogues', JSON.stringify(newData));
+      setDeleteId(null);
+      toast.error('Gagal menghapus dari database, draf dihapus secara lokal.');
     }
   };
 
@@ -179,7 +221,7 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
                            Continue Edit
                          </button>
                         <button 
-                           onClick={() => deleteCatalogue(cat.id)}
+                           onClick={() => setDeleteId(cat.id)}
                            className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
                           >
                            <Trash2 className="w-5 h-5" />
@@ -220,6 +262,14 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        <DeleteConfirmModal 
+          isOpen={!!deleteId} 
+          onCancel={() => setDeleteId(null)} 
+          onConfirm={confirmDelete} 
+        />
+      </AnimatePresence>
     </div>
   );
 }

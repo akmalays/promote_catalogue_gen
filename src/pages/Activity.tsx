@@ -3,6 +3,7 @@ import { Calendar as CalendarIcon, History, User, Users, ChevronLeft, ChevronRig
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
+import toast from 'react-hot-toast';
 
 interface BlastLog {
   id: string;
@@ -30,6 +31,7 @@ export default function Activity() {
       setLogs(data);
     } catch (e) {
       console.error('Gagal ambil log:', e);
+      toast.error('Gagal memuat log aktivitas.');
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +187,7 @@ export default function Activity() {
       <div className="mb-10 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">Activity Log</h1>
-          <p className="text-slate-500 text-sm font-medium">Lacak frekuensi promosi dan performa blast tim Bapak.</p>
+          <p className="text-slate-500 text-sm font-medium">Lacak frekuensi promosi dan performa blast tim.</p>
         </div>
         <div className="flex items-center bg-white rounded-2xl border border-slate-200 p-1.5 shadow-sm">
            <button onClick={prevMonth} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><ChevronLeft className="w-5 h-5 text-slate-800" /></button>

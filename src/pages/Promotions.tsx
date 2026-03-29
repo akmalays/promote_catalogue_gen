@@ -4,6 +4,7 @@ import { Users, Plus, Trash2, Send, MessageSquare, Phone, User, Search, CheckSqu
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
+import toast from 'react-hot-toast';
 
 interface Visitor {
   id: string;
@@ -69,14 +70,17 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
         try {
           const item = new ClipboardItem({ [blob.type]: blob });
           await navigator.clipboard.write([item]);
+          toast.success('Gambar berhasil disalin ke clipboard!');
           setCopySuccess(true);
           setTimeout(() => setCopySuccess(false), 2000);
         } catch (err) {
           console.error('Final clipboard write fail:', err);
+          toast.error('Gagal menyalin gambar.');
         }
       }, 'image/png');
     } catch (err) {
       console.error('Gagal menyalin gambar:', err);
+      toast.error('Gagal menyiapkan gambar untuk clipboard.');
     }
   };
 
@@ -125,8 +129,10 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
       setNewName('');
       setNewPhone('');
       setShowAddForm(false);
+      toast.success('Pengunjung berhasil ditambahkan!');
     } catch (err) {
       console.error('Gagal tambah pengunjung:', err);
+      toast.error('Gagal menambahkan pengunjung.');
     }
   };
 
@@ -134,8 +140,10 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
     try {
       await api.deleteVisitor(id);
       fetchVisitors();
+      toast.success('Kontak berhasil dihapus!');
     } catch (err) {
       console.error('Gagal hapus pengunjung:', err);
+      toast.error('Gagal menghapus kontak.');
     }
   };
 
@@ -152,8 +160,10 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
       await api.updateVisitor(editingId, { name: editName, phone });
       setEditingId(null);
       fetchVisitors();
+      toast.success('Data pengunjung berhasil diperbarui!');
     } catch (err) {
       console.error('Gagal simpan edit:', err);
+      toast.error('Gagal memperbarui data.');
     }
   };
 
@@ -185,6 +195,9 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
       setTimeout(() => {
         window.open(buildWhatsAppUrl(v), '_blank');
         setBlastSent(prev => [...prev, v.id]);
+        if (i === selectedVisitors.length - 1) {
+          toast.success(`Berhasil mengirim antrean pesan ke ${selectedVisitors.length} pengunjung!`);
+        }
       }, i * 600);
     });
   };

@@ -101,7 +101,7 @@ export default function Login({ onLogin }: LoginProps) {
                 y: { repeat: Infinity, duration: 6, ease: "easeInOut" }
               }}
               whileHover={{ scale: 1.05, rotate: 5 }}
-              className="w-64 h-64 md:w-80 md:h-80 flex items-center justify-center -mb-12 shrink-0 cursor-pointer drop-shadow-[0_45px_90px_rgba(139,115,101,0.5)]"
+               className="w-48 h-48 md:w-60 md:h-60 flex items-center justify-center -mb-8 shrink-0 cursor-pointer drop-shadow-[0_45px_90px_rgba(139,115,101,0.5)]"
             >
               <img 
                 src={logoAsset} 
@@ -109,13 +109,13 @@ export default function Login({ onLogin }: LoginProps) {
                 className="w-full h-full object-contain filter brightness-125 saturate-110"
               />
             </motion.div>
-            <h1 className="text-4xl md:text-6xl font-black leading-none mb-8 tracking-tighter min-h-[4em]">
-              <span className="text-white">myStore Studio</span><br />
-              <span className="text-2xl md:text-3xl text-slate-500 font-bold block my-4 lowercase italic opacity-80">untuk</span>
+            <h1 className="text-3xl md:text-4xl font-black leading-none mb-6 tracking-tighter min-h-[3em]">
+              <span className="text-white tracking-[-0.05em]">myStore Studio</span><br />
+              <span className="text-lg md:text-xl text-slate-500 font-bold block my-3 lowercase italic opacity-80">untuk</span>
               <TypingText texts={["Promosi & Konten", "Desain Katalog Otomatis", "WhatsApp Blast Terintegrasi"]} /><br />
-              <span className="text-white">Bisnis Anda.</span>
+              <span className="text-white tracking-[-0.05em]">Bisnis Anda.</span>
             </h1>
-            <p className="text-slate-400 text-lg max-w-md leading-relaxed font-medium">
+            <p className="text-slate-400 text-base max-w-sm leading-relaxed font-medium">
               Buat katalog menawan dan sebarkan kampanye promosi langsung ke pelanggan Anda dalam hitungan menit.
             </p>
           </div>
@@ -123,33 +123,32 @@ export default function Login({ onLogin }: LoginProps) {
         </div>
       </div>
 
-      {/* Right side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-24 bg-slate-50 relative">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-16 bg-slate-50 relative">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="w-full max-w-[380px]"
         >
           <div className="flex flex-col items-center gap-0 mb-8 lg:hidden">
             <motion.div 
               animate={{ y: [0, -10, 0] }}
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-              className="w-24 h-24 flex items-center justify-center shrink-0 -mb-2"
+              className="w-20 h-20 flex items-center justify-center shrink-0 -mb-1"
             >
               <img src={logoAsset} alt="Logo" className="w-full h-full object-contain drop-shadow-lg" />
             </motion.div>
             <div className="text-center">
-              <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase leading-none">myStore</h1>
-              <span className="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase block mb-3">Studio</span>
-              <div className="text-[11px] font-bold text-[#8b7365]">
+              <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">myStore</h1>
+              <span className="text-[9px] font-black text-slate-400 tracking-[0.3em] uppercase block mb-2">Studio</span>
+              <div className="text-[10px] font-bold text-[#8b7365]">
                 <TypingText texts={["Promosi & Konten", "Desain Katalog Otomatis", "WhatsApp Blast Terintegrasi"]} />
               </div>
             </div>
           </div>
 
-          <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-slate-800 mb-2">Selamat Datang</h2>
-            <p className="text-slate-500 text-sm">Silahkan login untuk masuk ke akun anda</p>
+          <div className="mb-8 text-center lg:text-left">
+            <h2 className="text-2xl font-bold text-slate-800 mb-1.5">Selamat Datang</h2>
+            <p className="text-slate-500 text-[13px] font-medium">Silahkan login untuk masuk ke akun anda</p>
           </div>
 
           {error && (
