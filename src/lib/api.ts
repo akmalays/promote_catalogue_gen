@@ -92,10 +92,36 @@ export const api = {
         thumbnail: catalogue.thumbnail,
         created_at: new Date().toISOString()
       }])
-      .select()
-      .single();
+      .select();
     if (error) throw error;
-    return data;
+    return data?.[0];
+  },
+  updateCatalogue: async (id: any, catalogue: { name: string, data: any, thumbnail?: string, creator_name?: string }) => {
+    // Force ID to number if it looks like one, to avoid Postgres type mismatch
+    const cleanId = (!isNaN(Number(id)) && typeof id !== 'boolean') ? Number(id) : id;
+    console.log('Upserting catalogue with clean ID:', cleanId, typeof cleanId);
+    
+    const { data, error } = await supabase
+      .from('catalogues')
+      .upsert({
+        id: cleanId,
+        name: catalogue.name,
+        catalog_data: catalogue.data,
+        thumbnail: catalogue.thumbnail,
+        creator_name: catalogue.creator_name
+      }, { onConflict: 'id' })
+      .select();
+      
+    if (error) {
+      console.error('Supabase upsert error:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      throw new Error('Gagal menyinkronkan data ke cloud. Coba simpan sebagai draf baru.');
+    }
+    
+    return data[0];
   },
   getCatalogues: async () => {
     const { data, error } = await supabase
@@ -137,4 +163,3 @@ export const api = {
     return data || [];
   }
 };
-

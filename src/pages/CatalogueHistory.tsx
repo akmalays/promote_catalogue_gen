@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Package, Plus, Search, Trash2, User, Calendar, ExternalLink, X, Edit, Eye } from 'lucide-react';
+import { FileText, Package, Plus, Search, Trash2, User, Calendar, X, Edit, Eye } from 'lucide-react';
 import { SavedCatalogue, UserProfile, CatalogData } from '../types';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
@@ -43,7 +43,7 @@ function DeleteConfirmModal({ isOpen, onCancel, onConfirm }: { isOpen: boolean; 
 interface CatalogueHistoryProps {
   onNavigate: (page: any) => void;
   userProfile: UserProfile;
-  onContinueEdit: (data: CatalogData) => void;
+  onContinueEdit: (data: SavedCatalogue) => void;
 }
 
 export default function CatalogueHistory({ onNavigate, userProfile, onContinueEdit }: CatalogueHistoryProps) {
@@ -107,20 +107,21 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
       {/* Image Preview Modal */}
       <AnimatePresence>
         {previewImage && (
-          <div className="fixed inset-0 z-[3000] flex items-center justify-center p-8 bg-black/90 backdrop-blur-md">
+          <div className="fixed inset-0 z-[3000] bg-black/90 backdrop-blur-md flex items-center justify-center p-8 overflow-hidden" onClick={() => setPreviewImage(null)}>
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="relative max-w-4xl w-full h-full flex items-center justify-center"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative max-w-full max-h-full flex items-center justify-center"
+              onClick={e => e.stopPropagation()}
             >
               <button 
                 onClick={() => setPreviewImage(null)}
-                className="absolute -top-4 -right-4 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-xl hover:bg-slate-100 transition-colors z-10"
+                className="absolute -top-4 -right-4 md:-top-6 md:-right-6 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-xl hover:bg-slate-100 transition-colors z-[3010]"
               >
-                <X className="w-6 h-6 text-slate-800" />
+                <X className="w-5 h-5 md:w-6 md:h-6 text-slate-800" />
               </button>
-              <img src={previewImage} alt="Large Preview" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
+              <img src={previewImage} alt="Large Preview" className="max-w-full max-h-[85vh] md:max-h-[90vh] object-contain rounded-xl shadow-2xl border-4 border-white/10" />
             </motion.div>
           </div>
         )}
@@ -178,7 +179,7 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
                     className="w-full md:w-32 lg:w-40 h-56 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm shrink-0 relative group cursor-zoom-in"
                    >
                      {cat.thumbnail ? (
-                       <img src={cat.thumbnail} alt="Preview" className="w-full h-full object-contain p-2" />
+                       <img src={cat.thumbnail} alt="Preview" className="w-full h-full object-cover object-top" />
                      ) : (
                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-300">
                          <FileText className="w-10 h-10 mb-2 opacity-30" />
@@ -214,7 +215,7 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
                        
                        <div className="flex items-center gap-2">
                         <button 
-                           onClick={() => onContinueEdit(cat.catalogData)}
+                           onClick={() => onContinueEdit(cat)}
                            className="flex items-center gap-1.5 px-4 py-2 bg-[#8b7365]/10 text-[#8b7365] rounded-xl hover:bg-[#8b7365] hover:text-white transition-all font-bold text-xs"
                          >
                            <Edit className="w-3.5 h-3.5" />

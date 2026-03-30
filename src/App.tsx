@@ -11,7 +11,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
 import { cn } from './lib/utils';
-import { CatalogData, CatalogItem, CatalogRow, DEFAULT_CATALOG, DEFAULT_ITEMS } from './types';
+import { CatalogData, CatalogItem, CatalogRow, DEFAULT_CATALOG, DEFAULT_ITEMS, SavedCatalogue, UserProfile } from './types';
 import logoAsset from './assets/img/pcs_logo.png';
 import Dashboard from './pages/Dashboard';
 import Promotions from './pages/Promotions';
@@ -19,9 +19,9 @@ import Login from './pages/Login';
 import CatalogueHistory from './pages/CatalogueHistory';
 import SettingsPage from './pages/Settings';
 import Activity from './pages/Activity';
-import { UserProfile } from './types';
+import ProductInventory from './pages/ProductInventory';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -102,21 +102,23 @@ function SaveDraftModal({ isOpen, onCancel, onConfirm, initialName }: {
   );
 }
 
-function CatalogueEditor({ userProfile, editData }: { 
+function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: { 
   userProfile: UserProfile, 
-  editData?: CatalogData
+  editingCatalogue?: SavedCatalogue,
+  onDraftSaved?: (cat: SavedCatalogue) => void
 }) {
-  const [catalog, setCatalog] = useState<CatalogData>(editData || DEFAULT_CATALOG);
+  const [catalog, setCatalog] = useState<CatalogData>(editingCatalogue?.catalogData || DEFAULT_CATALOG);
   const [activeTab, setActiveTab] = useState<'items' | 'campaign' | 'template'>('template');
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Sync state if editData changes
+  // Sync state if editingCatalogue changes
   useEffect(() => {
-    if (editData) setCatalog(editData);
-  }, [editData]);
+    if (editingCatalogue) setCatalog(editingCatalogue.catalogData);
+    else setCatalog(DEFAULT_CATALOG);
+  }, [editingCatalogue]);
 
   const handleExport = useCallback((format: 'jpg' | 'png') => {
     if (previewRef.current === null) return;
@@ -155,35 +157,64 @@ function CatalogueEditor({ userProfile, editData }: {
     setIsModalOpen(false);
     setIsSaving(true);
     try {
-      // Update promoSubtitle to reflect the theme name (requirement)
       const finalCatalog = { ...catalog, promoSubtitle: draftName };
       setCatalog(finalCatalog);
-
-      // Wait a tick for state update and images to settle
       await new Promise(r => setTimeout(r, 500));
 
       const thumbnailWidth = previewRef.current.scrollWidth;
       const thumbnailHeight = previewRef.current.scrollHeight;
       const dataUrl = await toJpeg(previewRef.current, { 
-        quality: 0.6, 
-        pixelRatio: 0.8,
-        cacheBust: true,
-        includeQueryParams: true,
-        width: thumbnailWidth,
-        height: thumbnailHeight,
-        style: { transform: 'scale(1)' }
+        quality: 0.6, pixelRatio: 0.8, cacheBust: true, includeQueryParams: true, width: thumbnailWidth, height: thumbnailHeight, style: { transform: 'scale(1)' }
       });
       
-      await api.saveCatalogue({
+      const data = await api.saveCatalogue({
         name: draftName,
         data: finalCatalog,
         creator_name: userProfile.nickname || userProfile.username,
         thumbnail: dataUrl
       });
+      
+      if (data && onDraftSaved) {
+        onDraftSaved({
+          id: data.id,
+          name: data.name,
+          catalogData: data.catalog_data,
+          createdAt: data.created_at,
+          creator_name: data.creator_name,
+          thumbnail: data.thumbnail
+        });
+      }
+      
       toast.success('Draft katalog berhasil disimpan!');
     } catch (err: any) {
       console.error('Gagal simpan ke DB:', err);
-      toast.error('Gagal menyimpan: ' + (err.message?.includes('catalogues' as any) ? 'Tabel belum dibuat di database' : err.message));
+      toast.error('Gagal menyimpan: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateExisting = async () => {
+    if (!editingCatalogue || !previewRef.current) return;
+    setIsSaving(true);
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      const thumbnailWidth = previewRef.current.scrollWidth;
+      const thumbnailHeight = previewRef.current.scrollHeight;
+      const dataUrl = await toJpeg(previewRef.current, { 
+        quality: 0.6, pixelRatio: 0.8, cacheBust: true, includeQueryParams: true, width: thumbnailWidth, height: thumbnailHeight, style: { transform: 'scale(1)' }
+      });
+
+      await api.updateCatalogue(editingCatalogue.id, {
+        name: editingCatalogue.name,
+        data: catalog,
+        thumbnail: dataUrl,
+        creator_name: userProfile.nickname || userProfile.username
+      });
+      toast.success('Perubahan draft berhasil disimpan!');
+    } catch (err: any) {
+      console.error('Gagal update draft:', err);
+      toast.error('Gagal memperbarui draft: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -277,13 +308,23 @@ function CatalogueEditor({ userProfile, editData }: {
           <p className="text-sm text-slate-500 mt-0.5">Buat katalog promosi profesional dengan mudah</p>
         </div>
         <div className="flex gap-3">
-          <button 
-            onClick={() => setIsModalOpen(true)} 
-            disabled={isSaving || isExporting}
-            className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
-          >
-            <Plus className="w-4 h-4" /> Add to Draft
-          </button>
+          {editingCatalogue ? (
+            <button 
+              onClick={handleUpdateExisting} 
+              disabled={isSaving || isExporting}
+              className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Update Draft'}
+            </button>
+          ) : (
+            <button 
+              onClick={() => setIsModalOpen(true)} 
+              disabled={isSaving || isExporting}
+              className="px-5 py-2.5 bg-[#8b7365] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#725e52] transition-colors shadow-md text-sm cursor-pointer disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" /> Add to Draft
+            </button>
+          )}
           
           <SaveDraftModal 
             isOpen={isModalOpen}
@@ -874,10 +915,10 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [editData, setEditData] = useState<CatalogData | undefined>(undefined);
+  const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
 
-  const handleContinueEdit = (data: CatalogData) => {
-    setEditData(data);
+  const handleContinueEdit = (cat: SavedCatalogue) => {
+    setEditingCatalogue(cat);
     setCurrentPage('catalogue');
   };
 
@@ -909,7 +950,7 @@ export default function App() {
     const isAdmin = role.includes('admin');
     const isManager = role.includes('manager');
     
-    const allowed: Page[] = ['dashboard', 'catalogue', 'settings'];
+    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products'];
     if (isManager) allowed.push('promotions', 'history');
     if (isAdmin) allowed.push('promotions', 'history', 'activity');
     
@@ -928,12 +969,18 @@ export default function App() {
 
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+    { id: 'products', label: 'Engaged Products', icon: <Package className="w-5 h-5 shrink-0" /> },
     { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
     { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
     { id: 'history', label: 'Drafts', icon: <Plus className="w-5 h-5 shrink-0" /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5 shrink-0" /> },
   ];
+
+  const clearEditingState = () => {
+    setEditingCatalogue(null);
+    setCurrentPage('catalogue');
+  };
 
   const navItems = allNavItems.filter(item => {
     const role = userProfile.role?.toLowerCase() || 'editor';
@@ -1053,7 +1100,10 @@ export default function App() {
           {navItems.map(item => (
             <button
               key={item.id}
-              onClick={() => setCurrentPage(item.id)}
+              onClick={() => {
+                if (item.id === 'catalogue') setEditingCatalogue(null);
+                setCurrentPage(item.id);
+              }}
               title={item.label}
               className={cn(
                 "w-full flex items-center group relative transition-all duration-200 rounded-xl px-4 py-3.5",
@@ -1203,9 +1253,16 @@ export default function App() {
               >
                 {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} userProfile={userProfile} />}
                 {currentPage === 'activity' && <Activity />}
-                {currentPage === 'catalogue' && <CatalogueEditor userProfile={userProfile} editData={editData} />}
+                {currentPage === 'catalogue' && (
+                  <CatalogueEditor 
+                    userProfile={userProfile} 
+                    editingCatalogue={editingCatalogue || undefined} 
+                    onDraftSaved={setEditingCatalogue}
+                  />
+                )}
                 {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
+                {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
                 {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}
               </motion.div>
             </AnimatePresence>
