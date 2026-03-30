@@ -32,6 +32,8 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
   const [blastSent, setBlastSent] = useState<string[]>([]);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isNamingCampaign, setIsNamingCampaign] = useState(false);
+  const [campaignName, setCampaignName] = useState('');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,7 +131,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
       setNewName('');
       setNewPhone('');
       setShowAddForm(false);
-      toast.success('Pengunjung berhasil ditambahkan!');
+      toast.success('Pelanggan berhasil ditambahkan!');
     } catch (err) {
       console.error('Gagal tambah pengunjung:', err);
       toast.error('Gagal menambahkan pengunjung.');
@@ -179,26 +181,53 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
     setBlastSent(prev => [...prev, visitor.id]);
   };
 
-  const handleBlastSelected = async () => {
-    // Record to history
+  const handleBlastSelected = () => {
+    if (selectedVisitors.length === 0) return;
+    setCampaignName(attachedImage ? "Katalog Blast" : "Pesan Promosi");
+    setIsNamingCampaign(true);
+  };
+
+  const confirmBlast = async () => {
+    const total = selectedVisitors.length;
+    toast.loading('Menyiapkan antrean pesan...', { id: 'blast-status' });
+
+    // Record to history with robust retries
     try {
+      // First attempt with preview
       await api.saveBlastHistory({
-        promo_name: attachedImage ? "Katalog Blast" : "Pesan Promosi",
+        promo_name: campaignName || (attachedImage ? "Katalog Blast" : "Pesan Promosi"),
         sender_name: userProfile.nickname || userProfile.username,
-        recipient_count: selectedVisitors.length
+        recipient_count: total,
+        catalogue_preview: attachedImage || undefined
       });
-    } catch (e) {
-      console.error('Gagal simpan log blast:', e);
+      toast.success('Riwayat kampanye berhasil dicatat!', { id: 'blast-status' });
+    } catch (e: any) {
+      console.warn('Gagal simpan log blast dengan preview, mencoba tanpa preview:', e);
+      // Second attempt without preview column
+      try {
+         await api.saveBlastHistory({
+           promo_name: campaignName || (attachedImage ? "Katalog Blast" : "Pesan Promosi"),
+           sender_name: userProfile.nickname || userProfile.username,
+           recipient_count: total
+         });
+         toast.success('Riwayat dicatat (Tanpa preview gambar).', { id: 'blast-status' });
+      } catch (e2: any) {
+         console.error('Final fail:', e2);
+         toast.error('Gagal menyimpan riwayat kampanye, namun pesan tetap dikirim.', { id: 'blast-status' });
+      }
     }
 
     selectedVisitors.forEach((v, i) => {
       setTimeout(() => {
         window.open(buildWhatsAppUrl(v), '_blank');
         setBlastSent(prev => [...prev, v.id]);
-        if (i === selectedVisitors.length - 1) {
-          toast.success(`Berhasil mengirim antrean pesan ke ${selectedVisitors.length} pengunjung!`);
+        
+        if (i === total - 1) {
+          toast.success(`Berhasil memproses ${total} antrean pelanggan!`);
+          setIsNamingCampaign(false);
+          setCampaignName('');
         }
-      }, i * 600);
+      }, i * 1000); // 1s interval (lebih aman agar tidak diblokir browser)
     });
   };
 
@@ -539,8 +568,8 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
           >
             <Megaphone className="w-5 h-5" />
             {selectedVisitors.length > 0
-              ? `Blast ke ${selectedVisitors.length} Pengunjung`
-              : 'Pilih Pengunjung Terlebih Dahulu'}
+              ? `Blast ke ${selectedVisitors.length} Pelanggan`
+              : 'Pilih Pelanggan Terlebih Dahulu'}
           </button>
 
           {selectedVisitors.length > 0 && (
@@ -550,6 +579,62 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
           )}
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {isNamingCampaign && (
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100"
+            >
+              <h2 className="text-xl font-black text-slate-800 mb-2">Nama Kampanye Blast</h2>
+              <p className="text-slate-500 text-sm mb-6">Berikan nama untuk sesi blast ini agar mudah dilacak di Log Aktivitas.</p>
+              
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Kampanye</label>
+                  <input
+                    autoFocus
+                    value={campaignName}
+                    onChange={e => setCampaignName(e.target.value)}
+                    placeholder="Contoh: Promo Ramadhan / Diskon Weekend"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                </div>
+
+                {attachedImage && (
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border border-emerald-200 shrink-0">
+                      <img src={attachedImage} className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-emerald-800">Katalog Terlampir</p>
+                      <p className="text-[10px] text-emerald-600">Akan disimpan sebagai pratinjau di log.</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setIsNamingCampaign(false)}
+                    className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={confirmBlast}
+                    className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all hover:-translate-y-0.5"
+                  >
+                    Mulai Blast
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

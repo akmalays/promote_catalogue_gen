@@ -115,12 +115,13 @@ export const api = {
   },
 
   // Blast Activity History tracking
-  saveBlastHistory: async (history: { promo_name: string; sender_name: string; recipient_count: number }) => {
+  saveBlastHistory: async (history: { promo_name: string; sender_name: string; recipient_count: number; catalogue_preview?: string }) => {
     const { error } = await supabase.from('blast_history').insert([
       { 
         promo_name: history.promo_name, 
         sender_name: history.sender_name, 
-        recipient_count: history.recipient_count 
+        recipient_count: history.recipient_count,
+        catalogue_preview: history.catalogue_preview
       }
     ]);
     if (error) throw error;

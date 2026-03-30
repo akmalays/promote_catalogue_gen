@@ -11,6 +11,7 @@ interface BlastLog {
   sender_name: string;
   recipient_count: number;
   created_at: string;
+  catalogue_preview?: string;
 }
 
 export default function Activity() {
@@ -156,9 +157,18 @@ export default function Activity() {
                        </div>
                        <div>
                           <p className="font-bold text-slate-800">{log.promo_name}</p>
-                          <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Target: {log.recipient_count} Pengunjung</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Target: {log.recipient_count} Pelanggan</p>
                        </div>
                     </div>
+
+                    {log.catalogue_preview && (
+                      <div className="mt-4 mb-4 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video relative group">
+                        <img src={log.catalogue_preview} alt="Preview Katalog" className="w-full h-full object-contain" />
+                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/50 backdrop-blur-sm rounded text-[9px] text-white font-bold">
+                          Pratinjau Katalog
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-200/50">
                        <div className="flex items-center gap-1.5">
                           <User className="w-3.5 h-3.5 text-slate-400" />
