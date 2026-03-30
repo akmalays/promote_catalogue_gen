@@ -181,54 +181,59 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
     setBlastSent(prev => [...prev, visitor.id]);
   };
 
+  const [isBlasting, setIsBlasting] = useState(false);
+  const [currentBlastIdx, setCurrentBlastIdx] = useState(0);
+
   const handleBlastSelected = () => {
     if (selectedVisitors.length === 0) return;
     setCampaignName(attachedImage ? "Katalog Blast" : "Pesan Promosi");
     setIsNamingCampaign(true);
   };
 
-  const confirmBlast = async () => {
+  const startBlastQueue = async () => {
     const total = selectedVisitors.length;
-    toast.loading('Menyiapkan antrean pesan...', { id: 'blast-status' });
+    setIsNamingCampaign(false);
+    setIsBlasting(true);
+    setCurrentBlastIdx(0);
 
-    // Record to history with robust retries
+    // Record to history
     try {
-      // First attempt with preview
       await api.saveBlastHistory({
         promo_name: campaignName || (attachedImage ? "Katalog Blast" : "Pesan Promosi"),
         sender_name: userProfile.nickname || userProfile.username,
         recipient_count: total,
         catalogue_preview: attachedImage || undefined
       });
-      toast.success('Riwayat kampanye berhasil dicatat!', { id: 'blast-status' });
     } catch (e: any) {
-      console.warn('Gagal simpan log blast dengan preview, mencoba tanpa preview:', e);
-      // Second attempt without preview column
+      console.warn('Gagal simpan log blast:', e);
+      // Attempt once more without preview
       try {
-         await api.saveBlastHistory({
-           promo_name: campaignName || (attachedImage ? "Katalog Blast" : "Pesan Promosi"),
-           sender_name: userProfile.nickname || userProfile.username,
-           recipient_count: total
-         });
-         toast.success('Riwayat dicatat (Tanpa preview gambar).', { id: 'blast-status' });
-      } catch (e2: any) {
-         console.error('Final fail:', e2);
-         toast.error('Gagal menyimpan riwayat kampanye, namun pesan tetap dikirim.', { id: 'blast-status' });
-      }
+        await api.saveBlastHistory({
+          promo_name: campaignName || (attachedImage ? "Katalog Blast" : "Pesan Promosi"),
+          sender_name: userProfile.nickname || userProfile.username,
+          recipient_count: total
+        });
+      } catch (e2) { console.error('Final history fail:', e2); }
     }
+  };
 
-    selectedVisitors.forEach((v, i) => {
+  const sendNextInQueue = () => {
+    if (currentBlastIdx >= selectedVisitors.length) return;
+    
+    const visitor = selectedVisitors[currentBlastIdx];
+    window.open(buildWhatsAppUrl(visitor), '_blank');
+    setBlastSent(prev => [...prev, visitor.id]);
+    
+    if (currentBlastIdx < selectedVisitors.length - 1) {
+      setCurrentBlastIdx(prev => prev + 1);
+    } else {
+      // Last one sent
+      toast.success('Semua antrean berhasil diproses!');
       setTimeout(() => {
-        window.open(buildWhatsAppUrl(v), '_blank');
-        setBlastSent(prev => [...prev, v.id]);
-        
-        if (i === total - 1) {
-          toast.success(`Berhasil memproses ${total} antrean pelanggan!`);
-          setIsNamingCampaign(false);
-          setCampaignName('');
-        }
-      }, i * 1000); // 1s interval (lebih aman agar tidak diblokir browser)
-    });
+        setIsBlasting(false);
+        setCampaignName('');
+      }, 1000);
+    }
   };
 
   return (
@@ -624,12 +629,81 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                     Batal
                   </button>
                   <button
-                    onClick={confirmBlast}
+                    onClick={startBlastQueue}
                     className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all hover:-translate-y-0.5"
                   >
                     Mulai Blast
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isBlasting && (
+          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="bg-white rounded-[32px] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-slate-100">
+                <motion.div 
+                  className="h-full bg-emerald-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentBlastIdx + 1) / selectedVisitors.length) * 100}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800">Blast Antrean</h2>
+                  <p className="text-slate-500 font-medium tracking-tight">Pelanggan {currentBlastIdx + 1} dari {selectedVisitors.length}</p>
+                </div>
+                <button 
+                  onClick={() => setIsBlasting(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <XCircle className="w-6 h-6 text-slate-300" />
+                </button>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-lg">
+                    {selectedVisitors[currentBlastIdx]?.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-slate-800 text-lg truncate">{selectedVisitors[currentBlastIdx]?.name}</p>
+                    <p className="text-slate-400 font-mono text-sm">{selectedVisitors[currentBlastIdx]?.phone}</p>
+                  </div>
+                </div>
+                <div className="p-4 bg-white rounded-xl border border-slate-200">
+                  <p className="text-sm text-slate-600 italic">"{message.replace('{nama}', selectedVisitors[currentBlastIdx]?.name || 'Pelanggan').substring(0, 100)}..."</p>
+                </div>
+              </div>
+
+              {attachedImage && (
+                <div className="mb-8 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-3">
+                   <div className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shrink-0">PENTING</div>
+                   <p className="text-[11px] text-emerald-800 font-medium">Bapak jangan lupa tekan <span className="font-bold underline">Ctrl+V (Paste)</span> lalu <span className="font-bold underline">Enter</span> di WA nanti!</p>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={sendNextInQueue}
+                  className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all hover:bg-emerald-700 active:shadow-none"
+                >
+                  <Send className="w-5 h-5" />
+                  Kirim ke {selectedVisitors[currentBlastIdx]?.name}
+                </motion.button>
+                <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sistem akan otomatis lanjut ke pelanggan berikutnya</p>
               </div>
             </motion.div>
           </div>
