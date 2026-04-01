@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle, Check, DollarSign } from 'lucide-react';
+import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle, Check, DollarSign, Truck, ShoppingCart, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -38,6 +38,9 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [productSupplyHistory, setProductSupplyHistory] = useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<'supply' | 'sales' | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,6 +157,27 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
     setEditingProduct(p);
     setFormData({ ...p });
     setIsFormOpen(true);
+  };
+
+  useEffect(() => {
+    if (isDetailOpen && viewingProduct) {
+      fetchProductHistory(viewingProduct.id);
+    } else {
+      setExpandedSection(null);
+    }
+  }, [isDetailOpen, viewingProduct]);
+
+  const fetchProductHistory = async (productId: string) => {
+    setIsHistoryLoading(true);
+    try {
+      const history = await api.getSupplyHistory();
+      const productLogs = history.filter((h: any) => h.product_id === productId);
+      setProductSupplyHistory(productLogs);
+    } catch (e) {
+      console.error('Gagal ambil riwayat:', e);
+    } finally {
+      setIsHistoryLoading(false);
+    }
   };
 
   const openDetail = (p: Product) => {
@@ -659,46 +683,136 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                 <X className="w-6 h-6 text-slate-400" />
               </button>
 
-              <div className="mb-8 flex items-center gap-6">
-                <div className="w-24 h-24 bg-slate-50 rounded-3xl border border-slate-100 p-4 shrink-0">
+               <div className="mb-6 flex items-center gap-6">
+                <div className="w-20 h-20 bg-slate-50 rounded-2xl border border-slate-100 p-3 shrink-0">
                   <img 
                     src={viewingProduct.image_url} 
                     alt={viewingProduct.name} 
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <div>
-                  <p className="text-[10px] font-black text-[#8b7365] uppercase tracking-widest mb-1">{viewingProduct.brand}</p>
-                  <h2 className="text-2xl font-black text-slate-800 leading-tight">{viewingProduct.name}</h2>
+                <div className="flex-1">
+                  <p className="text-[9px] font-black text-[#8b7365] uppercase tracking-widest mb-1">{viewingProduct.brand}</p>
+                  <h2 className="text-xl font-black text-slate-800 leading-tight">{viewingProduct.name}</h2>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">PLU: {viewingProduct.plu}</p>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Deskripsi Produk</p>
-                  <p className="text-slate-600 leading-relaxed font-medium italic">
-                    "{viewingProduct.description || 'Tidak ada deskripsi untuk produk ini.'}"
-                  </p>
+              {/* Big Stock Block */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                 <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 text-center flex flex-col items-center justify-center">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">TOTAL STOK</p>
+                    <div className="flex items-end gap-2">
+                      <p className="text-5xl font-black text-[#8b7365] tracking-tighter">{viewingProduct.stock}</p>
+                      <p className="text-xs font-black text-[#8b7365]/50 uppercase mb-2">{viewingProduct.unit}</p>
+                    </div>
+                 </div>
+                 <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100 text-center flex flex-col items-center justify-center">
+                    <p className="text-[9px] font-black text-emerald-600/50 uppercase tracking-widest mb-1">HARGA SATUAN</p>
+                    <p className="text-2xl font-black text-emerald-600 tracking-tight">Rp {viewingProduct.price.toLocaleString()}</p>
+                 </div>
+              </div>
+
+              <div className="space-y-3">
+                {/* Supply History Expandable */}
+                <div className="border border-slate-100 rounded-3xl overflow-hidden">
+                   <button 
+                     onClick={() => setExpandedSection(expandedSection === 'supply' ? null : 'supply')}
+                     className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                   >
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100">
+                            <Truck className="w-4 h-4" />
+                         </div>
+                         <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">Riwayat Barang Masuk</span>
+                      </div>
+                      {expandedSection === 'supply' ? <ChevronUp className="w-4 h-4 text-slate-400"/> : <ChevronDown className="w-4 h-4 text-slate-400"/>}
+                   </button>
+                   <AnimatePresence>
+                      {expandedSection === 'supply' && (
+                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-slate-50/30">
+                           <div className="p-4 pt-0 space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                              {isHistoryLoading ? (
+                                <div className="py-8 text-center text-[10px] font-bold text-slate-400">Memuat data...</div>
+                              ) : productSupplyHistory.length === 0 ? (
+                                <div className="py-8 text-center text-[10px] font-bold text-slate-300">Belum ada riwayat masuk.</div>
+                              ) : (
+                                productSupplyHistory.map(log => (
+                                  <div key={log.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
+                                     <div className="min-w-0 pr-4">
+                                        <p className="text-[10px] font-black text-slate-800 line-clamp-1">{log.supplier}</p>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                           <span className="text-[8px] font-bold text-slate-400">{new Date(log.created_at).toLocaleDateString()}</span>
+                                           <span className="text-[8px] font-bold text-slate-400 text-[6px]">●</span>
+                                           <span className="text-[8px] font-bold text-slate-400 uppercase">{log.salesman}</span>
+                                        </div>
+                                     </div>
+                                     <span className="text-xs font-black text-emerald-600 shrink-0">+{log.quantity}</span>
+                                  </div>
+                                ))
+                              )}
+                           </div>
+                        </motion.div>
+                      )}
+                   </AnimatePresence>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-white rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Kategori</p>
-                    <p className="font-black text-slate-800">{viewingProduct.category}</p>
-                  </div>
-                  <div className="p-4 bg-white rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Harga</p>
-                    <p className="font-black text-emerald-600">Rp {viewingProduct.price.toLocaleString()}</p>
-                  </div>
+                {/* Sales History Expandable (Mock for UI) */}
+                <div className="border border-slate-100 rounded-3xl overflow-hidden">
+                   <button 
+                     onClick={() => setExpandedSection(expandedSection === 'sales' ? null : 'sales')}
+                     className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                   >
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 border border-rose-100">
+                            <ShoppingCart className="w-4 h-4" />
+                         </div>
+                         <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">Riwayat Penjualan (Out)</span>
+                      </div>
+                      {expandedSection === 'sales' ? <ChevronUp className="w-4 h-4 text-slate-400"/> : <ChevronDown className="w-4 h-4 text-slate-400"/>}
+                   </button>
+                   <AnimatePresence>
+                      {expandedSection === 'sales' && (
+                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-slate-50/30">
+                           <div className="p-4 pt-0 space-y-2">
+                              {/* Mock Sales Data */}
+                              {[
+                                { date: 'Senin, 30 Mar', qty: 12 },
+                                { date: 'Selasa, 31 Mar', qty: 8 },
+                                { date: 'Hari Ini', qty: 5 },
+                              ].map((s, i) => (
+                                <div key={i} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
+                                   <div className="flex items-center gap-2">
+                                      <Calendar className="w-3 h-3 text-slate-300" />
+                                      <span className="text-[10px] font-bold text-slate-600">{s.date}</span>
+                                   </div>
+                                   <span className="text-xs font-black text-rose-500">-{s.qty} {viewingProduct.unit}</span>
+                                </div>
+                              ))}
+                              <div className="py-4 text-center">
+                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Data Penjualan akan diupdate otomatis<br/>oleh sistem kasir nantinya.</p>
+                              </div>
+                           </div>
+                        </motion.div>
+                      )}
+                   </AnimatePresence>
                 </div>
               </div>
 
-              <button 
-                onClick={() => setIsDetailOpen(false)}
-                className="w-full mt-10 py-4 bg-slate-800 text-white rounded-[20px] font-black hover:bg-slate-900 transition-colors shadow-xl shadow-slate-900/20"
-              >
-                Tutup Detail
-              </button>
+              <div className="mt-8 flex gap-3">
+                 <button 
+                   onClick={() => setIsDetailOpen(false)}
+                   className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-[20px] font-black hover:bg-slate-200 transition-colors text-xs"
+                 >
+                   TUTUP
+                 </button>
+                 <button 
+                   onClick={() => { setIsDetailOpen(false); openEditForm(viewingProduct, { stopPropagation: () => {} } as any); }}
+                   className="flex-1 py-4 bg-[#8b7365] text-white rounded-[20px] font-black hover:bg-[#7a6458] transition-colors shadow-lg shadow-[#8b7365]/20 text-xs"
+                 >
+                   EDIT STOK / DATA
+                 </button>
+              </div>
             </motion.div>
           </div>
         )}

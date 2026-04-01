@@ -6,7 +6,7 @@ import {
   BookOpen, Megaphone, LayoutDashboard, Home, Search,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
   Menu, LogOut, Bell, Settings as SettingsIcon, User, X,
-  AlertCircle, History
+  AlertCircle, History, Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -20,8 +20,9 @@ import CatalogueHistory from './pages/CatalogueHistory';
 import SettingsPage from './pages/Settings';
 import Activity from './pages/Activity';
 import ProductInventory from './pages/ProductInventory';
+import Supply from './pages/Supply';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'supply';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -1105,7 +1106,7 @@ export default function App() {
     const isAdmin = role.includes('admin');
     const isManager = role.includes('manager');
     
-    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products'];
+    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products', 'supply'];
     if (isManager) allowed.push('promotions', 'history');
     if (isAdmin) allowed.push('promotions', 'history', 'activity');
     
@@ -1125,6 +1126,7 @@ export default function App() {
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'products', label: 'Product Database', icon: <Package className="w-5 h-5 shrink-0" /> },
+    { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-5 h-5 shrink-0" /> },
     { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
     { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
@@ -1418,6 +1420,7 @@ export default function App() {
                 {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
+                {currentPage === 'supply' && <Supply />}
                 {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}
               </motion.div>
             </AnimatePresence>
