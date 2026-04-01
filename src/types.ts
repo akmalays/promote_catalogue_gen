@@ -91,7 +91,7 @@ export const DEFAULT_ITEMS: CatalogItem[] = [
     discountedPrice: 19500,
     discountPercentage: 25,
     image: 'https://picsum.photos/seed/chitato/200/200',
-    unit: 'Klg'
+    unit: 'Pcs'
   },
   {
     id: '2',
@@ -102,7 +102,7 @@ export const DEFAULT_ITEMS: CatalogItem[] = [
     discountedPrice: 17900,
     discountPercentage: 30,
     image: 'https://picsum.photos/seed/candy/200/200',
-    unit: 'Pck'
+    unit: 'Pcs'
   },
   {
     id: '3',
@@ -113,7 +113,7 @@ export const DEFAULT_ITEMS: CatalogItem[] = [
     discountedPrice: 8900,
     discountPercentage: 30,
     image: 'https://picsum.photos/seed/cheese/200/200',
-    unit: 'Pck'
+    unit: 'Pcs'
   },
   {
     id: '4',
@@ -124,7 +124,7 @@ export const DEFAULT_ITEMS: CatalogItem[] = [
     discountedPrice: 5900,
     discountPercentage: 10,
     image: 'https://picsum.photos/seed/meises/200/200',
-    unit: 'Pck'
+    unit: 'Pcs'
   },
   {
     id: '5',
@@ -135,7 +135,7 @@ export const DEFAULT_ITEMS: CatalogItem[] = [
     discountedPrice: 8400,
     discountPercentage: 20,
     image: 'https://picsum.photos/seed/milo/200/200',
-    unit: 'Pck'
+    unit: 'Pcs'
   },
   {
     id: '6',
@@ -146,7 +146,7 @@ export const DEFAULT_ITEMS: CatalogItem[] = [
     discountedPrice: 11000,
     discountPercentage: 10,
     image: 'https://picsum.photos/seed/indomie/200/200',
-    unit: '3 Pcs'
+    unit: 'Pcs'
   }
 ];
 

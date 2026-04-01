@@ -13,10 +13,13 @@ interface Product {
   price: number;
   category: string;
   image_url: string;
+  stock: number;
+  unit: string;
+  plu: string;
 }
 
 const CATEGORIES = [
-  'All', 'Makanan', 'Minuman', 'Kebutuhan Rumah', 'Perawatan Diri', 'Bayi & Anak', 'Peralatan'
+  'All', 'Makanan', 'Minuman', 'Kardus', 'Kebutuhan Rumah', 'Perawatan Diri', 'Bayi & Anak', 'Peralatan'
 ];
 
 const INITIAL_PRODUCTS: Product[] = [];
@@ -39,6 +42,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLowStockExpanded, setIsLowStockExpanded] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -47,7 +51,10 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
     description: '',
     price: 0,
     category: 'Makanan',
-    image_url: ''
+    image_url: '',
+    stock: 0,
+    unit: 'pcs',
+    plu: ''
   });
 
   useEffect(() => {
@@ -71,6 +78,8 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
       setIsLoading(false);
     }
   };
+
+  const lowStockItems = products.filter(p => (p.stock || 0) < 10);
 
   const openDeleteModal = (p: Product, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -122,6 +131,9 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
   };
 
   const openAddForm = () => {
+    // Generate a unique 6-digit PLU
+    const randomPlu = Math.floor(100000 + Math.random() * 900000).toString();
+    
     setEditingProduct(null);
     setFormData({
       name: '',
@@ -129,7 +141,10 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
       description: '',
       price: 0,
       category: 'Makanan',
-      image_url: ''
+      image_url: '',
+      stock: 0,
+      unit: 'pcs',
+      plu: randomPlu
     });
     setIsFormOpen(true);
   };
@@ -238,6 +253,68 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
         </div>
       ) : (
         <>
+          {/* Low Stock Alerts (Expandable) */}
+          {lowStockItems.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 overflow-hidden rounded-[32px] border border-rose-200 bg-rose-50/30"
+            >
+              <div 
+                onClick={() => setIsLowStockExpanded(!isLowStockExpanded)}
+                className="flex items-center justify-between px-8 py-4 cursor-pointer hover:bg-rose-50/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-500/20">
+                     <AlertCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-rose-800 text-base leading-none">Peringatan: {lowStockItems.length} Produk Stok Menipis</h3>
+                    <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mt-1">Stok di bawah 10 unit</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">{isLowStockExpanded ? 'Tutup Detail' : 'Lihat Detail'}</span>
+                  <div className={cn("w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center transition-transform duration-300", 
+                    isLowStockExpanded && "rotate-180"
+                  )}>
+                    <Plus className="w-4 h-4 text-rose-600 rotate-45" />
+                  </div>
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {isLowStockExpanded && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="px-8 pb-8"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
+                       {lowStockItems.map(item => (
+                         <div key={item.id} onClick={() => openDetail(item)} className="bg-white p-3 rounded-2xl border border-rose-100 shadow-sm flex items-center gap-3 cursor-pointer hover:border-rose-300 transition-all group">
+                            <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 group-hover:scale-110 transition-transform">
+                               <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
+                            </div>
+                            <div className="min-w-0 pr-2">
+                               <p className="text-[10px] font-black text-[#8b7365] uppercase truncate tracking-tighter leading-none mb-1">{item.brand}</p>
+                               <h4 className="font-bold text-slate-800 text-xs truncate leading-tight">{item.name}</h4>
+                               <div className="flex items-center gap-1 mt-1">
+                                  <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Sisa:</span>
+                                  <span className="text-[11px] font-black text-rose-600">{item.stock || 0}</span>
+                                  <span className="text-[10px] font-black text-rose-400 lowercase">{item.unit || 'pcs'}</span>
+                               </div>
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
           {filteredProducts.length === 0 ? (
             <div className="h-[400px] bg-white rounded-[32px] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 text-center px-6">
               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -253,9 +330,12 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
                       <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center w-20">Gambar</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">PLU</th>
                       <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Nama Produk</th>
                       <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Merek</th>
                       <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Kategori</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Stok</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Satuan</th>
                       <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Harga</th>
                       <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">Aksi</th>
                     </tr>
@@ -282,6 +362,11 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                           </div>
                         </td>
                         <td className="px-6 py-3">
+                           <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded border border-rose-100">
+                              {p.plu || 'N/A'}
+                           </span>
+                        </td>
+                        <td className="px-6 py-3">
                           <button 
                             onClick={() => openDetail(p)}
                             className="font-black text-slate-800 hover:text-[#8b7365] transition-colors text-left text-sm"
@@ -295,6 +380,24 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                         <td className="px-6 py-3">
                           <span className="px-2.5 py-1 bg-slate-100 text-[9px] font-black text-slate-500 rounded uppercase tracking-tight">
                             {p.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3">
+                           <div className="flex items-center gap-1.5">
+                              <span className={cn(
+                                "text-xs font-black",
+                                p.stock <= 10 ? "text-rose-500" : "text-slate-600"
+                              )}>
+                                {p.stock || 0}
+                              </span>
+                              {p.stock <= 10 && (
+                                <AlertCircle className="w-3 h-3 text-rose-500" />
+                              )}
+                           </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {p.unit || 'pcs'}
                           </span>
                         </td>
                         <td className="px-6 py-3 text-sm font-black text-emerald-600">
@@ -375,69 +478,96 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-[40px] p-10 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-[40px] p-8 max-w-2xl w-full shadow-2xl relative max-h-[95vh] overflow-y-auto mt-4"
             >
               <button 
                 onClick={() => setIsFormOpen(false)}
-                className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors"
+                className="absolute top-6 right-8 p-2 hover:bg-slate-100 rounded-2xl transition-colors"
               >
-                <X className="w-6 h-6 text-slate-400" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
 
-              <div className="mb-8">
-                <h2 className="text-3xl font-black text-slate-800">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-                <p className="text-slate-500 font-medium">Lengkapi detail produk di bawah ini.</p>
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-slate-800">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+                <p className="text-slate-500 text-xs font-medium">Lengkapi detail produk di bawah ini.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Merek (Brand)</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-rose-500 tracking-widest ml-1">KODE PLU (AUTO)</label>
+                  <input 
+                    value={formData.plu}
+                    readOnly
+                    className="w-full px-4 py-2.5 bg-rose-50/30 border border-rose-100 rounded-2xl outline-none font-black text-rose-600 cursor-not-allowed text-sm"
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Merek (Brand)</label>
                   <input 
                     value={formData.brand}
                     onChange={e => setFormData({...formData, brand: e.target.value})}
                     placeholder="Contoh: Indomie / Coca Cola"
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
                   />
                 </div>
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Produk</label>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Produk</label>
                   <input 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     placeholder="Contoh: Mie Goreng Jumbo"
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
                   />
                 </div>
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kategori</label>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Kategori</label>
                   <select 
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold appearance-none"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold appearance-none text-sm"
                   >
                     {CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Harga (Rupiah)</label>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Satuan</label>
+                  <input 
+                    value={formData.unit}
+                    onChange={e => setFormData({...formData, unit: e.target.value})}
+                    placeholder="Contoh: pcs / kardus"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Stok Awal</label>
+                  <input 
+                    type="number"
+                    value={formData.stock}
+                    onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
+                    placeholder="0"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Harga (Rupiah)</label>
                   <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">Rp</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">Rp</span>
                     <input 
                       type="number"
                       value={formData.price}
                       onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                      className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-black"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-black text-sm"
                     />
                   </div>
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Gambar Produk</label>
+                <div className="col-span-2 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Gambar Produk</label>
                   <div className="flex gap-4 items-center">
-                    <div className="w-24 h-24 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group relative">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group relative">
                       {formData.image_url ? (
                         <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain" />
                       ) : (
-                        <Plus className="w-6 h-6 text-slate-300" />
+                        <Plus className="w-5 h-5 text-slate-300" />
                       )}
                       <input 
                         type="file" 
@@ -456,36 +586,35 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                       />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-slate-500 font-medium mb-2">Klik ikon di kiri untuk pilih file gambar dari HP/Laptop.</p>
                       <button 
                         type="button"
                         onClick={() => {
                           const input = document.querySelector('input[type="file"]') as HTMLInputElement;
                           input?.click();
                         }}
-                        className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                        className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
                       >
                         Ganti Gambar
                       </button>
                     </div>
                   </div>
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Deskripsi Produk</label>
+                <div className="col-span-2 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Deskripsi Produk</label>
                   <textarea 
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value})}
-                    rows={3}
+                    rows={2}
                     placeholder="Jelaskan keunggulan produk ini..."
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium resize-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium resize-none text-xs"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-4 mt-10">
+              <div className="flex gap-3 mt-6">
                 <button 
                   onClick={() => setIsFormOpen(false)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-[20px] font-black hover:bg-slate-200 transition-colors"
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-[20px] font-black hover:bg-slate-200 transition-colors text-sm"
                 >
                   Batal
                 </button>
@@ -493,7 +622,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                   onClick={handleSubmit}
                   disabled={isSubmitting}
                   className={cn(
-                    "flex-3 py-4 text-white rounded-[20px] font-black transition-all shadow-2xl flex items-center justify-center gap-2",
+                    "flex-3 py-3 text-white rounded-[20px] font-black transition-all shadow-2xl flex items-center justify-center gap-2 text-sm",
                     isSubmitting 
                       ? "bg-slate-400 cursor-not-allowed" 
                       : "bg-[#8b7365] hover:bg-[#7a6458] shadow-[#8b7365]/20"

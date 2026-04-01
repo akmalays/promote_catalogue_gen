@@ -150,6 +150,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
       image: p.image_url || '',
       originalPrice: p.price || 0,
       discountedPrice: p.price || 0, // Initial sync
+      unit: p.unit || 'pcs',
     });
     setIsDbLookupOpen(false);
     setTargetLookup(null);
