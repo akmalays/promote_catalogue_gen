@@ -24,7 +24,8 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
     totalReach: 0,
     totalProducts: 0,
     totalCustomers: 0,
-    monthlyGrowth: 0
+    monthlyGrowth: 0,
+    lowStockCount: 0
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -36,10 +37,11 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [visitors, logs, catalogues] = await Promise.all([
+      const [visitors, logs, catalogues, allProducts] = await Promise.all([
         api.getVisitors(),
         api.getBlastLogs(),
-        api.getCatalogues()
+        api.getCatalogues(),
+        api.getProducts()
       ]);
 
       // Process Metrics
@@ -61,12 +63,15 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       }).length;
 
+      const lowStock = allProducts.filter((p: any) => (p.stock || 0) < 10).length;
+
       setMetrics({
         totalCatalogues: catalogues.length,
         totalReach: reach,
-        totalProducts: products,
+        totalProducts: allProducts.length,
         totalCustomers: visitors.length,
-        monthlyGrowth: thisMonthGrowth
+        monthlyGrowth: thisMonthGrowth,
+        lowStockCount: lowStock
       });
 
       // Combine Recent Activities (Last 4 items)
@@ -154,7 +159,7 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
            { id: 'history', label: 'Total Galeri', value: metrics.totalCatalogues, sub: 'Katalog tersimpan', icon: <Layout className="w-4 h-4" />, color: 'bg-blue-600' },
            { id: 'activity', label: 'Jangkauan Promo', value: metrics.totalReach.toLocaleString(), sub: 'Pesan terkirim', icon: <Send className="w-4 h-4" />, color: 'bg-emerald-600' },
            { id: 'promotions', label: 'Pelanggan', value: metrics.totalCustomers, sub: 'Kontak aktif', icon: <Users className="w-4 h-4" />, color: 'bg-amber-600' },
-           { id: 'products', label: 'Produk Terlibat', value: metrics.totalProducts, sub: 'Item unik', icon: <Package className="w-4 h-4" />, color: 'bg-slate-800' },
+           { id: 'products', label: 'Stok Menipis', value: metrics.lowStockCount, sub: 'Perlu Re-stock', icon: <AlertTriangle className={cn("w-4 h-4", metrics.lowStockCount > 0 && "animate-pulse")} />, color: metrics.lowStockCount > 0 ? 'bg-rose-600' : 'bg-slate-800' },
          ].map((m, i) => (
            <motion.div 
              key={i}
