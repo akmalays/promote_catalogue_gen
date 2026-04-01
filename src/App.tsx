@@ -114,6 +114,48 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
+  // Database Lookup State
+  const [isDbLookupOpen, setIsDbLookupOpen] = useState(false);
+  const [dbSearchQuery, setDbSearchQuery] = useState('');
+  const [dbFilterCategory, setDbFilterCategory] = useState('All');
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
+  const [isDbLoading, setIsDbLoading] = useState(false);
+  const [targetLookup, setTargetLookup] = useState<{rowId: string, itemId: string} | null>(null);
+
+  const fetchDbProducts = async () => {
+    setIsDbLoading(true);
+    try {
+      const data = await api.getProducts();
+      setDbProducts(data);
+    } catch (e) {
+      console.error('Gagal ambil data DB:', e);
+      toast.error('Gagal mengambil data dari database master.');
+    } finally {
+      setIsDbLoading(false);
+    }
+  };
+
+  const openDbLookup = (rowId: string, itemId: string) => {
+    setTargetLookup({ rowId, itemId });
+    setIsDbLookupOpen(true);
+    fetchDbProducts();
+  };
+
+  const handlePickFromDb = (p: any) => {
+    if (!targetLookup) return;
+    updateItem(targetLookup.rowId, targetLookup.itemId, {
+      brand: p.brand || '',
+      name: p.name || '',
+      description: p.description || '',
+      image: p.image_url || '',
+      originalPrice: p.price || 0,
+      discountedPrice: p.price || 0, // Initial sync
+    });
+    setIsDbLookupOpen(false);
+    setTargetLookup(null);
+    toast.success(`${p.name} berhasil diambil dari database!`);
+  };
+
   // Sync state if editingCatalogue changes
   useEffect(() => {
     if (editingCatalogue) setCatalog(editingCatalogue.catalogData);
@@ -387,10 +429,19 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                         <div className="space-y-3">
                           {row.items.map(item => (
                             <div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 group relative">
-                              <button onClick={() => removeItemFromRow(row.id, item.id)} disabled={row.items.length <= 2}
-                                className="absolute top-2 right-2 p-1 text-slate-400 hover:text-red-500 disabled:opacity-30 transition-colors opacity-0 group-hover:opacity-100">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                  onClick={() => openDbLookup(row.id, item.id)}
+                                  className="p-1.5 bg-white text-[#8b7365] hover:bg-[#8b7365] hover:text-white border border-slate-200 rounded-lg transition-all shadow-sm"
+                                  title="Ambil dari Database Master"
+                                >
+                                  <Package className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => removeItemFromRow(row.id, item.id)} disabled={row.items.length <= 2}
+                                  className="p-1.5 bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition-all shadow-sm disabled:opacity-30">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                               <div className="flex gap-3">
                                 <div className="relative w-14 h-14 bg-white rounded-lg border border-slate-200 overflow-hidden flex-shrink-0">
                                   <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
@@ -907,6 +958,109 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
           </div>
         </div>
       </div>
+
+      {/* Database Lookup Modal */}
+      <AnimatePresence>
+        {isDbLookupOpen && (
+          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[40px] p-8 max-w-2xl w-full shadow-2xl relative max-h-[85vh] flex flex-col"
+            >
+              <button 
+                onClick={() => setIsDbLookupOpen(false)}
+                className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Cari di Database Master</h2>
+                <p className="text-slate-500 text-sm font-medium">Pilih produk untuk mengisi baris katalog secara otomatis.</p>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-wrap gap-3 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Ketik nama produk atau merek..." 
+                    value={dbSearchQuery}
+                    onChange={e => setDbSearchQuery(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-[#8b7365]/10 outline-none font-bold transition-all"
+                  />
+                </div>
+                <select 
+                  value={dbFilterCategory}
+                  onChange={e => setDbFilterCategory(e.target.value)}
+                  className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black text-slate-700 outline-none focus:ring-4 focus:ring-[#8b7365]/10 transition-all appearance-none cursor-pointer min-w-[150px]"
+                >
+                  {['All', 'Makanan', 'Minuman', 'Kebutuhan Rumah', 'Perawatan Diri', 'Peralatan', 'Lainnya'].map(cat => (
+                    <option key={cat} value={cat}>{cat === 'All' ? 'Semua Kategori' : cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Product List */}
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                {isDbLoading ? (
+                  <div className="py-20 flex flex-col items-center justify-center gap-4">
+                     <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#8b7365] border-t-transparent"></div>
+                     <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Memuat Master Data...</p>
+                  </div>
+                ) : dbProducts.filter(p => {
+                  const matchesSearch = p.name.toLowerCase().includes(dbSearchQuery.toLowerCase()) || p.brand.toLowerCase().includes(dbSearchQuery.toLowerCase());
+                  const matchesCat = dbFilterCategory === 'All' || p.category === dbFilterCategory;
+                  return matchesSearch && matchesCat;
+                }).length === 0 ? (
+                  <div className="py-20 text-center text-slate-400">
+                    <Search className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                    <p className="font-bold">Produk tidak ditemukan di database master.</p>
+                  </div>
+                ) : (
+                  dbProducts.filter(p => {
+                    const matchesSearch = p.name.toLowerCase().includes(dbSearchQuery.toLowerCase()) || p.brand.toLowerCase().includes(dbSearchQuery.toLowerCase());
+                    const matchesCat = dbFilterCategory === 'All' || p.category === dbFilterCategory;
+                    return matchesSearch && matchesCat;
+                  }).map(p => (
+                    <button 
+                      key={p.id}
+                      onClick={() => handlePickFromDb(p)}
+                      className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-3xl transition-all group text-left"
+                    >
+                      <div className="w-14 h-14 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shrink-0">
+                        <img src={p.image_url || 'https://via.placeholder.com/100'} alt={p.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black text-[#8b7365] uppercase tracking-widest leading-none mb-1">{p.brand}</p>
+                        <h4 className="font-bold text-slate-800 truncate">{p.name}</h4>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{p.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-black text-emerald-600">Rp {p.price.toLocaleString()}</p>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pilih Item</span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              
+              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Database Cloud Connected</p>
+                <button 
+                  onClick={() => setIsDbLookupOpen(false)}
+                  className="px-6 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors text-sm"
+                >
+                  Tutup
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
