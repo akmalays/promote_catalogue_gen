@@ -6,7 +6,7 @@ import {
   BookOpen, Megaphone, LayoutDashboard, Home, Search,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
   Menu, LogOut, Bell, Settings as SettingsIcon, User, X,
-  AlertCircle, History
+  AlertCircle, History, Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -20,8 +20,9 @@ import CatalogueHistory from './pages/CatalogueHistory';
 import SettingsPage from './pages/Settings';
 import Activity from './pages/Activity';
 import ProductInventory from './pages/ProductInventory';
+import Supply from './pages/Supply';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'supply';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -988,7 +989,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input 
                     type="text" 
-                    placeholder="Ketik nama produk atau merek..." 
+                    placeholder="Ketik nama produk, merek atau plu..." 
                     value={dbSearchQuery}
                     onChange={e => setDbSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-[#8b7365]/10 outline-none font-bold transition-all"
@@ -1013,7 +1014,10 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                      <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Memuat Master Data...</p>
                   </div>
                 ) : dbProducts.filter(p => {
-                  const matchesSearch = p.name.toLowerCase().includes(dbSearchQuery.toLowerCase()) || p.brand.toLowerCase().includes(dbSearchQuery.toLowerCase());
+                  const s = dbSearchQuery.toLowerCase();
+                  const matchesSearch = p.name.toLowerCase().includes(s) || 
+                                       p.brand.toLowerCase().includes(s) ||
+                                       (p.plu && p.plu.toLowerCase().includes(s));
                   const matchesCat = dbFilterCategory === 'All' || p.category === dbFilterCategory;
                   return matchesSearch && matchesCat;
                 }).length === 0 ? (
@@ -1023,7 +1027,10 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                   </div>
                 ) : (
                   dbProducts.filter(p => {
-                    const matchesSearch = p.name.toLowerCase().includes(dbSearchQuery.toLowerCase()) || p.brand.toLowerCase().includes(dbSearchQuery.toLowerCase());
+                    const s = dbSearchQuery.toLowerCase();
+                    const matchesSearch = p.name.toLowerCase().includes(s) || 
+                                         p.brand.toLowerCase().includes(s) ||
+                                         (p.plu && p.plu.toLowerCase().includes(s));
                     const matchesCat = dbFilterCategory === 'All' || p.category === dbFilterCategory;
                     return matchesSearch && matchesCat;
                   }).map(p => (
@@ -1038,7 +1045,11 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-black text-[#8b7365] uppercase tracking-widest leading-none mb-1">{p.brand}</p>
                         <h4 className="font-bold text-slate-800 truncate">{p.name}</h4>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{p.category}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight inline-flex items-center gap-2">
+                          {p.category}
+                          <span className="text-[#8b7365]/30">●</span>
+                          <span className="text-rose-500">PLU: {p.plu}</span>
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs font-black text-emerald-600">Rp {p.price.toLocaleString()}</p>
@@ -1105,7 +1116,7 @@ export default function App() {
     const isAdmin = role.includes('admin');
     const isManager = role.includes('manager');
     
-    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products'];
+    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products', 'supply'];
     if (isManager) allowed.push('promotions', 'history');
     if (isAdmin) allowed.push('promotions', 'history', 'activity');
     
@@ -1125,6 +1136,7 @@ export default function App() {
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'products', label: 'Product Database', icon: <Package className="w-5 h-5 shrink-0" /> },
+    { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-5 h-5 shrink-0" /> },
     { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
     { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
@@ -1418,6 +1430,7 @@ export default function App() {
                 {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
+                {currentPage === 'supply' && <Supply />}
                 {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}
               </motion.div>
             </AnimatePresence>

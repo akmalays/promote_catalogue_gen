@@ -198,5 +198,23 @@ export const api = {
       .eq('id', id);
     if (error) throw error;
     return true;
+  },
+  // Supply History Management
+  getSupplyHistory: async () => {
+    const { data, error } = await supabase
+      .from('supply_history')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+  addSupplyHistory: async (log: any) => {
+    const { data, error } = await supabase
+      .from('supply_history')
+      .insert([log])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 };
