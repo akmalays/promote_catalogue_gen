@@ -161,5 +161,42 @@ export const api = {
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
+  },
+
+  // Product Database Management
+  getProducts: async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+  addProduct: async (product: any) => {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([product])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  updateProduct: async (id: any, product: any) => {
+    const { data, error } = await supabase
+      .from('products')
+      .update(product)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  deleteProduct: async (id: any) => {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
   }
 };

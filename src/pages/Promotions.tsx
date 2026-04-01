@@ -689,7 +689,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
               {attachedImage && (
                 <div className="mb-8 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-3">
                    <div className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shrink-0">PENTING</div>
-                   <p className="text-[11px] text-emerald-800 font-medium">Bapak jangan lupa tekan <span className="font-bold underline">Ctrl+V (Paste)</span> lalu <span className="font-bold underline">Enter</span> di WA nanti!</p>
+                   <p className="text-[11px] text-emerald-800 font-medium">Jangan lupa tekan <span className="font-bold underline">Ctrl+V (Paste)</span> lalu <span className="font-bold underline">Enter</span> di WA nanti!</p>
                 </div>
               )}
 
