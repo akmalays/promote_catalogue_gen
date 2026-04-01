@@ -216,5 +216,23 @@ export const api = {
       .single();
     if (error) throw error;
     return data;
+  },
+  // Sales & POS Management
+  addSale: async (sale: any) => {
+    const { data, error } = await supabase
+      .from('sales')
+      .insert([sale])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  getSales: async () => {
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   }
 };

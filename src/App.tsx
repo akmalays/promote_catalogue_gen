@@ -2,11 +2,11 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { toJpeg, toPng } from 'html-to-image';
 import { 
   Plus, Trash2, Download, Upload, Package, FileText,
-  Palette, CheckCircle2, Bike, ArrowDown,
-  BookOpen, Megaphone, LayoutDashboard, Home, Search,
+  Palette, CheckCircle2,
+  BookOpen, Megaphone, LayoutDashboard, Search,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
   Menu, LogOut, Bell, Settings as SettingsIcon, User, X,
-  AlertCircle, History, Truck
+   History, Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -21,8 +21,9 @@ import SettingsPage from './pages/Settings';
 import Activity from './pages/Activity';
 import ProductInventory from './pages/ProductInventory';
 import Supply from './pages/Supply';
+import POS from './pages/POS';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'supply';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'supply' | 'pos';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -1116,7 +1117,7 @@ export default function App() {
     const isAdmin = role.includes('admin');
     const isManager = role.includes('manager');
     
-    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products', 'supply'];
+    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products', 'supply', 'pos'];
     if (isManager) allowed.push('promotions', 'history');
     if (isAdmin) allowed.push('promotions', 'history', 'activity');
     
@@ -1124,6 +1125,12 @@ export default function App() {
       setCurrentPage('dashboard');
     }
   }, [userProfile.role, currentPage]);
+
+  useEffect(() => {
+    if (currentPage === 'pos') {
+      setIsSidebarExpanded(false);
+    }
+  }, [currentPage]);
 
   if (!isLoggedIn) {
      return <Login onLogin={(user) => {
@@ -1137,6 +1144,7 @@ export default function App() {
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'products', label: 'Product Database', icon: <Package className="w-5 h-5 shrink-0" /> },
     { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-5 h-5 shrink-0" /> },
+    { id: 'pos', label: 'POS Kasir', icon: <QrCode className="w-5 h-5 shrink-0" /> },
     { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
     { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
@@ -1155,7 +1163,7 @@ export default function App() {
     const isManager = role.includes('manager');
 
     // Semua role bisa akses settings & Admin akses semua
-    if (item.id === 'settings' || isAdmin) return true;
+    if (item.id === 'settings' || item.id === 'pos' || isAdmin) return true;
     
     // Role lainnya (Manager/Editor)
     if (isManager) return ['dashboard', 'catalogue', 'promotions', 'history'].includes(item.id);
@@ -1213,8 +1221,7 @@ export default function App() {
         }}
         className={cn(
           "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative transition-all duration-300",
-          "fixed lg:relative top-0 left-0",
-          !isSidebarExpanded && "lg:flex hidden"
+          "fixed lg:relative top-0 left-0"
         )}
       >
         {/* Toggle Button Container for Alignment */}
@@ -1335,78 +1342,80 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
         {/* Top Header - Redesigned Sticky */}
-        <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
-          <div className="flex items-center gap-3 md:gap-8 flex-1">
-            <button 
-              onClick={() => setIsSidebarExpanded(true)}
-              className="p-2 lg:hidden text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+        {currentPage !== 'pos' && (
+          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
+            <div className="flex items-center gap-3 md:gap-8 flex-1">
+              <button 
+                onClick={() => setIsSidebarExpanded(true)}
+                className="p-2 lg:hidden text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
 
-            <div className="flex items-center gap-0 -ml-2">
-              <div className="h-16 shrink-0 hidden md:flex items-center justify-center">
-                <img src={logoAsset} alt="Logo" className="h-full w-auto object-contain" />
+              <div className="flex items-center gap-0 -ml-2">
+                <div className="h-16 shrink-0 hidden md:flex items-center justify-center">
+                  <img src={logoAsset} alt="Logo" className="h-full w-auto object-contain" />
+                </div>
+                <div className="flex flex-col">
+                   <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">myStore</h1>
+                   <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.2em] mt-1 ml-0.5">Studio</span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                 <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">myStore</h1>
-                 <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.2em] mt-1 ml-0.5">Studio</span>
+              
+              <div className="relative w-full max-w-lg hidden lg:flex items-center">
+                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                   <Search className="h-4 w-4 text-[#6d4d42]/50" />
+                 </div>
+                 <input 
+                   type="text" 
+                   className="w-full pl-11 pr-4 py-2 bg-[#f4f4f2] border-none rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6d4d42]/10 text-sm placeholder-slate-400 font-medium transition-all" 
+                   placeholder="Search inventory or tools..." 
+                 />
               </div>
             </div>
-            
-            <div className="relative w-full max-w-lg hidden lg:flex items-center">
-               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                 <Search className="h-4 w-4 text-[#6d4d42]/50" />
-               </div>
-               <input 
-                 type="text" 
-                 className="w-full pl-11 pr-4 py-2 bg-[#f4f4f2] border-none rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6d4d42]/10 text-sm placeholder-slate-400 font-medium transition-all" 
-                 placeholder="Search inventory or tools..." 
-               />
+
+            <div className="flex items-center gap-2 md:gap-5 text-[#6d4d42]/70 ml-2 md:ml-8">
+               <button 
+                 title="Notifikasi"
+                 className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100"
+               >
+                  <Bell className="w-5 h-5 group-hover:text-[#6d4d42]" />
+                  <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
+               </button>
+               
+               <button 
+                 onClick={() => setCurrentPage('settings')}
+                 title="Pengaturan Profil"
+                 className={cn(
+                   "hidden sm:flex p-2.5 rounded-full hover:bg-slate-100 transition-all items-center justify-center group transform active:scale-95 shadow-sm border",
+                   currentPage === 'settings' ? "bg-[#8b7365] text-white border-[#8b7365]" : "bg-white border-slate-100 text-[#6d4d42]/70"
+                 )}
+               >
+                  <SettingsIcon className="w-5 h-5 group-hover:text-inherit" />
+               </button>
+
+               <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block" />
+
+               <button 
+                 onClick={() => setCurrentPage('settings')}
+                 title={`Profil: ${userProfile.nickname}`}
+                 className="flex items-center gap-3 p-1.5 pr-4 rounded-full bg-[#f4f4f2]/50 hover:bg-white border border-slate-200/50 transition-all transform active:scale-95 shadow-sm group"
+               >
+                  <div className="w-9 h-9 md:w-10 md:h-10 bg-[#8b7365] text-white rounded-full flex items-center justify-center shadow-inner">
+                     <User className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="hidden md:flex flex-col items-start leading-tight">
+                     <span className="text-xs font-black text-slate-800 uppercase tracking-tighter truncate max-w-[100px]">
+                        {userProfile.nickname}
+                     </span>
+                     <span className="text-[9px] font-bold text-[#8b7365] uppercase tracking-widest truncate max-w-[100px]">
+                        {userProfile.role}
+                     </span>
+                  </div>
+               </button>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-5 text-[#6d4d42]/70 ml-2 md:ml-8">
-             <button 
-               title="Notifikasi"
-               className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100"
-             >
-                <Bell className="w-5 h-5 group-hover:text-[#6d4d42]" />
-                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
-             </button>
-             
-             <button 
-               onClick={() => setCurrentPage('settings')}
-               title="Pengaturan Profil"
-               className={cn(
-                 "hidden sm:flex p-2.5 rounded-full hover:bg-slate-100 transition-all items-center justify-center group transform active:scale-95 shadow-sm border",
-                 currentPage === 'settings' ? "bg-[#8b7365] text-white border-[#8b7365]" : "bg-white border-slate-100 text-[#6d4d42]/70"
-               )}
-             >
-                <SettingsIcon className="w-5 h-5 group-hover:text-inherit" />
-             </button>
-
-             <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block" />
-
-             <button 
-               onClick={() => setCurrentPage('settings')}
-               title={`Profil: ${userProfile.nickname}`}
-               className="flex items-center gap-3 p-1.5 pr-4 rounded-full bg-[#f4f4f2]/50 hover:bg-white border border-slate-200/50 transition-all transform active:scale-95 shadow-sm group"
-             >
-                <div className="w-9 h-9 md:w-10 md:h-10 bg-[#8b7365] text-white rounded-full flex items-center justify-center shadow-inner">
-                   <User className="w-5 h-5 md:w-6 md:h-6" />
-                </div>
-                <div className="hidden md:flex flex-col items-start leading-tight">
-                   <span className="text-xs font-black text-slate-800 uppercase tracking-tighter truncate max-w-[100px]">
-                      {userProfile.nickname}
-                   </span>
-                   <span className="text-[9px] font-bold text-[#8b7365] uppercase tracking-widest truncate max-w-[100px]">
-                      {userProfile.role}
-                   </span>
-                </div>
-             </button>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Workspace Content */}
         <section className="relative p-0 transition-all duration-300">
@@ -1431,6 +1440,7 @@ export default function App() {
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
                 {currentPage === 'supply' && <Supply />}
+                {currentPage === 'pos' && <POS onNavigate={setCurrentPage} />}
                 {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}
               </motion.div>
             </AnimatePresence>
