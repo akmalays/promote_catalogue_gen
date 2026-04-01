@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Truck, Search, Plus, User, Calendar, Package, ArrowRight, History, CheckCircle2, AlertCircle, X, Trash2, Camera, Building2, FileText, ShoppingCart, ChevronDown, ChevronRight, Filter, ChevronLeft } from 'lucide-react';
+import { Truck, Search, Plus, Minus, User, Calendar, Package, ArrowRight, History, CheckCircle2, AlertCircle, X, Trash2, Camera, Building2, FileText, ShoppingCart, ChevronDown, ChevronRight, Filter, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -241,7 +241,21 @@ export default function Supply() {
              <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
                {cart.length === 0 ? (<div className="py-20 flex flex-col items-center justify-center text-slate-300 border-2 border-dashed rounded-3xl"><Package className="w-12 h-12 mb-3 opacity-20"/><p className="text-xs font-black uppercase tracking-widest">Daftar Item Kosong</p></div>) : (
                  cart.map(item => (
-                   <div key={item.product.id} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between group"><div className="flex items-center gap-4 flex-1"><div className="w-11 h-11 bg-white rounded-lg border flex items-center justify-center p-1"><img src={item.product.image_url} alt="" className="max-h-full max-w-full"/></div><div className="min-w-0"><p className="text-[9px] font-black text-[#8b7365] mb-0.5">{item.product.brand}</p><p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p></div></div><div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border"><button onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-slate-100 rounded text-slate-400"><X className="w-3 h-3 rotate-45"/></button><span className="text-sm font-black w-8 text-center">{item.quantity}</span><button onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-slate-100 rounded text-[#8b7365]"><Plus className="w-3 h-3"/></button><span className="text-[9px] font-black text-slate-400 uppercase">{item.product.unit}</span></div><button onClick={() => removeFromCart(item.product.id)} className="ml-4 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="w-4 h-4"/></button></div>
+                    <div key={item.product.id} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between group"><div className="flex items-center gap-4 flex-1"><div className="w-11 h-11 bg-white rounded-lg border flex items-center justify-center p-1"><img src={item.product.image_url} alt="" className="max-h-full max-w-full"/></div><div className="min-w-0"><p className="text-[9px] font-black text-[#8b7365] mb-0.5">{item.product.brand}</p><p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p></div></div><div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border">
+                      <button onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                        <Minus className="w-3 h-3"/>
+                      </button>
+                      <input 
+                        type="number" 
+                        value={item.quantity} 
+                        onChange={(e) => updateCartQuantity(item.product.id, parseInt(e.target.value) || 1)}
+                        className="text-sm font-black w-12 text-center bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:ring-0"
+                      />
+                      <button onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-slate-100 rounded text-[#8b7365]">
+                        <Plus className="w-3 h-3"/>
+                      </button>
+                      <span className="text-[9px] font-black text-slate-400 uppercase">{item.product.unit}</span>
+                    </div><button onClick={() => removeFromCart(item.product.id)} className="ml-4 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="w-4 h-4"/></button></div>
                  ))
                )}
              </div>

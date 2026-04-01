@@ -186,8 +186,10 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         p.brand.toLowerCase().includes(searchTerm.toLowerCase());
+    const s = searchTerm.toLowerCase();
+    const matchesSearch = p.name.toLowerCase().includes(s) || 
+                         p.brand.toLowerCase().includes(s) ||
+                         (p.plu && p.plu.toLowerCase().includes(s));
     const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
@@ -233,7 +235,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Cari produk atau merek..."
+              placeholder="Cari produk, merek atau plu..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl w-[260px] md:w-[320px] text-sm focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all shadow-sm font-bold"
