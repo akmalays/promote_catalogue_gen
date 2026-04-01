@@ -19,32 +19,7 @@ const CATEGORIES = [
   'All', 'Makanan', 'Minuman', 'Kebutuhan Rumah', 'Perawatan Diri', 'Bayi & Anak', 'Peralatan'
 ];
 
-const INITIAL_PRODUCTS = [
-  {
-    name: 'Lite Potato Chips',
-    brand: 'Chitato',
-    description: 'Snack kentang gurih kualitas premium dengan rasa bumbu merata.',
-    price: 19500,
-    category: 'Makanan',
-    image_url: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=2070&auto=format&fit=crop'
-  },
-  {
-    name: 'Activ-Go',
-    brand: 'Milo',
-    description: 'Susu cokelat bergizi dengan kandungan malt tinggi untuk energi harian.',
-    price: 8400,
-    category: 'Minuman',
-    image_url: 'https://images.unsplash.com/photo-1550583724-1d2ee29ad706?q=80&w=1974&auto=format&fit=crop'
-  },
-  {
-    name: 'Cheddar Cheese 70g',
-    brand: 'Kraft',
-    description: 'Keju cheddar olahan kualitas terbaik yang mudah diparut.',
-    price: 8900,
-    category: 'Kebutuhan Rumah',
-    image_url: 'https://images.unsplash.com/photo-1486297678162-ad2a19b05840?q=80&w=2070&auto=format&fit=crop'
-  }
-];
+const INITIAL_PRODUCTS: Product[] = [];
 
 export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any) => void }) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -52,11 +27,18 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
   const [filterCategory, setFilterCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   
-  // Modals state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -72,45 +54,44 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
     fetchProducts();
   }, []);
 
+  // Reset page when filtering
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCategory]);
+
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      let data = await api.getProducts();
-      
-      // Auto-insert initial data if empty and no error occurred
-      if (data.length === 0) {
-        toast.loading('Menyiapkan database produk...', { id: 'init-db' });
-        for (const p of INITIAL_PRODUCTS) {
-          await api.addProduct(p);
-        }
-        data = await api.getProducts();
-        toast.success('Database produk siap digunakan!', { id: 'init-db' });
-      }
-      
+      const data = await api.getProducts();
       setProducts(data);
     } catch (e: any) {
       console.warn('Gagal memuat produk dari DB cloud:', e);
-      // Fallback robust
-      setProducts(INITIAL_PRODUCTS as Product[]);
-      toast.error('Database cloud belum siap. Bapak bisa mencoba dalam "Mode Lokal" dulu.', {
-        icon: 'ℹ️',
-        duration: 5000
-      });
+      setProducts(INITIAL_PRODUCTS);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const openDeleteModal = (p: Product, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Hapus produk ini secara permanen?')) return;
+    setProductToDelete(p);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
     
+    setIsDeleting(true);
     try {
-      await api.deleteProduct(id);
+      await api.deleteProduct(productToDelete.id);
       toast.success('Produk berhasil dihapus');
+      setIsDeleteModalOpen(false);
+      setProductToDelete(null);
       fetchProducts();
     } catch (e) {
       toast.error('Gagal menghapus produk');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -120,6 +101,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
       return;
     }
 
+    setIsSubmitting(true);
     try {
       if (editingProduct) {
         await api.updateProduct(editingProduct.id, formData);
@@ -131,8 +113,11 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
       setIsFormOpen(false);
       setEditingProduct(null);
       fetchProducts();
-    } catch (e) {
-      toast.error('Gagal menyimpan produk');
+    } catch (e: any) {
+      console.error('Gagal simpan:', e);
+      toast.error('Gagal menyimpan produk ke database.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -168,6 +153,31 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
     return matchesSearch && matchesCategory;
   });
 
+  // Smart Pagination Controls
+  const renderPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const currentItems = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage, 
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
       {/* Header Section */}
@@ -191,26 +201,30 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
             />
           </div>
           
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
-            {['All', 'Makanan', 'Minuman'].map(cat => (
-              <button
-                key={cat}
-                onClick={() => setFilterCategory(cat)}
-                className={cn(
-                  "px-4 py-1.5 rounded-xl text-xs font-black transition-all",
-                  filterCategory === cat ? "bg-[#8b7365] text-white shadow-md shadow-[#8b7365]/20" : "text-slate-500 hover:bg-slate-50"
-                )}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="relative group">
+            <Filter className={cn(
+              "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
+              filterCategory === 'All' ? "text-slate-400" : "text-[#8b7365]"
+            )} />
+            <select
+              value={filterCategory}
+              onChange={e => setFilterCategory(e.target.value)}
+              className="pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-black text-slate-700 focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all shadow-sm appearance-none cursor-pointer min-w-[180px]"
+            >
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat === 'All' ? 'Semua Kategori' : cat}</option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <Plus className="w-3.5 h-3.5 rotate-45" />
+            </div>
           </div>
 
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={openAddForm}
-            className="px-6 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-2xl font-black text-sm shadow-xl shadow-slate-900/20 flex items-center gap-2"
+            className="px-6 py-3 bg-[#8b7365] text-white rounded-2xl font-black text-sm shadow-xl shadow-[#8b7365]/20 flex items-center gap-2 hover:bg-[#7a6458] transition-colors"
           >
             <Plus className="w-4 h-4" /> Add New Product
           </motion.button>
@@ -233,54 +247,121 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
               <p className="text-sm font-medium">Coba gunakan kata kunci lain atau tambahkan produk baru.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((p, i) => (
-                <motion.div 
-                  key={p.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => openDetail(p)}
-                  className="bg-white rounded-[32px] border border-slate-100 p-5 group flex flex-col hover:shadow-2xl hover:shadow-slate-200/50 transition-all cursor-pointer relative"
-                >
-                  <div className="relative aspect-square rounded-[24px] overflow-hidden bg-slate-50 border border-slate-100 mb-4">
-                    <img 
-                      src={p.image_url || 'https://via.placeholder.com/400x400?text=No+Image'} 
-                      alt={p.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-md rounded-xl text-[10px] font-black text-[#8b7365] uppercase tracking-widest shadow-sm">
-                      {p.category}
-                    </div>
+            <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center w-20">Gambar</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Nama Produk</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Merek</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Kategori</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Harga</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {currentItems.map((p, i) => (
+                      <motion.tr 
+                        key={p.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className="group hover:bg-slate-50/80 transition-colors"
+                      >
+                        <td className="px-6 py-3">
+                          <div 
+                            onClick={() => openDetail(p)}
+                            className="w-11 h-11 bg-slate-50 rounded-lg border border-slate-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#8b7365]/20 transition-all mx-auto"
+                          >
+                            <img 
+                              src={p.image_url || 'https://via.placeholder.com/100x100?text=No+Img'} 
+                              alt={p.name} 
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                            />
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <button 
+                            onClick={() => openDetail(p)}
+                            className="font-black text-slate-800 hover:text-[#8b7365] transition-colors text-left text-sm"
+                          >
+                            {p.name}
+                          </button>
+                        </td>
+                        <td className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                          {p.brand}
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className="px-2.5 py-1 bg-slate-100 text-[9px] font-black text-slate-500 rounded uppercase tracking-tight">
+                            {p.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-sm font-black text-emerald-600">
+                          Rp {p.price.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button 
+                              onClick={(e) => openEditForm(p, e)}
+                              className="p-2 bg-white text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-lg transition-all shadow-sm"
+                              title="Edit Produk"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button 
+                              onClick={(e) => openDeleteModal(p, e)}
+                              className="p-2 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-100 rounded-lg transition-all shadow-sm"
+                              title="Hapus Produk"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="px-8 py-5 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    Halaman {currentPage} dari {totalPages} <span className="mx-2">|</span> Total {filteredProducts.length} Produk
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
+                    >
+                      Sebelumnya
+                    </button>
+                    {renderPageNumbers().map((pg, i) => (
+                      <button
+                        key={i}
+                        onClick={() => typeof pg === 'number' && setCurrentPage(pg)}
+                        disabled={pg === '...'}
+                        className={cn(
+                          "w-9 h-9 rounded-xl text-xs font-black transition-all shadow-sm",
+                          currentPage === pg ? "bg-[#8b7365] text-white shadow-md shadow-[#8b7365]/20" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50",
+                          pg === '...' && "cursor-default border-none shadow-none bg-transparent"
+                        )}
+                      >
+                        {pg}
+                      </button>
+                    ))}
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
+                    >
+                      Berikutnya
+                    </button>
                   </div>
-                  
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{p.brand}</p>
-                    <h3 className="text-lg font-black text-slate-800 leading-tight mb-2 group-hover:text-[#8b7365] transition-colors">{p.name}</h3>
-                    <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-4 italic">"{p.description}"</p>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
-                    <div className="text-xl font-black text-emerald-600">
-                      Rp {p.price.toLocaleString()}
-                    </div>
-                    <div className="flex gap-2">
-                       <button 
-                        onClick={(e) => openEditForm(p, e)}
-                        className="p-2 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                       >
-                         <Edit2 className="w-4 h-4" />
-                       </button>
-                       <button 
-                        onClick={(e) => handleDelete(p.id, e)}
-                        className="p-2 bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                       >
-                         <Trash2 className="w-4 h-4" />
-                       </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                </div>
+              )}
             </div>
           )}
         </>
@@ -350,13 +431,44 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                   </div>
                 </div>
                 <div className="col-span-2 space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">URL Gambar Produk</label>
-                   <input 
-                    value={formData.image_url}
-                    onChange={e => setFormData({...formData, image_url: e.target.value})}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
-                  />
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Gambar Produk</label>
+                  <div className="flex gap-4 items-center">
+                    <div className="w-24 h-24 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group relative">
+                      {formData.image_url ? (
+                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain" />
+                      ) : (
+                        <Plus className="w-6 h-6 text-slate-300" />
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setFormData({ ...formData, image_url: reader.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-500 font-medium mb-2">Klik ikon di kiri untuk pilih file gambar dari HP/Laptop.</p>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                          input?.click();
+                        }}
+                        className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                      >
+                        Ganti Gambar
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="col-span-2 space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Deskripsi Produk</label>
@@ -379,9 +491,22 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                 </button>
                 <button 
                   onClick={handleSubmit}
-                  className="flex-3 py-4 bg-emerald-600 text-white rounded-[20px] font-black hover:bg-emerald-700 transition-colors shadow-2xl shadow-emerald-600/20"
+                  disabled={isSubmitting}
+                  className={cn(
+                    "flex-3 py-4 text-white rounded-[20px] font-black transition-all shadow-2xl flex items-center justify-center gap-2",
+                    isSubmitting 
+                      ? "bg-slate-400 cursor-not-allowed" 
+                      : "bg-[#8b7365] hover:bg-[#7a6458] shadow-[#8b7365]/20"
+                  )}
                 >
-                  {editingProduct ? 'Update Produk' : 'Simpan Produk'}
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {editingProduct ? 'Updating...' : 'Saving...'}
+                    </>
+                  ) : (
+                    editingProduct ? 'Update Produk' : 'Simpan Produk'
+                  )}
                 </button>
               </div>
             </motion.div>
@@ -389,75 +514,108 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
         )}
       </AnimatePresence>
 
-      {/* Detail Preview Modal */}
       <AnimatePresence>
         {isDetailOpen && viewingProduct && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-[48px] max-w-4xl w-full shadow-2xl relative overflow-hidden"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[40px] p-10 max-w-lg w-full shadow-2xl relative"
             >
               <button 
                 onClick={() => setIsDetailOpen(false)}
-                className="absolute top-10 right-10 z-10 p-3 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white rounded-2xl transition-all"
+                className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6 text-slate-400" />
               </button>
 
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="aspect-square md:h-[600px] relative bg-slate-100">
+              <div className="mb-8 flex items-center gap-6">
+                <div className="w-24 h-24 bg-slate-50 rounded-3xl border border-slate-100 p-4 shrink-0">
                   <img 
                     src={viewingProduct.image_url} 
                     alt={viewingProduct.name} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-12">
-                     <div className="bg-emerald-500 text-white px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest w-fit mb-4">
-                        Tersedia Secara Global
-                     </div>
-                     <h2 className="text-4xl font-black text-white leading-tight">{viewingProduct.name}</h2>
-                     <p className="text-white/80 text-xl font-bold">{viewingProduct.brand}</p>
-                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-[#8b7365] uppercase tracking-widest mb-1">{viewingProduct.brand}</p>
+                  <h2 className="text-2xl font-black text-slate-800 leading-tight">{viewingProduct.name}</h2>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Deskripsi Produk</p>
+                  <p className="text-slate-600 leading-relaxed font-medium italic">
+                    "{viewingProduct.description || 'Tidak ada deskripsi untuk produk ini.'}"
+                  </p>
                 </div>
 
-                <div className="p-12 flex flex-col justify-center">
-                  <div className="mb-8">
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Informasi Produk</p>
-                     <p className="text-slate-600 text-lg leading-relaxed font-medium italic">"{viewingProduct.description}"</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-white rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Kategori</p>
+                    <p className="font-black text-slate-800">{viewingProduct.category}</p>
                   </div>
-
-                  <div className="space-y-6 mb-10">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center">
-                        <Tag className="w-6 h-6 text-[#8b7365]" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Kategori</p>
-                        <p className="font-black text-slate-800 uppercase">{viewingProduct.category}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center">
-                        <DollarSign className="w-6 h-6 text-emerald-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Harga Dasar</p>
-                        <p className="text-3xl font-black text-emerald-600">Rp {viewingProduct.price.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <button 
-                      onClick={() => { setIsDetailOpen(false); onNavigate('catalogue'); }}
-                      className="flex-1 py-5 bg-[#8b7365] text-white rounded-[24px] font-black text-lg hover:bg-[#725e52] shadow-2xl shadow-[#8b7365]/30 transition-all active:scale-95"
-                    >
-                      Gunakan di Katalog
-                    </button>
+                  <div className="p-4 bg-white rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Harga</p>
+                    <p className="font-black text-emerald-600">Rp {viewingProduct.price.toLocaleString()}</p>
                   </div>
                 </div>
+              </div>
+
+              <button 
+                onClick={() => setIsDetailOpen(false)}
+                className="w-full mt-10 py-4 bg-slate-800 text-white rounded-[20px] font-black hover:bg-slate-900 transition-colors shadow-xl shadow-slate-900/20"
+              >
+                Tutup Detail
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && productToDelete && (
+          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center"
+            >
+              <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-600">
+                <AlertCircle className="w-10 h-10" />
+              </div>
+              
+              <h3 className="text-2xl font-black text-slate-800 mb-2">Hapus Produk?</h3>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
+                Apakah Anda yakin ingin menghapus <span className="text-slate-800 font-black">"{productToDelete.name}"</span>? Tindakan ini tidak dapat dibatalkan.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className={cn(
+                    "w-full py-4 rounded-2xl font-black text-white transition-all shadow-lg flex items-center justify-center gap-2",
+                    isDeleting ? "bg-slate-400 cursor-not-allowed" : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
+                  )}
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Menghapus...
+                    </>
+                  ) : 'Ya, Hapus Produk'}
+                </button>
+                <button 
+                  disabled={isDeleting}
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="w-full py-4 rounded-2xl font-black text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  Batal
+                </button>
               </div>
             </motion.div>
           </div>

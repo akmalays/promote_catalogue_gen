@@ -136,7 +136,7 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
         <div>
           <h1 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">Hi, {userProfile.nickname || 'User'}!</h1>
           <p className="text-slate-500 text-sm max-w-lg leading-relaxed font-medium">
-            Control center MyStore Studio siap digunakan. Pantau performa bisnis Bapak hari ini.
+            Control center MyStore Studio siap digunakan. Pantau performa bisnis Anda hari ini.
           </p>
         </div>
         <div className="hidden md:block text-right">
