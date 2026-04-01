@@ -194,10 +194,13 @@ export default function Activity() {
         )}
       </AnimatePresence>
 
-      <div className="mb-10 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">Activity Log</h1>
-          <p className="text-slate-500 text-sm font-medium">Lacak frekuensi promosi dan performa blast tim.</p>
+      <div className="mb-10 flex items-center justify-between px-2">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <History className="w-5 h-5 text-[#8b7365]" />
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Activity Log</h1>
+          </div>
+          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Lacak riwayat promosi dan performa blast Anda</p>
         </div>
         <div className="flex items-center bg-white rounded-2xl border border-slate-200 p-1.5 shadow-sm">
            <button onClick={prevMonth} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><ChevronLeft className="w-5 h-5 text-slate-800" /></button>

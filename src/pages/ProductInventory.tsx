@@ -223,11 +223,12 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
       {/* Header Section */}
       <div className="mb-10 lg:flex items-center justify-between gap-6">
-        <div className="mb-6 lg:mb-0">
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-            Product Database
-          </h1>
-          <p className="text-slate-500 text-sm mt-1 font-medium">Kelola data master produk untuk katalog promosi Anda.</p>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <Package className="w-5 h-5 text-[#8b7365]" />
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Product Inventory</h1>
+          </div>
+          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Kelola stok dan database produk toko Anda</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Package, Plus, Search, Trash2, User, Calendar, X, Edit, Eye } from 'lucide-react';
+import { FileText, Package, Plus, Search, Trash2, User, Calendar, X, Edit, Eye, BookOpen } from 'lucide-react';
 import { SavedCatalogue, UserProfile, CatalogData } from '../types';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
@@ -127,10 +127,13 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
         )}
       </AnimatePresence>
 
-      <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">Drafts</h1>
-          <p className="text-slate-500 text-sm font-medium">Tempat penyimpanan draf katalog yang sedang dalam proses pengerjaan.</p>
+      <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <BookOpen className="w-5 h-5 text-[#8b7365]" />
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Catalogue Drafts</h1>
+          </div>
+          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Daftar katalog yang sedang dalam proses pengerjaan</p>
         </div>
         <button 
           onClick={() => onNavigate('catalogue')}
