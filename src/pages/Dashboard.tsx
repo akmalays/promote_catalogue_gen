@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Megaphone, ArrowRight, Book, Activity, AlertTriangle, Users, TrendingUp, Layout, Send, UserPlus, Package } from 'lucide-react';
+import { BookOpen, Megaphone, ArrowRight, Book, Activity, AlertTriangle, Users, TrendingUp, Layout, Send, UserPlus, Package, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -137,21 +137,31 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
   return (
     <div className="flex-1 p-8 overflow-y-auto">
       {/* Greeting */}
-      <div className="mb-8 flex items-end justify-between">
-        <div>
-          <h1 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">Hi, {userProfile.nickname || 'User'}!</h1>
-          <p className="text-slate-500 text-sm max-w-lg leading-relaxed font-medium">
-            Control center MyStore Studio siap digunakan. Pantau performa bisnis Anda hari ini.
-          </p>
+      <div className="mb-8 flex items-center justify-between px-2">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <LayoutDashboard className="w-5 h-5 text-[#8b7365]" />
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Dashboard</h1>
+          </div>
+          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Pantau performa bisnis anda hari ini</p>
         </div>
         <div className="hidden md:block text-right">
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Sistem</p>
            <div className="flex items-center gap-2 justify-end">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-              <span className="text-xs font-bold text-slate-600">Terhubung ke Cloud</span>
+              <span className="text-xs font-bold text-slate-600">Terhubung ke cloud</span>
            </div>
         </div>
       </div>
+
+      {/* Greeting User */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="mb-6 px-2"
+      >
+        <h2 className="text-2xl font-black text-slate-800 tracking-tight">Selamat Datang, {userProfile.nickname || 'Admin Toko'}!</h2>
+      </motion.div>
 
       {/* Point 2: Quick Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

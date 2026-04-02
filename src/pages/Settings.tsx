@@ -108,14 +108,17 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
   return (
     <div className="flex-1 p-8 overflow-y-auto space-y-12 max-w-6xl mx-auto custom-scrollbar pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">
-          {isAdmin ? 'Pengaturan Keamanan & Tim' : 'Keamanan Akun'}
-        </h1>
-        <p className="text-slate-500 text-sm font-medium">
+      <div className="flex flex-col mb-12 px-2">
+        <div className="flex items-center gap-2 mb-1">
+          <Shield className="w-5 h-5 text-[#8b7365]" />
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">
+            {isAdmin ? 'Account & Team Settings' : 'Account Security'}
+          </h1>
+        </div>
+        <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">
           {isAdmin 
             ? 'Kelola profil pribadi Anda dan manajemen akses pengguna aplikasi.' 
-            : 'Kelola keamanan akses akun Anda secara mandiri.'}
+            : 'Atur keamanan akun dan kata sandi Anda untuk perlindungan data.'}
         </p>
       </div>
 
@@ -251,7 +254,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                             >
                                <option value="admin">Administrator</option>
                                <option value="manager">Manager</option>
-                               <option value="editor">Editor</option>
+                               <option value="kasir">Kasir</option>
                             </select>
                          </td>
                        </tr>
@@ -303,7 +306,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                    >
                       <option value="admin" className="text-slate-800">Administrator</option>
                       <option value="manager" className="text-slate-800">Manager</option>
-                      <option value="editor" className="text-slate-800">Editor</option>
+                      <option value="kasir" className="text-slate-800">Kasir</option>
                    </select>
                 </div>
                 <div>

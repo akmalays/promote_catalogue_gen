@@ -3,10 +3,10 @@ import { toJpeg, toPng } from 'html-to-image';
 import { 
   Plus, Trash2, Download, Upload, Package, FileText,
   Palette, CheckCircle2,
-  BookOpen, Megaphone, LayoutDashboard, Search,
+  BookOpen, Megaphone, LayoutDashboard, Search, TrendingUp,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
   Menu, LogOut, Bell, Settings as SettingsIcon, User, X,
-   History, Truck
+  History, Truck, BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -19,11 +19,13 @@ import Login from './pages/Login';
 import CatalogueHistory from './pages/CatalogueHistory';
 import SettingsPage from './pages/Settings';
 import Activity from './pages/Activity';
+import Analytics from './pages/Analytics';
 import ProductInventory from './pages/ProductInventory';
 import Supply from './pages/Supply';
 import POS from './pages/POS';
+import SalesRevenue from './pages/SalesRevenue';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'supply' | 'pos';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -348,9 +350,12 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
     <div className="flex-1 flex flex-col">
       {/* Catalogue Header */}
       <div className="px-8 pt-8 pb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800">Catalogue Generator</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Buat katalog promosi profesional dengan mudah</p>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <BookOpen className="w-5 h-5 text-[#8b7365]" />
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Catalogue Generator</h1>
+          </div>
+          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Buat katalog promosi profesional dengan mudah</p>
         </div>
         <div className="flex gap-3">
           {editingCatalogue ? (
@@ -1113,13 +1118,13 @@ export default function App() {
 
   // RBAC: Redirect if unauthorized page access
   useEffect(() => {
-    const role = userProfile.role?.toLowerCase() || 'editor';
+    const role = userProfile.role?.toLowerCase() || 'kasir';
     const isAdmin = role.includes('admin');
     const isManager = role.includes('manager');
     
-    const allowed: Page[] = ['dashboard', 'catalogue', 'settings', 'products', 'supply', 'pos'];
-    if (isManager) allowed.push('promotions', 'history');
-    if (isAdmin) allowed.push('promotions', 'history', 'activity');
+    const allowed: Page[] = ['dashboard', 'settings', 'pos', 'revenue'];
+    if (isManager) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply');
+    if (isAdmin) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'activity', 'analytics');
     
     if (!allowed.includes(currentPage)) {
       setCurrentPage('dashboard');
@@ -1142,10 +1147,12 @@ export default function App() {
 
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+    { id: 'revenue', label: 'Sales Report', icon: <TrendingUp className="w-5 h-5 shrink-0" /> },
     { id: 'products', label: 'Product Database', icon: <Package className="w-5 h-5 shrink-0" /> },
     { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-5 h-5 shrink-0" /> },
-    { id: 'pos', label: 'POS Kasir', icon: <QrCode className="w-5 h-5 shrink-0" /> },
+    { id: 'pos', label: 'POS', icon: <QrCode className="w-5 h-5 shrink-0" /> },
     { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 shrink-0" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
     { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
     { id: 'history', label: 'Drafts', icon: <Plus className="w-5 h-5 shrink-0" /> },
@@ -1158,16 +1165,21 @@ export default function App() {
   };
 
   const navItems = allNavItems.filter(item => {
-    const role = userProfile.role?.toLowerCase() || 'editor';
+    const role = userProfile.role?.toLowerCase() || 'kasir';
     const isAdmin = role.includes('admin');
     const isManager = role.includes('manager');
+    const isKasir = role.includes('kasir');
 
-    // Semua role bisa akses settings & Admin akses semua
-    if (item.id === 'settings' || item.id === 'pos' || isAdmin) return true;
+    // Semua role bisa akses settings, revenue, dashboard, & Admin akses semua
+    if (item.id === 'settings' || item.id === 'dashboard' || isAdmin) return true;
     
-    // Role lainnya (Manager/Editor)
-    if (isManager) return ['dashboard', 'catalogue', 'promotions', 'history'].includes(item.id);
-    return ['dashboard', 'catalogue'].includes(item.id);
+    // Role Manager
+    if (isManager) return ['catalogue', 'promotions', 'history', 'revenue', 'pos', 'products', 'supply'].includes(item.id);
+    
+    // Role Kasir
+    if (isKasir) return ['pos', 'revenue'].includes(item.id);
+
+    return false;
   });
 
   return (
@@ -1429,6 +1441,7 @@ export default function App() {
               >
                 {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} userProfile={userProfile} />}
                 {currentPage === 'activity' && <Activity />}
+                {currentPage === 'analytics' && <Analytics />}
                 {currentPage === 'catalogue' && (
                   <CatalogueEditor 
                     userProfile={userProfile} 
@@ -1440,8 +1453,9 @@ export default function App() {
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
                 {currentPage === 'supply' && <Supply />}
-                {currentPage === 'pos' && <POS onNavigate={setCurrentPage} />}
-                {currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />}
+                { currentPage === 'pos' && <POS onNavigate={setCurrentPage} /> }
+                { currentPage === 'revenue' && <SalesRevenue /> }
+                { currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} /> }
               </motion.div>
             </AnimatePresence>
         </section>

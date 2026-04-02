@@ -211,8 +211,8 @@ export default function POS({ onNavigate }: { onNavigate: (page: any) => void })
              <QrCode className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">POS Kasir Premium</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Sinkronisasi Stok Real-time</p>
+            <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">POS Premium</h1>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Sinkronisasi stok real-time</p>
           </div>
         </div>
         

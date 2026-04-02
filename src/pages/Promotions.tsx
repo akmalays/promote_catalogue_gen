@@ -245,9 +245,12 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
         className="px-8 pt-8 pb-4"
       >
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800">Promotions Blast</h1>
-            <p className="text-sm text-slate-500 mt-0.5 font-medium">Kelola pengunjung dan kirim pesan promosi via WhatsApp</p>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 mb-1">
+              <Megaphone className="w-5 h-5 text-[#8b7365]" />
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Promotions Blast</h1>
+            </div>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Kelola kontak pelanggan dan broadcast promo via WhatsApp</p>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
