@@ -254,7 +254,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                             >
                                <option value="admin">Administrator</option>
                                <option value="manager">Manager</option>
-                               <option value="editor">Editor</option>
+                               <option value="kasir">Kasir</option>
                             </select>
                          </td>
                        </tr>
@@ -306,7 +306,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                    >
                       <option value="admin" className="text-slate-800">Administrator</option>
                       <option value="manager" className="text-slate-800">Manager</option>
-                      <option value="editor" className="text-slate-800">Editor</option>
+                      <option value="kasir" className="text-slate-800">Kasir</option>
                    </select>
                 </div>
                 <div>
