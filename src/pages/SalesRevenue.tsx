@@ -27,9 +27,29 @@ interface Sale {
   created_at: string;
 }
 
-export default function SalesRevenue() {
+interface SalesRevenueProps {
+  userProfile: { nickname: string; username: string; role: string };
+}
+
+export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'owner';
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingTargets, setIsSavingTargets] = useState(false);
+  
+  // Dynamic Targets State
+  const [dailyTargetAmount, setDailyTargetAmount] = useState(5000000);
+  const [focusItemsConfig, setFocusItemsConfig] = useState<any[]>([
+    { name: 'Aqua 600ml (Isi 24)', target: 50 },
+    { name: 'Minyak Kita 1L', target: 50 },
+    { name: 'Beras Premium 5kg', target: 50 }
+  ]);
+  const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
+  const [pickerSearchQuery, setPickerSearchQuery] = useState('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMethod, setFilterMethod] = useState<'all' | 'cash' | 'debit' | 'qris'>('all');
@@ -48,7 +68,46 @@ export default function SalesRevenue() {
     const saved = localStorage.getItem('pos_branding_settings');
     if (saved) setPosSettings(JSON.parse(saved));
     fetchSales();
+    fetchStoreSettings();
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const data = await api.getProducts();
+      setAvailableProducts(data);
+    } catch (e) {
+      console.error('Cant fetch products:', e);
+    }
+  };
+
+  const fetchStoreSettings = async () => {
+    try {
+      const settings = await api.getStoreSettings();
+      if (settings.daily_sales_target) {
+        setDailyTargetAmount(settings.daily_sales_target.amount || 5000000);
+      }
+      if (settings.focus_items) {
+        setFocusItemsConfig(settings.focus_items);
+      }
+    } catch (e) {
+      console.error('Cant fetch targets:', e);
+    }
+  };
+
+  const saveStoreSettings = async () => {
+    setIsSavingTargets(true);
+    try {
+      await api.updateStoreSetting('daily_sales_target', { amount: dailyTargetAmount });
+      await api.updateStoreSetting('focus_items', focusItemsConfig);
+      toast.success('Target berhasil diperbarui!');
+      setIsTargetModalOpen(false);
+    } catch (e) {
+      toast.error('Gagal menyimpan target');
+    } finally {
+      setIsSavingTargets(false);
+    }
+  };
 
   // Reset pagination when filter or search changes
   useEffect(() => {
@@ -77,9 +136,6 @@ export default function SalesRevenue() {
     });
   }, [sales, selectedDate, searchQuery, filterMethod]);
 
-  const DAILY_TARGET = 5000000;
-  const ITEM_TARGET = 50;
-
   const stats = useMemo(() => {
     const totalRevenue = filteredSales.reduce((acc, s) => acc + s.total_amount, 0);
     const totalTransactions = filteredSales.length;
@@ -87,7 +143,7 @@ export default function SalesRevenue() {
     
     const cashRevenue = filteredSales.filter(s => s.payment_method === 'cash').reduce((acc, s) => acc + s.total_amount, 0);
     const digitalRevenue = totalRevenue - cashRevenue;
-    const targetProgress = Math.min((totalRevenue / DAILY_TARGET) * 100, 100);
+    const targetProgress = Math.min((totalRevenue / dailyTargetAmount) * 100, 100);
 
     // Calculate Focus Item Progress
     const itemSales: Record<string, number> = {};
@@ -98,17 +154,18 @@ export default function SalesRevenue() {
       });
     });
 
-    const focusItems = [
-      { name: 'Aqua 600ml (Isi 24)', sold: itemSales['Aqua 600ml (Isi 24)'] || 0 },
-      { name: 'Minyak Kita 1L', sold: itemSales['Minyak Kita 1L'] || 0 },
-      { name: 'Beras Premium 5kg', sold: itemSales['Beras Premium 5kg'] || 0 }
-    ].map(item => ({
-      ...item,
-      progress: Math.min((item.sold / ITEM_TARGET) * 100, 100)
-    }));
+    const focusItems = focusItemsConfig.map(config => {
+      const sold = itemSales[config.name] || 0;
+      return {
+        name: config.name,
+        sold,
+        target: config.target,
+        progress: Math.min((sold / config.target) * 100, 100)
+      };
+    });
 
     return { totalRevenue, totalTransactions, avgTransaction, cashRevenue, digitalRevenue, targetProgress, focusItems };
-  }, [filteredSales]);
+  }, [filteredSales, dailyTargetAmount, focusItemsConfig]);
 
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
   const paginatedSales = useMemo(() => {
@@ -136,22 +193,20 @@ export default function SalesRevenue() {
                className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10"
             >
                {/* Modal Header */}
-               <div className="p-8 border-b border-slate-50 flex items-center justify-between no-print">
-                  <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
-                        <FileText className="w-6 h-6" />
-                     </div>
-                     <div>
-                        <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Rekap Harian</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(selectedDate).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
-                     </div>
-                  </div>
+               <div className="p-8 border-b border-slate-50 flex flex-col items-start relative no-print">
                   <button 
                     onClick={() => setIsReportModalOpen(false)}
-                    className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
+                    className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
                   >
                      <X className="w-6 h-6" />
                   </button>
+                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm shadow-[#8b7365]/10">
+                     <FileText className="w-8 h-8" />
+                  </div>
+                  <div>
+                     <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">Rekap Harian</h2>
+                     <p className="text-[10px] font-black text-slate-400 tracking-widest">{new Date(selectedDate).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
+                  </div>
                </div>
 
                {/* Report Area for Printing */}
@@ -168,13 +223,36 @@ export default function SalesRevenue() {
                         {[
                            { label: 'Total Tunai', value: stats.cashRevenue, color: 'text-slate-900', bg: 'bg-white border-2 border-slate-900/5' },
                            { label: 'Total QRIS/Debit', value: stats.digitalRevenue, color: 'text-slate-900', bg: 'bg-white border-2 border-slate-900/5' },
-                           { label: 'TOTAL OMZET', value: stats.totalRevenue, color: 'text-slate-900', bg: 'bg-slate-900' }
+                           { label: 'TOTAL OMZET', value: stats.totalRevenue, color: 'text-white', bg: 'bg-[#8b7365]' }
                         ].map((p, i) => (
                            <div key={i} className={cn("p-6 rounded-[32px]", p.bg)}>
                               <p className={cn("text-[10px] font-black uppercase tracking-widest mb-1", i === 2 ? "text-slate-300" : "text-slate-400")}>{p.label}</p>
                               <p className={cn("text-xl font-black tracking-tight", i === 2 ? "text-white" : "text-slate-900")}>Rp {p.value.toLocaleString()}</p>
                            </div>
                         ))}
+                     </div>
+
+                     {/* Cashier Report */}
+                     <div className="mb-12">
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                           <div className="w-1.5 h-1.5 rounded-full bg-[#8b7365]" /> Laporan Kinerja Per Kasir
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                           {Object.entries(
+                              filteredSales.reduce((acc: any, sale: any) => {
+                                 const meta = sale.items?.find((i: any) => i.is_metadata);
+                                 const cashier = meta?.cashier_name || 'Kasir (Offline)';
+                                 if (!acc[cashier]) acc[cashier] = 0;
+                                 acc[cashier] += sale.total_amount || 0;
+                                 return acc;
+                              }, {})
+                           ).map(([cashier, total]: [string, any], i) => (
+                              <div key={i} className="p-5 border border-slate-100 rounded-3xl bg-slate-50/50">
+                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{cashier}</p>
+                                 <p className="text-lg font-black text-slate-800 tracking-tight">Rp {total.toLocaleString()}</p>
+                              </div>
+                           ))}
+                        </div>
                      </div>
 
                      {/* Itemized List */}
@@ -195,11 +273,12 @@ export default function SalesRevenue() {
                               {/* Group sales by item name */}
                               {Object.entries(
                                  filteredSales.reduce((acc: any, sale: any) => {
-                                    sale.items?.forEach((item: any) => {
-                                       const name = item.name || 'Produk';
-                                       if (!acc[name]) acc[name] = { qty: 0, price: item.price || 0 };
-                                       acc[name].qty += (item.qty || item.quantity || 0);
-                                    });
+                                     sale.items?.forEach((item: any) => {
+                                        if (item.is_metadata) return;
+                                        const name = item.name || 'Produk';
+                                        if (!acc[name]) acc[name] = { qty: 0, price: item.price || 0 };
+                                        acc[name].qty += (item.qty || item.quantity || 0);
+                                     });
                                     return acc;
                                  }, {})
                               ).map(([name, data]: [string, any], i) => (
@@ -229,7 +308,7 @@ export default function SalesRevenue() {
                </div>
 
                {/* Modal Footer */}
-               <div className="p-8 border-t border-slate-50 flex gap-4 bg-slate-50/20 no-print">
+                <div className="p-8 border-t border-slate-50 bg-slate-50/20 no-print">
                   <button 
                     onClick={() => {
                        const originalTitle = document.title;
@@ -237,10 +316,207 @@ export default function SalesRevenue() {
                        window.print();
                        setTimeout(() => { document.title = originalTitle; }, 100);
                     }}
-                    className="flex-1 py-4 bg-slate-900 text-white rounded-3xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-[#8b7365] text-white rounded-3xl text-sm font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 flex items-center justify-center gap-3"
                   >
                      <Printer className="w-5 h-5" /> Download PDF / Cetak
                   </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Target Settings Modal (Admin Only) */}
+      <AnimatePresence>
+        {isTargetModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setIsTargetModalOpen(false)}
+               className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+               className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+               <div className="p-8 border-b border-slate-50 flex flex-col items-start relative">
+                  <button onClick={() => setIsTargetModalOpen(false)} className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400">
+                     <X className="w-6 h-6" />
+                  </button>
+                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm shadow-[#8b7365]/10">
+                     <TrendingUp className="w-8 h-8" />
+                  </div>
+                  <div>
+                     <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">Pengaturan Target</h2>
+                     <p className="text-[10px] font-black text-slate-400 tracking-widest">Atur goal & item prioritas</p>
+                  </div>
+               </div>
+
+               <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
+                  {/* Daily Target Amount */}
+                  <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block px-1">Target Omzet Harian (Rp)</label>
+                      <div className="relative">
+                         <input 
+                           type="number"
+                           value={dailyTargetAmount}
+                           onChange={e => setDailyTargetAmount(Number(e.target.value))}
+                           placeholder="Contoh: 5000000"
+                           className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black text-slate-800 focus:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] transition-all outline-none"
+                         />
+                      </div>
+                   </div>
+
+                  {/* Focus Items List */}
+                  <div>
+                      <div className="flex items-center justify-between mb-4 px-1">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Fokus Utama</label>
+                         <button 
+                           onClick={() => setFocusItemsConfig([...focusItemsConfig, { name: '', target: 50 }])}
+                           className="text-[9px] font-black text-[#8b7365] bg-[#8b7365]/5 px-3 py-1.5 rounded-lg hover:bg-[#8b7365]/10 transition-all uppercase tracking-widest border border-[#8b7365]/10"
+                         >
+                            + Tambah Item
+                         </button>
+                      </div>
+                     <div className="space-y-3">
+                        {focusItemsConfig.map((item, idx) => (
+                           <div key={idx} className="flex gap-3 items-center group">
+                              <div className="flex-1">
+                                  <button 
+                                    onClick={() => {
+                                       setEditingIndex(idx);
+                                       setIsProductPickerOpen(true);
+                                    }}
+                                    className={cn(
+                                      "w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-left transition-all hover:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] flex items-center justify-between outline-none group/btn",
+                                      item.name ? "text-slate-700" : "text-slate-300"
+                                    )}
+                                  >
+                                     <span className="truncate">{item.name || 'Pilih produk...'}</span>
+                                     <ChevronRight className="w-4 h-4 text-slate-300 group-hover/btn:translate-x-0.5 transition-transform" />
+                                  </button>
+                              </div>
+                              <div className="w-24">
+                                  <input 
+                                    type="number"
+                                    value={item.target}
+                                    onChange={e => {
+                                       const newConfig = [...focusItemsConfig];
+                                       newConfig[idx].target = Number(e.target.value);
+                                       setFocusItemsConfig(newConfig);
+                                    }}
+                                    placeholder="Goal"
+                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black text-center text-[#8b7365] focus:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all"
+                                  />
+                              </div>
+                              <button 
+                                onClick={() => setFocusItemsConfig(focusItemsConfig.filter((_, i) => i !== idx))}
+                                className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                              >
+                                 <X className="w-4 h-4" />
+                              </button>
+                           </div>
+                        ))}
+                        {focusItemsConfig.length === 0 && (
+                           <div className="py-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
+                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Belum ada item fokus</p>
+                           </div>
+                        )}
+                     </div>
+                  </div>
+               </div>
+
+               <div className="p-8 border-t border-slate-50 flex gap-4 bg-slate-50/20">
+                  <button 
+                    onClick={() => setIsTargetModalOpen(false)}
+                    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  >
+                     Batal
+                  </button>
+                  <button 
+                    onClick={saveStoreSettings}
+                    disabled={isSavingTargets}
+                    className="flex-1 py-4 bg-[#8b7365] text-white rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 flex items-center justify-center gap-3"
+                  >
+                     {isSavingTargets ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Product Picker Modal (Sub-modal) */}
+      <AnimatePresence>
+        {isProductPickerOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6">
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setIsProductPickerOpen(false)}
+               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+               className="relative w-full max-w-md bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            >
+               <div className="p-6 border-b border-slate-50">
+                  <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-lg font-black text-slate-800 tracking-tight">Pilih Produk Target</h3>
+                     <button onClick={() => setIsProductPickerOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                        <X className="w-5 h-5 text-slate-400" />
+                     </button>
+                  </div>
+                  <div className="relative">
+                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                     <input 
+                       autoFocus
+                       value={pickerSearchQuery}
+                       onChange={e => setPickerSearchQuery(e.target.value)}
+                       placeholder="Cari nama produk atau stok..."
+                       className="w-full pl-11 pr-5 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700"
+                     />
+                  </div>
+               </div>
+
+               <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+                  <div className="grid grid-cols-1 gap-1">
+                     {availableProducts
+                       .filter(p => p.name.toLowerCase().includes(pickerSearchQuery.toLowerCase()))
+                       .map(product => (
+                        <button 
+                          key={product.id}
+                          onClick={() => {
+                             if (editingIndex !== null) {
+                                const newConfig = [...focusItemsConfig];
+                                newConfig[editingIndex].name = product.name;
+                                setFocusItemsConfig(newConfig);
+                                setIsProductPickerOpen(false);
+                                setPickerSearchQuery('');
+                             }
+                          }}
+                          className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all text-left group"
+                        >
+                           <div className="flex-1">
+                              <p className="text-sm font-black text-slate-800 leading-tight group-hover:text-emerald-600 transition-colors">{product.name}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Rp {product.price?.toLocaleString()}</p>
+                           </div>
+                           <div className={cn(
+                             "px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase text-center min-w-[70px]",
+                             product.stock <= 5 ? "bg-red-50 text-red-500 border-red-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                           )}>
+                              {product.stock} Stok
+                           </div>
+                        </button>
+                     ))}
+                  </div>
                </div>
             </motion.div>
           </div>
@@ -289,9 +565,17 @@ export default function SalesRevenue() {
                className="bg-transparent border-none text-xs font-black text-slate-600 px-3 py-1.5 focus:ring-0 outline-none"
              />
           </div>
+          {isAdmin && (
+            <button 
+              onClick={() => setIsTargetModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs  hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
+            >
+               <TrendingUp className="w-4 h-4" /> Atur Target
+            </button>
+          )}
           <button 
             onClick={() => setIsReportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#8b7365] text-white rounded-xl font-bold text-xs uppercase transition-all shadow-lg shadow-[#8b7365]/20 hover:bg-[#7a6458]"
+            className="flex items-center gap-2 px-4 py-2 bg-[#8b7365] text-white rounded-xl font-bold text-xs  transition-all shadow-lg shadow-[#8b7365]/20 hover:bg-[#7a6458]"
           >
              <FileText className="w-4 h-4" /> Rekap Harian
           </button>
@@ -337,9 +621,9 @@ export default function SalesRevenue() {
                            className="h-full bg-emerald-500 rounded-full"
                          />
                       </div>
-                      <p className="text-[9px] font-bold text-slate-300 mt-1.5 uppercase tracking-tighter">
-                         Goal: Rp {DAILY_TARGET.toLocaleString()}
-                      </p>
+                        <p className="text-[9px] font-bold text-slate-300 mt-1.5 uppercase tracking-tighter">
+                          Goal: Rp {dailyTargetAmount.toLocaleString()}
+                        </p>
                    </div>
                 ) : (
                    <p className="text-[10px] font-bold text-slate-400 mt-1">{stat.sub}</p>
@@ -361,7 +645,7 @@ export default function SalesRevenue() {
               <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Target Penjualan Item Fokus</h2>
            </div>
            
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {stats.focusItems.map((item, i) => (
                  <motion.div 
                    key={i}
@@ -375,10 +659,10 @@ export default function SalesRevenue() {
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Item Fokus</p>
                           <h4 className="text-sm font-black text-slate-800 leading-tight">{item.name}</h4>
                        </div>
-                       <div className="text-right">
-                          <p className="text-xs font-black text-[#8b7365]">{item.sold} <span className="text-[10px] text-slate-400">/ {ITEM_TARGET}</span></p>
+                        <div className="text-right">
+                          <p className="text-xs font-black text-[#8b7365]">{item.sold} <span className="text-[10px] text-slate-400">/ {item.target}</span></p>
                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter mt-0.5">TERJUAL</p>
-                       </div>
+                        </div>
                     </div>
 
                     <div className="relative pt-4">
@@ -493,7 +777,7 @@ export default function SalesRevenue() {
                               </div>
                            </td>
                            <td className="px-8 py-6 text-right">
-                              <span className="text-xs font-black text-slate-600">{sale.items?.reduce((acc: number, item: any) => acc + (item.qty || item.quantity || 0), 0) || 0} unit</span>
+                               <span className="text-xs font-black text-slate-600">{sale.items?.reduce((acc: number, item: any) => item.is_metadata ? acc : acc + (item.qty || item.quantity || 0), 0) || 0} unit</span>
                            </td>
                            <td className="px-8 py-6 text-right">
                               <span className="text-sm font-black text-[#8b7365]">Rp {sale.total_amount.toLocaleString()}</span>
@@ -615,7 +899,7 @@ export default function SalesRevenue() {
 
                      {/* Items List */}
                      <div className="space-y-4 mb-6">
-                        {selectedSale.items?.map((item: any, idx: number) => (
+                        {selectedSale.items?.filter((i: any) => !i.is_metadata).map((item: any, idx: number) => (
                            <div key={idx} className="flex justify-between items-start group">
                               <div className="flex-1 pr-4">
                                  <p className="text-xs font-black text-slate-800 leading-tight mb-0.5">{item.name || 'Produk'}</p>
@@ -624,6 +908,12 @@ export default function SalesRevenue() {
                               <span className="text-xs font-black text-slate-800">{( (item.qty || item.quantity || 0) * (item.price || 0) ).toLocaleString()}</span>
                            </div>
                         ))}
+                        <div className="border-t border-slate-50 border-dashed my-2 pt-2">
+                           <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                              <span>KASIR</span>
+                              <span>{selectedSale.items?.find((i: any) => i.is_metadata)?.cashier_name || 'ADMIN'}</span>
+                           </div>
+                        </div>
                      </div>
 
                      <div className="border-t border-slate-50 border-dashed my-6" />

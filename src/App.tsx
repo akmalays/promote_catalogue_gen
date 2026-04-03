@@ -24,8 +24,10 @@ import ProductInventory from './pages/ProductInventory';
 import Supply from './pages/Supply';
 import POS from './pages/POS';
 import SalesRevenue from './pages/SalesRevenue';
+import Notifications from './pages/Notifications';
+import NotificationPopup from './components/NotificationPopup';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -1086,7 +1088,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
 
   const handleContinueEdit = (cat: SavedCatalogue) => {
@@ -1123,8 +1125,8 @@ export default function App() {
     const isManager = role.includes('manager');
     
     const allowed: Page[] = ['dashboard', 'settings', 'pos', 'revenue'];
-    if (isManager) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply');
-    if (isAdmin) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'activity', 'analytics');
+    if (isManager) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'notifications');
+    if (isAdmin) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'activity', 'analytics', 'notifications');
     
     if (!allowed.includes(currentPage)) {
       setCurrentPage('dashboard');
@@ -1152,7 +1154,8 @@ export default function App() {
     { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-5 h-5 shrink-0" /> },
     { id: 'pos', label: 'POS', icon: <QrCode className="w-5 h-5 shrink-0" /> },
     { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 shrink-0" /> },
+    { id: 'analytics', label: 'Revenue', icon: <BarChart3 className="w-5 h-5 shrink-0" /> },
+    { id: 'notifications', label: 'Notifikasi', icon: <Bell className="w-5 h-5 shrink-0" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <BookOpen className="w-5 h-5 shrink-0" /> },
     { id: 'promotions', label: 'Promotions', icon: <Megaphone className="w-5 h-5 shrink-0" /> },
     { id: 'history', label: 'Drafts', icon: <Plus className="w-5 h-5 shrink-0" /> },
@@ -1174,7 +1177,7 @@ export default function App() {
     if (item.id === 'settings' || item.id === 'dashboard' || isAdmin) return true;
     
     // Role Manager
-    if (isManager) return ['catalogue', 'promotions', 'history', 'revenue', 'pos', 'products', 'supply'].includes(item.id);
+    if (isManager) return ['catalogue', 'promotions', 'history', 'revenue', 'pos', 'products', 'supply', 'notifications'].includes(item.id);
     
     // Role Kasir
     if (isKasir) return ['pos', 'revenue'].includes(item.id);
@@ -1387,14 +1390,7 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2 md:gap-5 text-[#6d4d42]/70 ml-2 md:ml-8">
-               <button 
-                 title="Notifikasi"
-                 className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100"
-               >
-                  <Bell className="w-5 h-5 group-hover:text-[#6d4d42]" />
-                  <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
-               </button>
-               
+               <NotificationPopup onBellClick={() => setCurrentPage('notifications')} />               
                <button 
                  onClick={() => setCurrentPage('settings')}
                  title="Pengaturan Profil"
@@ -1453,8 +1449,9 @@ export default function App() {
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
                 {currentPage === 'supply' && <Supply />}
-                { currentPage === 'pos' && <POS onNavigate={setCurrentPage} /> }
-                { currentPage === 'revenue' && <SalesRevenue /> }
+                { currentPage === 'pos' && <POS onNavigate={setCurrentPage} userProfile={userProfile} /> }
+                { currentPage === 'revenue' && <SalesRevenue userProfile={userProfile} /> }
+                { currentPage === 'notifications' && <Notifications userProfile={userProfile} /> }
                 { currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} /> }
               </motion.div>
             </AnimatePresence>
