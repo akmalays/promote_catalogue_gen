@@ -1088,7 +1088,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
 
   const handleContinueEdit = (cat: SavedCatalogue) => {

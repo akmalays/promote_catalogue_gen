@@ -544,14 +544,14 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
           {isAdmin && (
             <button 
               onClick={() => setIsTargetModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs uppercase hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs  hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
             >
                <TrendingUp className="w-4 h-4" /> Atur Target
             </button>
           )}
           <button 
             onClick={() => setIsReportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#8b7365] text-white rounded-xl font-bold text-xs uppercase transition-all shadow-lg shadow-[#8b7365]/20 hover:bg-[#7a6458]"
+            className="flex items-center gap-2 px-4 py-2 bg-[#8b7365] text-white rounded-xl font-bold text-xs  transition-all shadow-lg shadow-[#8b7365]/20 hover:bg-[#7a6458]"
           >
              <FileText className="w-4 h-4" /> Rekap Harian
           </button>

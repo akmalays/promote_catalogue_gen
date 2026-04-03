@@ -226,6 +226,24 @@ export const api = {
     if (error) throw error;
     return data;
   },
+  updateSupplyHistory: async (id: any, log: any) => {
+    const { data, error } = await supabase
+      .from('supply_history')
+      .update(log)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  deleteSupplyHistory: async (id: any) => {
+    const { error } = await supabase
+      .from('supply_history')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
+  },
   // Sales & POS Management
   addSale: async (sale: any) => {
     const { data, error } = await supabase
@@ -334,7 +352,80 @@ export const api = {
     if (error) throw error;
     return data;
   },
-  // Get only active (sent & unread) notifications for popup
+  // ===== DASHBOARD DATA OPTIMIZATION =====
+  getDashboardStats: async () => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    // Fetch all necessary data in parallel
+    const [sales, products, visitors, blastLogs] = await Promise.all([
+      api.getSales(),
+      api.getProducts(),
+      api.getVisitors(),
+      api.getBlastLogs()
+    ]);
+
+    // 1. Calculate Today's Revenue
+    const todaySales = sales.filter((s: any) => s.created_at.startsWith(todayStr));
+    const todayRevenue = todaySales.reduce((acc: number, curr: any) => acc + (curr.total_amount || 0), 0);
+
+    // 2. Revenue Trend (Last 7 Days)
+    const last7Days = [...Array(7)].map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr = d.toISOString().split('T')[0];
+      const daySales = sales.filter((s: any) => s.created_at.startsWith(dateStr));
+      return {
+        date: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+        revenue: daySales.reduce((acc: number, curr: any) => acc + (curr.total_amount || 0), 0),
+        fullDate: dateStr
+      };
+    });
+
+    // 3. Top 5 Products (By Frequency in Sales)
+    const productFrequency: Record<string, { name: string, count: number }> = {};
+    sales.forEach((s: any) => {
+      try {
+        const items = typeof s.items === 'string' ? JSON.parse(s.items) : s.items;
+        items.forEach((item: any) => {
+          const name = item.product_name || item.name;
+          if (!productFrequency[name]) productFrequency[name] = { name, count: 0 };
+          productFrequency[name].count += item.quantity || 1;
+        });
+      } catch (e) {}
+    });
+    const topProducts = Object.values(productFrequency)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // 4. Stock Summary
+    const lowStockCount = products.filter((p: any) => (p.stock || 0) > 0 && (p.stock || 0) < 10).length;
+    const outOfStockCount = products.filter((p: any) => (p.stock || 0) === 0).length;
+
+    // 5. Recent Items for Feed
+    const recentSales = sales.slice(0, 5).map(s => ({
+      type: 'sale',
+      title: `Transaksi Baru (Rp ${s.total_amount.toLocaleString()})`,
+      time: s.created_at,
+      payment: s.payment_method
+    }));
+
+    return {
+      metrics: {
+        todayRevenue,
+        totalCustomers: visitors.length,
+        lowStockCount,
+        outOfStockCount,
+        totalReach: blastLogs.reduce((acc: number, curr: any) => acc + (curr.recipient_count || 0), 0),
+        totalCatalogues: (await api.getCatalogues()).length
+      },
+      charts: {
+        revenueTrend: last7Days,
+        topProducts
+      },
+      recentSales
+    };
+  },
   // ===== STORE SETTINGS (TARGETS & FOCUS ITEMS) =====
   getStoreSettings: async () => {
     const { data, error } = await supabase
@@ -358,3 +449,4 @@ export const api = {
     return data;
   },
 };
+
