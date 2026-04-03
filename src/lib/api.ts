@@ -234,5 +234,118 @@ export const api = {
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
-  }
+  },
+
+  // ===== NOTIFICATIONS =====
+  getNotifications: async () => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+  addNotification: async (notification: {
+    title: string;
+    message: string;
+    type: 'info' | 'promo' | 'warning' | 'success';
+    scheduled_at?: string | null;
+    target_role?: string;
+    sender_name?: string;
+  }) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert([{
+        ...notification,
+        is_read: false,
+        is_sent: !notification.scheduled_at, // If no schedule, mark as sent immediately
+        sent_at: !notification.scheduled_at ? new Date().toISOString() : null,
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  updateNotification: async (id: any, updates: any) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  deleteNotification: async (id: any) => {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
+  },
+  markNotificationRead: async (id: any) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  markAllNotificationsRead: async () => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('is_read', false);
+    if (error) throw error;
+    return true;
+  },
+  // Scheduler: Get pending scheduled notifications that are due
+  getScheduledDueNotifications: async () => {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('is_sent', false)
+      .lte('scheduled_at', now)
+      .order('scheduled_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+  // Mark scheduled notification as sent
+  markNotificationSent: async (id: any) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ is_sent: true, sent_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  // Get only active (sent & unread) notifications for popup
+  // ===== STORE SETTINGS (TARGETS & FOCUS ITEMS) =====
+  getStoreSettings: async () => {
+    const { data, error } = await supabase
+      .from('store_settings')
+      .select('*');
+    if (error) throw error;
+    
+    // Convert to a more usable object
+    return data.reduce((acc: any, curr: any) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {});
+  },
+  updateStoreSetting: async (key: string, value: any) => {
+    const { data, error } = await supabase
+      .from('store_settings')
+      .upsert({ key, value, updated_at: new Date().toISOString() })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
 };

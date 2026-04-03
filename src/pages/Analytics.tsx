@@ -98,8 +98,20 @@ export default function Analytics() {
   const COLORS = ['#8b7365', '#a38b7d', '#bdab9f', '#d7ccc4', '#f1edea'];
 
   if (isLoading) return (
-    <div className="flex-1 flex items-center justify-center bg-slate-50">
-       <div className="w-12 h-12 border-4 border-[#8b7365] border-t-transparent rounded-full animate-spin" />
+    <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 h-[70vh] w-full">
+       <motion.div 
+         animate={{ rotate: 360 }}
+         transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+         className="w-12 h-12 border-4 border-[#8b7365] border-t-transparent rounded-full mb-6 shadow-xl shadow-[#8b7365]/10" 
+       />
+       <motion.p 
+         initial={{ opacity: 0 }}
+         animate={{ opacity: 1 }}
+         transition={{ repeat: Infinity, duration: 1.5, repeatType: 'reverse' }}
+         className="text-[10px] font-black text-[#8b7365] uppercase tracking-[0.3em] text-center"
+       >
+         Menyiapkan Laporan Revenue...
+       </motion.p>
     </div>
   );
 
@@ -109,9 +121,9 @@ export default function Analytics() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <BarChart3 className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none uppercase">Analisis Tren</h1>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none ">Revenue</h1>
           </div>
-          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none uppercase">Data Penjualan & Intelligence</p>
+          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none ">Laporan & Analisis Omzet</p>
         </div>
 
         <div className="flex items-center gap-3">
