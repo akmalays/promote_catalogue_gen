@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, X, Info, Gift, AlertTriangle, CheckCircle2, Clock, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 interface NotifItem {
   id: any;
@@ -31,74 +33,73 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
   const [unreadNotifs, setUnreadNotifs] = useState<NotifItem[]>([]);
   const [popupNotif, setPopupNotif] = useState<NotifItem | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [lastCheckedIds, setLastCheckedIds] = useState<Set<any>>(new Set());
-  const pollIntervalRef = useRef<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const schedulerIntervalRef = useRef<any>(null);
 
   // Run the scheduler check (mark due scheduled notifications as sent)
   const runSchedulerCheck = useCallback(async () => {
     try {
       const dueNotifs = await api.getScheduledDueNotifications();
-      for (const notif of dueNotifs) {
-        await api.markNotificationSent(notif.id);
+      if (dueNotifs.length > 0) {
+        for (const notif of dueNotifs) {
+          await api.markNotificationSent(notif.id);
+        }
       }
-    } catch (e) {
-      // Silently fail for scheduler check
-    }
+    } catch (e) {}
   }, []);
 
-  // Poll for new notifications
-  const checkForNewNotifications = useCallback(async () => {
+  const fetchActiveNotifications = useCallback(async () => {
     try {
-      // First, run scheduler to mark due notifications as sent
-      await runSchedulerCheck();
-      
-      // Then fetch active (sent + unread) notifications
       const activeNotifs = await api.getActiveNotifications();
       setUnreadNotifs(activeNotifs);
-
-      // Check if there's a new notification to show as popup
-      if (activeNotifs.length > 0) {
-        const newNotifs = activeNotifs.filter((n: NotifItem) => !lastCheckedIds.has(n.id));
-        if (newNotifs.length > 0) {
-          // Show the newest one as popup
-          setPopupNotif(newNotifs[0]);
-          
-          // Auto-dismiss popup after 8 seconds
-          setTimeout(() => {
-            setPopupNotif(prev => prev?.id === newNotifs[0].id ? null : prev);
-          }, 8000);
-        }
-        // Update the checked IDs
-        setLastCheckedIds(new Set(activeNotifs.map((n: NotifItem) => n.id)));
-      }
-    } catch (e) {
-      // Silently fail
-    }
-  }, [lastCheckedIds, runSchedulerCheck]);
-
-  // Start polling every 15 seconds
-  useEffect(() => {
-    checkForNewNotifications(); // Initial check
-    pollIntervalRef.current = setInterval(checkForNewNotifications, 15000);
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
+    } catch (e) {}
   }, []);
 
-  // Update polling callback when lastCheckedIds changes
+  // Sync state and realtime subscription
   useEffect(() => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-    }
-    pollIntervalRef.current = setInterval(checkForNewNotifications, 15000);
+    fetchActiveNotifications();
+    runSchedulerCheck();
+
+    const channel = supabase
+      .channel('notif-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications' },
+        (payload) => {
+          console.log('[Realtime Notif] Event Received:', payload);
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const newRecord = payload.new as NotifItem;
+            
+            // Show popup if it's sent and unread
+            if (newRecord.is_sent && !newRecord.is_read) {
+              // Optional: Only show the popup if this is a newly inserted record OR an update where it just became sent.
+              // For simplicity, we trigger the popup. 
+              setPopupNotif(newRecord);
+              fetchActiveNotifications();
+              
+              setTimeout(() => {
+                setPopupNotif(prev => prev?.id === newRecord.id ? null : prev);
+              }, 8000);
+            } else if (payload.eventType === 'UPDATE' && newRecord.is_read) {
+              fetchActiveNotifications();
+            }
+          } else if (payload.eventType === 'DELETE') {
+            fetchActiveNotifications();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Realtime Notif] Subscription status:', status);
+      });
+
+    schedulerIntervalRef.current = setInterval(runSchedulerCheck, 30000);
+
     return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      supabase.removeChannel(channel);
+      if (schedulerIntervalRef.current) clearInterval(schedulerIntervalRef.current);
     };
-  }, [checkForNewNotifications]);
+  }, [fetchActiveNotifications, runSchedulerCheck]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -248,74 +249,77 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
         </AnimatePresence>
       </div>
 
-      {/* Floating Popup Toast (new notification) */}
-      <AnimatePresence>
-        {popupNotif && (
-          <motion.div
-            initial={{ opacity: 0, x: 100, y: -20 }}
-            animate={{ opacity: 1, x: 0, y: 0 }}
-            exit={{ opacity: 0, x: 100, y: -20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed top-6 right-6 z-[9999] w-[380px]"
-          >
-            <div className={cn(
-              "bg-white rounded-3xl shadow-2xl border-2 overflow-hidden",
-              TYPE_CONFIG[popupNotif.type]?.borderColor || 'border-blue-300'
-            )}>
-              {/* Top Accent Bar */}
-              <div className={cn("h-1.5 bg-gradient-to-r", TYPE_CONFIG[popupNotif.type]?.gradient || 'from-blue-500 to-blue-600')} />
-              
-              <div className="p-5 flex items-start gap-4">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 relative", TYPE_CONFIG[popupNotif.type]?.bgLight || 'bg-blue-50')}>
-                  {React.createElement(TYPE_CONFIG[popupNotif.type]?.icon || Info, {
-                    className: cn("w-6 h-6", TYPE_CONFIG[popupNotif.type]?.color || 'text-blue-600')
-                  })}
-                  {/* Pulse ring */}
-                  <span className={cn(
-                    "absolute inset-0 rounded-2xl animate-ping opacity-20",
-                    TYPE_CONFIG[popupNotif.type]?.bgLight || 'bg-blue-50'
-                  )} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Volume2 className="w-3 h-3 text-[#8b7365] animate-pulse" />
-                    <span className="text-[8px] font-black text-[#8b7365] uppercase tracking-widest">Notifikasi Baru</span>
+      {/* Floating Popup Toast (new notification) - Rendered via Portal for safety */}
+      {createPortal(
+        <AnimatePresence>
+          {popupNotif && (
+            <motion.div
+              initial={{ opacity: 0, x: 100, y: -20 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              exit={{ opacity: 0, x: 100, y: -20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed top-6 right-6 z-[99999] w-[380px]"
+            >
+              <div className={cn(
+                "bg-white rounded-3xl shadow-2xl border-2 overflow-hidden",
+                TYPE_CONFIG[popupNotif.type]?.borderColor || 'border-blue-300'
+              )}>
+                {/* Top Accent Bar */}
+                <div className={cn("h-1.5 bg-gradient-to-r", TYPE_CONFIG[popupNotif.type]?.gradient || 'from-blue-500 to-blue-600')} />
+                
+                <div className="p-5 flex items-start gap-4">
+                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 relative", TYPE_CONFIG[popupNotif.type]?.bgLight || 'bg-blue-50')}>
+                    {React.createElement(TYPE_CONFIG[popupNotif.type]?.icon || Info, {
+                      className: cn("w-6 h-6", TYPE_CONFIG[popupNotif.type]?.color || 'text-blue-600')
+                    })}
+                    {/* Pulse ring */}
+                    <span className={cn(
+                      "absolute inset-0 rounded-2xl animate-ping opacity-20",
+                      TYPE_CONFIG[popupNotif.type]?.bgLight || 'bg-blue-50'
+                    )} />
                   </div>
-                  <h4 className="text-sm font-black text-slate-800 mb-1 leading-tight">{popupNotif.title}</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{popupNotif.message}</p>
-                  {popupNotif.sender_name && (
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-2">Dari: {popupNotif.sender_name}</p>
-                  )}
+  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Volume2 className="w-3 h-3 text-[#8b7365] animate-pulse" />
+                      <span className="text-[8px] font-black text-[#8b7365] uppercase tracking-widest">Notifikasi Baru</span>
+                    </div>
+                    <h4 className="text-sm font-black text-slate-800 mb-1 leading-tight">{popupNotif.title}</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{popupNotif.message}</p>
+                    {popupNotif.sender_name && (
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-2">Dari: {popupNotif.sender_name}</p>
+                    )}
+                  </div>
+  
+                  <button
+                    onClick={dismissPopup}
+                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-300 hover:text-slate-500 shrink-0"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-
-                <button
-                  onClick={dismissPopup}
-                  className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-300 hover:text-slate-500 shrink-0"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+  
+                {/* Action bar */}
+                <div className="px-5 pb-4 flex gap-2">
+                  <button
+                    onClick={() => { handleMarkRead(popupNotif.id); }}
+                    className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  >
+                    Tandai Dibaca
+                  </button>
+                  <button
+                    onClick={dismissPopup}
+                    className="px-4 py-2 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+                  >
+                    Tutup
+                  </button>
+                </div>
               </div>
-
-              {/* Action bar */}
-              <div className="px-5 pb-4 flex gap-2">
-                <button
-                  onClick={() => { handleMarkRead(popupNotif.id); }}
-                  className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
-                >
-                  Tandai Dibaca
-                </button>
-                <button
-                  onClick={dismissPopup}
-                  className="px-4 py-2 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }

@@ -272,6 +272,16 @@ export const api = {
     if (error) throw error;
     return data || [];
   },
+  getActiveNotifications: async () => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('is_sent', true)
+      .eq('is_read', false)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
   addNotification: async (notification: {
     title: string;
     message: string;
