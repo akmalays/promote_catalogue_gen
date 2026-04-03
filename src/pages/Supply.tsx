@@ -151,7 +151,7 @@ export default function Supply() {
 
      setEditingLogs(originalLogs);
      setIsFullHistoryOpen(false);
-     toast('Mode Edit: Sesuaikan data supply', { icon: '✏️' });
+     toast.success('Mode Edit: Sesuaikan data supply');
      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

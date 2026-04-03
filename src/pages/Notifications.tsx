@@ -86,7 +86,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
         sender_name: userProfile.nickname || userProfile.username,
       });
 
-      toast.success(isScheduleMode ? '✅ Notifikasi berhasil dijadwalkan!' : '🔔 Notifikasi berhasil dikirim!');
+      toast.success(isScheduleMode ? 'Notifikasi berhasil dijadwalkan!' : 'Notifikasi berhasil dikirim!');
       resetComposeForm();
       fetchNotifications();
     } catch (e: any) {
@@ -121,14 +121,14 @@ export default function Notifications({ userProfile }: NotificationsProps) {
     try {
       const dueNotifs = await api.getScheduledDueNotifications();
       if (dueNotifs.length === 0) {
-        toast('⏰ Tidak ada notifikasi terjadwal yang perlu dikirim saat ini.', { icon: '📋' });
+        toast('Tidak ada notifikasi terjadwal yang perlu dikirim saat ini.');
       } else {
         let sentCount = 0;
         for (const notif of dueNotifs) {
           await api.markNotificationSent(notif.id);
           sentCount++;
         }
-        toast.success(`🚀 ${sentCount} notifikasi terjadwal berhasil dikirim!`);
+        toast.success(`${sentCount} notifikasi terjadwal berhasil dikirim!`);
         fetchNotifications();
       }
     } catch (e: any) {

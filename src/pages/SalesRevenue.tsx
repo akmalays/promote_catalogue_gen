@@ -100,7 +100,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
     try {
       await api.updateStoreSetting('daily_sales_target', { amount: dailyTargetAmount });
       await api.updateStoreSetting('focus_items', focusItemsConfig);
-      toast.success('🎯 Target berhasil diperbarui!');
+      toast.success('Target berhasil diperbarui!');
       setIsTargetModalOpen(false);
     } catch (e) {
       toast.error('Gagal menyimpan target');

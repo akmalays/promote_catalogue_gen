@@ -89,7 +89,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
     if (!userProfile.id) {
       onUpdateProfile(formData);
       setIsSaved(true);
-      toast.success('✅ Profil berhasil diperbarui secara lokal!');
+      toast.success('Profil berhasil diperbarui secara lokal!');
       setTimeout(() => setIsSaved(false), 3000);
       return;
     }
@@ -104,11 +104,11 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
       });
       onUpdateProfile(updated);
       setIsSaved(true);
-      toast.success('✨ Profil berhasil diperbarui di Cloud!');
+      toast.success('Profil berhasil diperbarui di Cloud!');
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err) {
       console.error('Gagal update profil:', err);
-      toast.error('❌ Gagal memperbarui profil. Coba lagi.');
+      toast.error('Gagal memperbarui profil. Coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +117,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.username || !newUser.nickname) {
-      toast.error('⚠️ Nickname dan Username wajib diisi!');
+      toast.error('Nickname dan Username wajib diisi!');
       return;
     }
 
@@ -135,12 +135,12 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
     try {
       setIsAddingUser(true);
       await api.addUser(newUser);
-      toast.success(`🚀 ${newUser.nickname} berhasil terdaftar!`);
+      toast.success(`${newUser.nickname} berhasil terdaftar!`);
       setNewUser({ username: '', nickname: '', role: 'editor', password: 'password123' });
       fetchUsers();
     } catch (err: any) {
       console.error('Gagal tambah user:', err);
-      toast.error('❌ Pendaftaran gagal. Username mungkin sudah terpakai.');
+      toast.error('Pendaftaran gagal. Username mungkin sudah terpakai.');
     } finally {
       setIsAddingUser(false);
     }
@@ -148,7 +148,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
 
   const handleEditOtherUserRequest = () => {
     if (!editFormData.username || !editFormData.nickname) {
-      toast.error('⚠️ Data tidak boleh kosong!');
+      toast.error('Data tidak boleh kosong!');
       return;
     }
     setConfirmModal({
@@ -166,12 +166,12 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
     try {
       setIsUpdatingOtherUser(true);
       await api.updateProfile(editingUser.id, editFormData);
-      toast.success(`✨ Data ${editFormData.nickname} diperbarui!`);
+      toast.success(`Data ${editFormData.nickname} diperbarui!`);
       setIsEditModalOpen(false);
       fetchUsers();
     } catch (err) {
       console.error('Gagal update user:', err);
-      toast.error('❌ Gagal memperbarui data user.');
+      toast.error('Gagal memperbarui data user.');
     } finally {
       setIsUpdatingOtherUser(false);
     }
@@ -179,7 +179,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
 
   const handleDeleteUser = (user: UserProfile) => {
     if (user.id === userProfile.id) {
-      toast.error('🚫 Anda tidak bisa menghapus akun Anda sendiri!');
+      toast.error('Anda tidak bisa menghapus akun Anda sendiri!');
       return;
     }
 
@@ -200,11 +200,11 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
 
     try {
       await api.deleteUser(id);
-      toast.success('🗑️ Pengguna telah dihapus');
+      toast.success('Pengguna telah dihapus');
       fetchUsers();
     } catch (err) {
       console.error('Gagal hapus user:', err);
-      toast.error('❌ Gagal menghapus pengguna');
+      toast.error('Gagal menghapus pengguna');
     }
   };
 
@@ -222,11 +222,11 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
   const handleUpdateOtherUserRole = async (userId: string, newRole: string) => {
     try {
       await api.updateProfile(userId, { role: newRole });
-      toast.success('✅ Peran user diperbarui');
+      toast.success('Peran user diperbarui');
       fetchUsers();
     } catch (err) {
       console.error('Gagal update role:', err);
-      toast.error('❌ Gagal mengubah peran');
+      toast.error('Gagal mengubah peran');
     }
   };
 
@@ -257,8 +257,8 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                     <UserCircle className="w-8 h-8" />
                  </div>
                  <div>
-                   <h3 className="font-bold text-slate-800 uppercase tracking-tighter">Profil Saya</h3>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">Informasi Personal</p>
+                   <h3 className="font-black text-slate-800  tracking-tighter">Profil Saya</h3>
+                   <p className="text-[10px] font-black text-slate-400  tracking-widest leading-none mt-1">Informasi Personal</p>
                  </div>
                </div>
                <button 
@@ -350,7 +350,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
                   <div className="flex items-center gap-3">
                     <Users className="w-5 h-5 text-[#8b7365]" />
-                    <h3 className="font-bold text-slate-800 uppercase tracking-tighter">Direktori Pengguna</h3>
+                    <h3 className="font-black text-slate-800  tracking-tighter">Direktori Pengguna</h3>
                   </div>
                   <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase">{users.length} Total</span>
                </div>
@@ -416,8 +416,8 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                    <UserPlus className="w-6 h-6" />
                 </div>
                 <div>
-                   <h3 className="font-bold text-lg leading-tight uppercase tracking-tighter">Tambah Anggota Baru</h3>
-                   <p className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Pendaftaran Tim</p>
+                   <h3 className="font-black text-lg leading-tight  tracking-tighter">Tambah Anggota Baru</h3>
+                   <p className="text-[10px] font-bold text-white/50 tracking-widest ">Pendaftaran Tim</p>
                 </div>
              </div>
              
@@ -503,7 +503,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
       {/* Confirmation Modal */}
       <AnimatePresence>
         {confirmModal.isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <motion.div 
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
@@ -573,21 +573,21 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col z-10"
             >
                {/* Modal Header */}
-               <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365]">
-                       <Pencil className="w-6 h-6" />
+               <div className="p-8 pb-6 border-b border-slate-50 flex items-start justify-between">
+                  <div className="flex flex-col items-start text-left">
+                    <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-5">
+                       <Pencil className="w-6 h-6 ml-0.5" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Edit Anggota Tim</h2>
+                      <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Edit Anggota Tim</h2>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Perbarui Akses & Informasi</p>
                     </div>
                   </div>
                   <button 
                     onClick={() => setIsEditModalOpen(false)}
-                    className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
+                    className="p-2.5 hover:bg-slate-100 rounded-xl transition-colors text-slate-400 -mr-2 -mt-2"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                </div>
 
@@ -619,7 +619,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                      <select 
                        value={editFormData.role}
                        onChange={e => setEditFormData({...editFormData, role: e.target.value})}
-                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all appearance-none"
+                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all appearance-none"
                      >
                         <option value="admin">Administrator</option>
                         <option value="manager">Manager</option>
@@ -649,17 +649,17 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                </div>
 
                {/* Modal Footer */}
-               <div className="p-8 border-t border-slate-50 bg-slate-50/10 flex gap-4">
+               <div className="p-8 pt-4 flex gap-4">
                   <button 
                     onClick={() => setIsEditModalOpen(false)}
-                    className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                    className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                   >
                     Batal
                   </button>
                   <button 
                     onClick={handleEditOtherUserRequest}
                     disabled={isUpdatingOtherUser}
-                    className="flex-1 py-4 bg-[#8b7365] text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 disabled:opacity-50"
+                    className="flex-1 py-4 bg-[#8b7365] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 disabled:opacity-50"
                   >
                     {isUpdatingOtherUser ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
