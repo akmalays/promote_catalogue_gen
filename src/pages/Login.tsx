@@ -14,29 +14,36 @@ const TypingText = ({ texts }: { texts: string[] }) => {
   const [displayText, setDisplayText] = useState('');
   const [index, setIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [speed, setSpeed] = useState(150);
+  const [speed, setSpeed] = useState(60);
 
   React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+
     const handleTyping = () => {
       const fullText = texts[index % texts.length];
       
       if (isDeleting) {
         setDisplayText(fullText.substring(0, displayText.length - 1));
-        setSpeed(50);
+        setSpeed(25);
       } else {
         setDisplayText(fullText.substring(0, displayText.length + 1));
-        setSpeed(150);
+        setSpeed(50);
       }
 
       if (!isDeleting && displayText === fullText) {
-        setTimeout(() => setIsDeleting(true), 2000);
+        timer = setTimeout(() => setIsDeleting(true), 2000);
+        return;
       } else if (isDeleting && displayText === '') {
         setIsDeleting(false);
-        setIndex(index + 1);
+        setIndex((prev) => prev + 1);
+        timer = setTimeout(handleTyping, 400);
+        return;
       }
+      
+      timer = setTimeout(handleTyping, speed);
     };
 
-    const timer = setTimeout(handleTyping, speed);
+    timer = setTimeout(handleTyping, speed);
     return () => clearTimeout(timer);
   }, [displayText, isDeleting, index, speed, texts]);
 
@@ -112,11 +119,11 @@ export default function Login({ onLogin }: LoginProps) {
             <h1 className="text-3xl md:text-4xl font-black leading-none mb-6 tracking-tighter min-h-[3em]">
               <span className="text-white tracking-[-0.05em]">myStore Studio</span><br />
               <span className="text-lg md:text-xl text-slate-500 font-bold block my-3 lowercase italic opacity-80">untuk</span>
-              <TypingText texts={["Promosi & Konten", "Desain Katalog Otomatis", "WhatsApp Blast Terintegrasi"]} /><br />
-              <span className="text-white tracking-[-0.05em]">Bisnis Anda.</span>
+              <TypingText texts={["POS & Stok Terintegrasi", "Desain Katalog Otomatis", "WhatsApp Blast", "Laporan Penjualan", "Stock Opname & Inbound"]} /><br />
+              <span className="text-white tracking-[-0.05em]">Bisnis Retail Anda.</span>
             </h1>
             <p className="text-slate-400 text-base max-w-sm leading-relaxed font-medium">
-              Buat katalog menawan dan sebarkan kampanye promosi langsung ke pelanggan Anda dalam hitungan menit.
+              Kelola dan promosikan bisnis retail Anda dengan mudah dan efisien.
             </p>
           </div>
           
@@ -141,7 +148,7 @@ export default function Login({ onLogin }: LoginProps) {
               <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">myStore</h1>
               <span className="text-[9px] font-black text-slate-400 tracking-[0.3em] uppercase block mb-2">Studio</span>
               <div className="text-[10px] font-bold text-[#8b7365]">
-                <TypingText texts={["Promosi & Konten", "Desain Katalog Otomatis", "WhatsApp Blast Terintegrasi"]} />
+                <TypingText texts={["POS & Stok Terintegrasi", "Desain Katalog Otomatis", "WhatsApp Blast", "Laporan Penjualan", "Stock Opname & Inbound"]} />
               </div>
             </div>
           </div>

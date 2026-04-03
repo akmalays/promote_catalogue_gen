@@ -1449,7 +1449,7 @@ export default function App() {
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
                 {currentPage === 'supply' && <Supply />}
-                { currentPage === 'pos' && <POS onNavigate={setCurrentPage} /> }
+                { currentPage === 'pos' && <POS onNavigate={setCurrentPage} userProfile={userProfile} /> }
                 { currentPage === 'revenue' && <SalesRevenue userProfile={userProfile} /> }
                 { currentPage === 'notifications' && <Notifications userProfile={userProfile} /> }
                 { currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} /> }

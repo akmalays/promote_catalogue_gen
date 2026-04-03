@@ -232,6 +232,29 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                         ))}
                      </div>
 
+                     {/* Cashier Report */}
+                     <div className="mb-12">
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                           <div className="w-1.5 h-1.5 rounded-full bg-[#8b7365]" /> Laporan Kinerja Per Kasir
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                           {Object.entries(
+                              filteredSales.reduce((acc: any, sale: any) => {
+                                 const meta = sale.items?.find((i: any) => i.is_metadata);
+                                 const cashier = meta?.cashier_name || 'Kasir (Offline)';
+                                 if (!acc[cashier]) acc[cashier] = 0;
+                                 acc[cashier] += sale.total_amount || 0;
+                                 return acc;
+                              }, {})
+                           ).map(([cashier, total]: [string, any], i) => (
+                              <div key={i} className="p-5 border border-slate-100 rounded-3xl bg-slate-50/50">
+                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{cashier}</p>
+                                 <p className="text-lg font-black text-slate-800 tracking-tight">Rp {total.toLocaleString()}</p>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+
                      {/* Itemized List */}
                      <div className="mb-12">
                         <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
@@ -250,11 +273,12 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                               {/* Group sales by item name */}
                               {Object.entries(
                                  filteredSales.reduce((acc: any, sale: any) => {
-                                    sale.items?.forEach((item: any) => {
-                                       const name = item.name || 'Produk';
-                                       if (!acc[name]) acc[name] = { qty: 0, price: item.price || 0 };
-                                       acc[name].qty += (item.qty || item.quantity || 0);
-                                    });
+                                     sale.items?.forEach((item: any) => {
+                                        if (item.is_metadata) return;
+                                        const name = item.name || 'Produk';
+                                        if (!acc[name]) acc[name] = { qty: 0, price: item.price || 0 };
+                                        acc[name].qty += (item.qty || item.quantity || 0);
+                                     });
                                     return acc;
                                  }, {})
                               ).map(([name, data]: [string, any], i) => (
@@ -753,7 +777,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                               </div>
                            </td>
                            <td className="px-8 py-6 text-right">
-                              <span className="text-xs font-black text-slate-600">{sale.items?.reduce((acc: number, item: any) => acc + (item.qty || item.quantity || 0), 0) || 0} unit</span>
+                               <span className="text-xs font-black text-slate-600">{sale.items?.reduce((acc: number, item: any) => item.is_metadata ? acc : acc + (item.qty || item.quantity || 0), 0) || 0} unit</span>
                            </td>
                            <td className="px-8 py-6 text-right">
                               <span className="text-sm font-black text-[#8b7365]">Rp {sale.total_amount.toLocaleString()}</span>
@@ -875,7 +899,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
 
                      {/* Items List */}
                      <div className="space-y-4 mb-6">
-                        {selectedSale.items?.map((item: any, idx: number) => (
+                        {selectedSale.items?.filter((i: any) => !i.is_metadata).map((item: any, idx: number) => (
                            <div key={idx} className="flex justify-between items-start group">
                               <div className="flex-1 pr-4">
                                  <p className="text-xs font-black text-slate-800 leading-tight mb-0.5">{item.name || 'Produk'}</p>
@@ -884,6 +908,12 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                               <span className="text-xs font-black text-slate-800">{( (item.qty || item.quantity || 0) * (item.price || 0) ).toLocaleString()}</span>
                            </div>
                         ))}
+                        <div className="border-t border-slate-50 border-dashed my-2 pt-2">
+                           <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                              <span>KASIR</span>
+                              <span>{selectedSale.items?.find((i: any) => i.is_metadata)?.cashier_name || 'ADMIN'}</span>
+                           </div>
+                        </div>
                      </div>
 
                      <div className="border-t border-slate-50 border-dashed my-6" />
