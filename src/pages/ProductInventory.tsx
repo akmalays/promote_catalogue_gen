@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle, Check, DollarSign, Truck, ShoppingCart, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle, Check, DollarSign, Truck, ShoppingCart, ChevronDown, ChevronUp, Calendar, Layers, Barcode, Box } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -457,7 +457,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="px-8 py-5 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  <p className="text-xs font-bold text-slate-400 tracking-widest">
                     Halaman {currentPage} dari {totalPages} <span className="mx-2">|</span> Total {filteredProducts.length} Produk
                   </p>
                   <div className="flex items-center gap-2">
@@ -514,9 +514,14 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                 <X className="w-5 h-5 text-slate-400" />
               </button>
 
-              <div className="mb-6">
-                <h2 className="text-2xl font-black text-slate-800">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-                <p className="text-slate-500 text-xs font-medium">Lengkapi detail produk di bawah ini.</p>
+              <div className="mb-10 flex flex-col items-start">
+                <div className="w-16 h-16 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm">
+                   {editingProduct ? <Edit2 className="w-8 h-8" /> : <Package className="w-8 h-8" />}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-3">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+                  <p className="text-slate-400 text-[10px] font-black tracking-widest leading-none">Lengkapi detail produk di bawah ini.</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -525,7 +530,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                   <input 
                     value={formData.plu}
                     readOnly
-                    className="w-full px-4 py-2.5 bg-rose-50/30 border border-rose-100 rounded-2xl outline-none font-black text-rose-600 cursor-not-allowed text-sm"
+                    className="w-full px-4 py-3 bg-rose-50/30 border border-rose-100 rounded-2xl outline-none font-black text-rose-600 cursor-not-allowed text-sm"
                   />
                 </div>
                 <div className="col-span-2 md:col-span-1 space-y-1.5">
@@ -534,7 +539,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                     value={formData.brand}
                     onChange={e => setFormData({...formData, brand: e.target.value})}
                     placeholder="Contoh: Indomie / Coca Cola"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
                   />
                 </div>
                 <div className="col-span-2 md:col-span-1 space-y-1.5">
@@ -543,7 +548,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     placeholder="Contoh: Mie Goreng Jumbo"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
                   />
                 </div>
                 <div className="col-span-2 md:col-span-1 space-y-1.5">
@@ -551,7 +556,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                   <select 
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold appearance-none text-sm"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold appearance-none text-sm"
                   >
                     {CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -562,7 +567,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                     value={formData.unit}
                     onChange={e => setFormData({...formData, unit: e.target.value})}
                     placeholder="Contoh: pcs / kardus"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
                   />
                 </div>
                 <div className="col-span-2 md:col-span-1 space-y-1.5">
@@ -572,7 +577,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                     value={formData.stock}
                     onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
                     placeholder="0"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
                   />
                 </div>
                 <div className="col-span-2 md:col-span-1 space-y-1.5">
@@ -583,23 +588,23 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                       type="number"
                       value={formData.price}
                       onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-black text-sm"
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-black text-sm"
                     />
                   </div>
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Gambar Produk</label>
                   <div className="flex gap-4 items-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group relative">
+                    <div className="w-20 h-20 bg-white rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group relative shadow-inner">
                       {formData.image_url ? (
                         <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain" />
                       ) : (
-                        <Plus className="w-5 h-5 text-slate-300" />
+                        <Plus className="w-6 h-6 text-slate-200" />
                       )}
                       <input 
                         type="file" 
                         accept="image/*"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                         className="absolute inset-0 opacity-0 cursor-pointer"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -619,9 +624,9 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                           const input = document.querySelector('input[type="file"]') as HTMLInputElement;
                           input?.click();
                         }}
-                        className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                        className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-[#8b7365] hover:bg-slate-50 transition-all shadow-sm"
                       >
-                        Ganti Gambar
+                        Ganti Gambar Produk
                       </button>
                     </div>
                   </div>
@@ -631,9 +636,9 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
                   <textarea 
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value})}
-                    rows={2}
+                    rows={3}
                     placeholder="Jelaskan keunggulan produk ini..."
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium resize-none text-xs"
+                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium resize-none text-xs"
                   />
                 </div>
               </div>
@@ -823,46 +828,45 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {isDeleteModalOpen && productToDelete && (
-          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center"
+               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+               className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl p-8 z-10"
             >
-              <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-600">
-                <AlertCircle className="w-10 h-10" />
-              </div>
-              
-              <h3 className="text-2xl font-black text-slate-800 mb-2">Hapus Produk?</h3>
-              <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
-                Apakah Anda yakin ingin menghapus <span className="text-slate-800 font-black">"{productToDelete.name}"</span>? Tindakan ini tidak dapat dibatalkan.
-              </p>
-
-              <div className="flex flex-col gap-3">
-                <button 
-                  onClick={confirmDelete}
-                  disabled={isDeleting}
-                  className={cn(
-                    "w-full py-4 rounded-2xl font-black text-white transition-all shadow-lg flex items-center justify-center gap-2",
-                    isDeleting ? "bg-slate-400 cursor-not-allowed" : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
-                  )}
-                >
-                  {isDeleting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Menghapus...
-                    </>
-                  ) : 'Ya, Hapus Produk'}
-                </button>
-                <button 
-                  disabled={isDeleting}
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  className="w-full py-4 rounded-2xl font-black text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  Batal
-                </button>
-              </div>
+               <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mb-6">
+                  <AlertCircle className="w-8 h-8" />
+               </div>
+               
+               <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-3">
+                 Hapus Produk?
+               </h3>
+               <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
+                 Apakah Anda yakin ingin menghapus <span className="text-slate-800 font-bold">"{productToDelete.name}"</span>? Aksi ini tidak dapat dibatalkan.
+               </p>
+               
+               <div className="flex gap-3">
+                 <button 
+                   onClick={() => setIsDeleteModalOpen(false)}
+                   disabled={isDeleting}
+                   className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all disabled:opacity-50"
+                 >
+                   Batal
+                 </button>
+                 <button 
+                   onClick={confirmDelete}
+                   disabled={isDeleting}
+                   className="flex-1 py-3.5 bg-red-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                 >
+                   {isDeleting ? (
+                     <>
+                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Sedang Menghapus...
+                     </>
+                   ) : 'Ya, Hapus'}
+                 </button>
+               </div>
             </motion.div>
           </div>
         )}

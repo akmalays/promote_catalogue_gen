@@ -5,6 +5,80 @@ const path = require('path');
 const PORT = 5001;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
+// ===== Supabase SDK for Scheduler =====
+let supabase = null;
+try {
+  const { createClient } = require('@supabase/supabase-js');
+  const envPath = path.join(__dirname, '..', '.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const getEnv = (key) => {
+      const match = envContent.match(new RegExp(`${key}=["']?([^"'\\n]+)["']?`));
+      return match ? match[1] : '';
+    };
+    const url = getEnv('VITE_SUPABASE_URL');
+    const key = getEnv('VITE_SUPABASE_ANON_KEY');
+    if (url && key) {
+      supabase = createClient(url, key);
+      console.log('✅ Supabase connected for scheduler');
+    }
+  }
+} catch (e) {
+  console.warn('⚠️ Supabase SDK not available for scheduler. Install with: npm install @supabase/supabase-js');
+}
+
+// ===== Notification Scheduler Logic =====
+async function runNotificationScheduler() {
+  if (!supabase) return { success: false, message: 'Supabase not configured' };
+
+  try {
+    const now = new Date().toISOString();
+    
+    // Find all scheduled notifications that are due
+    const { data: dueNotifs, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('is_sent', false)
+      .lte('scheduled_at', now);
+
+    if (error) throw error;
+
+    if (!dueNotifs || dueNotifs.length === 0) {
+      return { success: true, sent: 0, message: 'No scheduled notifications due' };
+    }
+
+    // Mark each as sent
+    let sentCount = 0;
+    for (const notif of dueNotifs) {
+      const { error: updateError } = await supabase
+        .from('notifications')
+        .update({ is_sent: true, sent_at: new Date().toISOString() })
+        .eq('id', notif.id);
+      
+      if (!updateError) {
+        sentCount++;
+        console.log(`📢 Notification sent: "${notif.title}" (scheduled for ${notif.scheduled_at})`);
+      }
+    }
+
+    return { success: true, sent: sentCount, message: `${sentCount} notification(s) sent` };
+  } catch (err) {
+    console.error('Scheduler error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+// Auto-run scheduler every 60 seconds
+if (supabase) {
+  setInterval(async () => {
+    const result = await runNotificationScheduler();
+    if (result.sent > 0) {
+      console.log(`⏰ Auto-scheduler: ${result.message}`);
+    }
+  }, 60000);
+  console.log('⏰ Auto-scheduler started (every 60 seconds)');
+}
+
 // Load or initialize data
 let data = {
   users: [
@@ -47,8 +121,16 @@ const server = http.createServer((req, res) => {
 
   let body = '';
   req.on('data', chunk => { body += chunk; });
-  req.on('end', () => {
+  req.on('end', async () => {
     const jsonBody = body ? JSON.parse(body) : {};
+
+    // --- SCHEDULER API ---
+    if (req.url === '/api/scheduler/run' && (req.method === 'POST' || req.method === 'GET')) {
+      const result = await runNotificationScheduler();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
 
     // --- AUTH ---
     if (req.url === '/api/login' && req.method === 'POST') {

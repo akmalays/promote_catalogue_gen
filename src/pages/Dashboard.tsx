@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Megaphone, ArrowRight, Book, Activity, AlertTriangle, Users, TrendingUp, Layout, Send, UserPlus, Package, LayoutDashboard } from 'lucide-react';
+import { BookOpen, Megaphone, ArrowRight, Book, Activity, AlertTriangle, Users, TrendingUp, Layout, Send, UserPlus, Package, LayoutDashboard, ShoppingCart, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -15,110 +15,20 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
-  const [contactsData, setContactsData] = useState<any[]>([]);
-  const [activityData, setActivityData] = useState<any[]>([]);
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  
-  const [metrics, setMetrics] = useState({
-    totalCatalogues: 0,
-    totalReach: 0,
-    totalProducts: 0,
-    totalCustomers: 0,
-    monthlyGrowth: 0,
-    lowStockCount: 0
-  });
-
+  const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
+    loadData();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
-      const [visitors, logs, catalogues, allProducts] = await Promise.all([
-        api.getVisitors(),
-        api.getBlastLogs(),
-        api.getCatalogues(),
-        api.getProducts()
-      ]);
-
-      // Process Metrics
-      const reach = logs.reduce((acc: number, curr: any) => acc + (curr.recipient_count || 0), 0);
-      let products = 0;
-      catalogues.forEach((c: any) => {
-        try {
-          const data = typeof c.catalog_data === 'string' ? JSON.parse(c.catalog_data) : c.catalog_data;
-          // Support both new row-based format and any potential old format
-          const fromRows = data?.rows?.flatMap((r: any) => r.items || []).length || 0;
-          const fromTop = data?.items?.length || 0;
-          products += fromRows || fromTop;
-        } catch(e) {}
-      });
-
-      const now = new Date();
-      const thisMonthGrowth = visitors.filter((v: any) => {
-        const d = new Date(v.created_at);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      }).length;
-
-      const lowStock = allProducts.filter((p: any) => (p.stock || 0) < 10).length;
-
-      setMetrics({
-        totalCatalogues: catalogues.length,
-        totalReach: reach,
-        totalProducts: allProducts.length,
-        totalCustomers: visitors.length,
-        monthlyGrowth: thisMonthGrowth,
-        lowStockCount: lowStock
-      });
-
-      // Combine Recent Activities (Last 4 items)
-      const combined = [
-        ...catalogues.slice(0, 3).map(c => ({ type: 'catalogue', title: c.name, time: c.created_at, icon: <BookOpen className="w-4 h-4 text-blue-600" />, bg: 'bg-blue-50' })),
-        ...logs.slice(0, 3).map(l => ({ type: 'blast', title: l.promo_name, time: l.created_at, icon: <Send className="w-4 h-4 text-emerald-600" />, bg: 'bg-emerald-50' })),
-        ...visitors.slice(0, 3).map(v => ({ type: 'customer', title: `Pelanggan: ${v.name}`, time: v.created_at, icon: <UserPlus className="w-4 h-4 text-amber-600" />, bg: 'bg-amber-50' }))
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 4);
-      
-      setRecentActivities(combined);
-
-      // Process Weekly Contacts Addition (Last 7 Days)
-      const last7Days = [...Array(7)].map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return {
-          date: d.toLocaleDateString('id-ID', { weekday: 'short' }),
-          dateFull: d.toISOString().split('T')[0],
-          count: 0
-        };
-      });
-
-      visitors.forEach((v: any) => {
-        const vDate = new Date(v.created_at).toISOString().split('T')[0];
-        const dayMatch = last7Days.find(d => d.dateFull === vDate);
-        if (dayMatch) dayMatch.count++;
-      });
-      setContactsData(last7Days);
-
-      // Process Weekly Activity (Last 4 Weeks)
-      const weeks = [...Array(4)].map((_, i) => ({
-         name: `W${4 - i}`,
-         count: 0
-      }));
-
-      const nowTime = now.getTime();
-      logs.forEach((log: any) => {
-        const logTime = new Date(log.created_at).getTime();
-        const diffWeeks = Math.floor((nowTime - logTime) / (1000 * 60 * 60 * 24 * 7));
-        if (diffWeeks >= 0 && diffWeeks < 4) {
-          weeks[3 - diffWeeks].count++;
-        }
-      });
-      setActivityData(weeks);
-
+      const stats = await api.getDashboardStats();
+      setData(stats);
     } catch (e) {
-      console.error('Gagal memuat dashboard:', e);
+      console.error('Failed to load dashboard:', e);
     } finally {
       setIsLoading(false);
     }
@@ -134,22 +44,53 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
     return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
   };
 
+  if (isLoading || !data) {
+    return (
+      <div className="flex-1 min-h-[80vh] bg-slate-50 flex items-center justify-center p-12">
+         <motion.div 
+           initial={{ opacity: 0, scale: 0.9 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="flex flex-col items-center gap-5 text-center"
+         >
+            <div className="relative">
+               <div className="w-16 h-16 border-4 border-[#8b7365]/10 border-t-[#8b7365] rounded-full animate-spin" />
+               <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-[#8b7365] rounded-full animate-pulse" />
+               </div>
+            </div>
+            <div className="space-y-1">
+               <p className="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">SINKRONISASI DATA</p>
+               <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">MOHON TUNGGU SEBENTAR...</p>
+            </div>
+         </motion.div>
+      </div>
+    );
+  }
+
+  const { metrics, charts, recentSales } = data;
+
   return (
-    <div className="flex-1 p-8 overflow-y-auto">
-      {/* Greeting */}
-      <div className="mb-8 flex items-center justify-between px-2">
+    <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
+      {/* Greeting & System Status */}
+      <div className="mb-10 flex items-center justify-between px-2">
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <LayoutDashboard className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Dashboard</h1>
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm">
+               <LayoutDashboard className="w-6 h-6" />
+            </div>
+            <div>
+               <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Dashboard</h1>
+               <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Pantau performa bisnis hari ini</p>
+            </div>
           </div>
-          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Pantau performa bisnis anda hari ini</p>
         </div>
-        <div className="hidden md:block text-right">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Sistem</p>
-           <div className="flex items-center gap-2 justify-end">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-              <span className="text-xs font-bold text-slate-600">Terhubung ke cloud</span>
+        <div className="hidden lg:block text-right">
+           <div className="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="text-right">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Server</p>
+                 <p className="text-xs font-bold text-slate-700">Terhubung & Aman</p>
+              </div>
+              <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
            </div>
         </div>
       </div>
@@ -158,224 +99,183 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="mb-6 px-2"
+        className="mb-8 px-2"
       >
-        <h2 className="text-2xl font-black text-slate-800 tracking-tight">Selamat Datang, {userProfile.nickname || 'Admin Toko'}!</h2>
+        <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Halo, {userProfile.nickname || 'User'}!</h2>
       </motion.div>
 
-      {/* Point 2: Quick Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Primary Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
          {[
-           { id: 'history', label: 'Total Galeri', value: metrics.totalCatalogues, sub: 'Katalog tersimpan', icon: <Layout className="w-4 h-4" />, color: 'bg-blue-600' },
-           { id: 'activity', label: 'Jangkauan Promo', value: metrics.totalReach.toLocaleString(), sub: 'Pesan terkirim', icon: <Send className="w-4 h-4" />, color: 'bg-emerald-600' },
-           { id: 'promotions', label: 'Pelanggan', value: metrics.totalCustomers, sub: 'Kontak aktif', icon: <Users className="w-4 h-4" />, color: 'bg-amber-600' },
-           { id: 'products', label: 'Stok Menipis', value: metrics.lowStockCount, sub: 'Perlu Re-stock', icon: <AlertTriangle className={cn("w-4 h-4", metrics.lowStockCount > 0 && "animate-pulse")} />, color: metrics.lowStockCount > 0 ? 'bg-rose-600' : 'bg-slate-800' },
+           { label: 'Omzet Hari Ini', value: `Rp ${metrics.todayRevenue.toLocaleString()}`, sub: 'Total penjualan hari ini', icon: <TrendingUp className="w-5 h-5" />, color: 'bg-[#8b7365]', shadow: 'shadow-[#8b7365]/20', id: 'sales' },
+           { label: 'Total Pelanggan', value: metrics.totalCustomers, sub: 'Kontak tersimpan', icon: <Users className="w-5 h-5" />, color: 'bg-amber-500', shadow: 'shadow-amber-500/20', id: 'customers' },
+           { label: 'Stok Menipis', value: `${metrics.lowStockCount} Item`, sub: `${metrics.outOfStockCount} Stok Habis`, icon: <AlertTriangle className="w-5 h-5" />, color: 'bg-rose-500', shadow: 'shadow-rose-500/20', id: 'products' },
+           { label: 'Jangkauan Promo', value: metrics.totalReach.toLocaleString(), sub: 'Pesan sukses terkirim', icon: <Send className="w-5 h-5" />, color: 'bg-emerald-500', shadow: 'shadow-emerald-500/20', id: 'promotions' },
          ].map((m, i) => (
            <motion.div 
              key={i}
-             initial={{ opacity: 0, y: 10 }}
+             initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: i * 0.1 }}
              onClick={() => onNavigate(m.id as any)}
-             className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md hover:border-[#8b7365]/30 transition-all cursor-pointer group"
+             className="bg-white p-6 rounded-[30px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group relative overflow-hidden"
            >
-              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 transition-transform group-hover:scale-110", m.color)}>
+              <div className={cn("inline-flex w-12 h-12 rounded-2xl items-center justify-center text-white mb-6 shadow-lg", m.color, m.shadow)}>
                  {m.icon}
               </div>
-              <div className="flex-1 min-w-0">
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1 group-hover:text-[#8b7365] transition-colors">{m.label}</p>
-                 <div className="flex items-baseline gap-1.5">
-                    <p className="text-xl font-black text-slate-800">{m.value}</p>
-                    <p className="text-[10px] text-slate-400 font-medium truncate">{m.sub}</p>
-                 </div>
+              <div>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-[#8b7365] transition-colors">{m.label}</p>
+                 <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-2">{m.value}</h3>
+                 <p className="text-[10px] font-bold text-slate-400">{m.sub}</p>
               </div>
            </motion.div>
          ))}
       </div>
 
-      {/* Main Feature Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-        {/* Catalogue Generator Card */}
-        <div className="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all h-[200px] flex flex-col justify-end p-6 border border-slate-200">
-          <div className="absolute inset-0 bg-[#e8e4db]">
-            <div className="absolute right-0 bottom-0 top-0 w-2/3 opacity-30 bg-gradient-to-l from-black/20 to-transparent mix-blend-overlay"></div>
-          </div>
-          <div className="relative z-10 w-full md:w-4/5 text-slate-800">
-            <span className="inline-block px-2 py-0.5 bg-black/5 rounded text-[10px] font-bold uppercase tracking-widest mb-2">Produksi Konten</span>
-            <h2 className="text-2xl font-bold mb-1">Editor Katalog</h2>
-            <p className="text-xs font-medium text-slate-600 mb-4 leading-relaxed">
-              Ubah daftar produk menjadi brosur digital menawan.
-            </p>
-            <button
-              onClick={() => onNavigate('catalogue')}
-              className="bg-[#8b7365] text-white px-5 py-2.5 rounded-xl hover:bg-[#725e52] transition-colors text-sm flex items-center gap-2 font-bold shadow-lg shadow-[#8b7365]/20"
-            >
-              Buka Editor
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+        {/* Revenue Trend Chart */}
+        <div className="lg:col-span-8">
+           <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm h-full">
+              <div className="flex items-center justify-between mb-10">
+                 <div>
+                    <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-2">Tren Omzet 7 Hari</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PERKEMBANGAN OMZET HARIAN TOKO</p>
+                 </div>
+                 <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                    <TrendingUp className="w-5 h-5" />
+                 </div>
+              </div>
+
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={charts.revenueTrend}>
+                    <defs>
+                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 800 }}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
+                      tickFormatter={(val) => `Rp${val/1000}k`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        borderRadius: '20px', 
+                        border: 'none', 
+                        boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+                        padding: '12px 16px'
+                      }}
+                      formatter={(val: number) => [`Rp ${val.toLocaleString()}`, 'Omzet']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#10b981" 
+                      strokeWidth={4}
+                      fillOpacity={1} 
+                      fill="url(#revenueGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+           </div>
         </div>
 
-        {/* Promotions/Banner Card */}
-        <div className="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all h-[200px] flex flex-col justify-end p-6 border border-slate-200">
-          <div className="absolute inset-0 bg-[#d9c5ba]">
-            <div className="absolute right-0 bottom-0 top-0 w-2/3 opacity-30 bg-gradient-to-l from-black/20 to-transparent mix-blend-overlay"></div>
-          </div>
-          <div className="relative z-10 w-full md:w-4/5 text-slate-800">
-            <span className="inline-block px-2 py-0.5 bg-black/5 rounded text-[10px] font-bold uppercase tracking-widest mb-2">Distribusi Promo</span>
-            <h2 className="text-2xl font-bold mb-1">WhatsApp Blast</h2>
-            <p className="text-xs font-medium text-slate-700 mb-4 leading-relaxed">
-              Siarkan promosi pintar secara massal ke pelanggan.
-            </p>
-            <button
-              onClick={() => onNavigate('promotions')}
-              className="bg-[#8b7365] text-white px-5 py-2.5 rounded-xl hover:bg-[#725e52] transition-colors text-sm flex items-center gap-2 font-bold shadow-lg shadow-[#8b7365]/20 w-fit"
-            >
-              Mulai Blast
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+        {/* Top Products */}
+        <div className="lg:col-span-4">
+           <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm h-full">
+              <div className="flex items-center justify-between mb-10">
+                 <div>
+                    <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-2">Paling Laris</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TOP 5 ITEM TERBANYAK TERJUAL</p>
+                 </div>
+                 <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+                    <Package className="w-5 h-5" />
+                 </div>
+              </div>
+
+              <div className="space-y-6">
+                 {charts.topProducts.map((p: any, i: number) => (
+                    <div key={i} className="flex flex-col gap-2">
+                       <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-slate-700 truncate pr-4">{p.name}</p>
+                          <p className="text-[10px] font-black text-[#8b7365] bg-[#8b7365]/10 px-2 py-0.5 rounded-md font-mono">{p.count} Pcs</p>
+                       </div>
+                       <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(p.count / charts.topProducts[0].count) * 100}%` }}
+                            className="h-full bg-slate-800 rounded-full"
+                          />
+                       </div>
+                    </div>
+                 ))}
+                 {charts.topProducts.length === 0 && (
+                    <div className="py-20 text-center text-slate-300 italic text-xs">Belum ada data penjualan</div>
+                 )}
+              </div>
+
+              <div className="mt-10 p-5 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">Insight Bisnis</p>
+                 <p className="text-[11px] text-slate-600 leading-relaxed font-bold">
+                    Item di atas memberikan kontribusi volume terbesar. Fokuskan promo pada item ini untuk menjaga momentum!
+                 </p>
+              </div>
+           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left: Charts column */}
-        <div className="lg:col-span-8 flex flex-col gap-8">
-           {/* Contact Acquisition Chart */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                  <h3 className="font-black text-slate-800 text-lg">Pertumbuhan Pelanggan</h3>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">7 Hari Terakhir</p>
-              </div>
-              <div className="flex items-center gap-4">
-                 <div className="text-right">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">Bulan Ini</p>
-                    <p className="text-lg font-black text-slate-800">+{metrics.monthlyGrowth}</p>
-                 </div>
-                 <div className="bg-emerald-50 p-3 rounded-2xl">
-                    <TrendingUp className="w-5 h-5 text-emerald-600" />
-                 </div>
-              </div>
-            </div>
-            
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={contactsData}>
-                  <defs>
-                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-                    dy={10}
-                  />
-                  <YAxis hide />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="count" 
-                    name="Kontak Baru"
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorCount)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+         {/* Recent Sales Feed */}
+         <div className="lg:col-span-12">
+            <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
+               <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Transaksi Terkini</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">LOG PENJUALAN POS TERAKHIR</p>
+                  </div>
+                  <button onClick={() => onNavigate('history')} className="px-5 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#8b7365] transition-all border border-slate-100">
+                     Lihat Selengkapnya
+                  </button>
+               </div>
 
-          {/* Activity Log Chart */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                  <h3 className="font-black text-slate-800 text-lg">Aktivitas Blast</h3>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Intensitas Mingguan</p>
-              </div>
-              <div className="bg-[#f0ece9] p-3 rounded-2xl">
-                  <Activity className="w-5 h-5 text-[#8b7365]" />
-              </div>
-            </div>
-
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-                    dy={10}
-                  />
-                  <YAxis hide />
-                  <Tooltip 
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    labelStyle={{ fontWeight: 'bold' }}
-                  />
-                  <Bar dataKey="count" name="Sesi Blast" radius={[6, 6, 0, 0]}>
-                    {activityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === activityData.length - 1 ? '#8b7365' : '#d9c5ba'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Point 3: Mini Activity Feed */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm h-full flex flex-col overflow-hidden">
-              <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                 <h3 className="font-black text-slate-800">Aktivitas Terbaru</h3>
-                 <button onClick={() => onNavigate('history')} className="text-[10px] font-black text-[#8b7365] tracking-widest uppercase hover:underline">Semua</button>
-              </div>
-
-              <div className="flex-1 divide-y divide-slate-50">
-                 {recentActivities.length === 0 ? (
-                   <div className="p-12 text-center">
-                      <p className="text-xs text-slate-400 font-medium">Belum ada aktivitas.</p>
-                   </div>
-                 ) : (
-                   recentActivities.map((act, i) => (
-                     <div key={i} className="p-5 flex items-start gap-4 hover:bg-slate-50 transition-colors cursor-default group">
-                        <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform", act.bg)}>
-                           {act.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                             {act.type === 'catalogue' ? 'Katalog Baru' : act.type === 'blast' ? 'Blast Terkirim' : 'Pelanggan Baru'}
-                           </p>
-                           <p className="text-sm font-bold text-slate-800 truncate mb-1">{act.title}</p>
-                           <p className="text-[10px] font-medium text-slate-400">{getTimeAgo(act.time)}</p>
-                        </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {recentSales.map((sale: any, i: number) => (
+                    <div key={i} className="flex items-center gap-4 p-5 bg-white border border-slate-50 hover:border-[#8b7365]/30 hover:shadow-md rounded-3xl transition-all group">
+                       <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#8b7365] group-hover:bg-[#8b7365] group-hover:text-white transition-all shadow-inner">
+                          <ShoppingCart className="w-5 h-5" />
+                       </div>
+                       <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black text-slate-800 tracking-tight truncate">{sale.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                             <p className="text-[10px] font-black text-[#8b7365] uppercase">{sale.payment}</p>
+                             <div className="w-1 h-1 rounded-full bg-slate-200" />
+                             <p className="text-[9px] font-bold text-slate-400">{getTimeAgo(sale.time)}</p>
+                          </div>
+                       </div>
+                       <ChevronRight className="w-4 h-4 text-slate-300" />
+                    </div>
+                  ))}
+                  {recentSales.length === 0 && (
+                     <div className="col-span-full py-20 text-center text-slate-300 border-2 border-dashed rounded-[32px]">
+                        <Activity className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                        <p className="text-xs font-black uppercase tracking-widest">Belum ada transaksi hari ini</p>
                      </div>
-                   ))
-                 )}
-              </div>
-
-              <div className="p-6 bg-slate-50/50 mt-auto">
-                 <div className="bg-white rounded-2xl p-4 border border-slate-200">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">Insight Cepat</p>
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                       Kamu memiliki <span className="text-emerald-600 font-bold">{metrics.monthlyGrowth} pelanggan baru</span> bulan ini. Luar biasa!
-                    </p>
-                 </div>
-              </div>
-           </div>
-        </div>
+                  )}
+               </div>
+            </div>
+         </div>
       </div>
     </div>
   );

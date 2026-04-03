@@ -28,7 +28,7 @@ interface CartItem {
   quantity: number;
 }
 
-export default function POS({ onNavigate }: { onNavigate: (page: any) => void }) {
+export default function POS({ onNavigate, userProfile }: { onNavigate: (page: any) => void, userProfile?: any }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -151,12 +151,19 @@ export default function POS({ onNavigate }: { onNavigate: (page: any) => void })
     try {
       // 1. Create Transaction Header
       const sale = await api.addSale({
-        items: cart.map(i => ({
-          product_id: i.product.id,
-          name: i.product.name,
-          qty: i.quantity,
-          price: i.product.price
-        })),
+        items: [
+          ...cart.map(i => ({
+            product_id: i.product.id,
+            name: i.product.name,
+            qty: i.quantity,
+            price: i.product.price
+          })),
+          {
+            is_metadata: true,
+            cashier_name: userProfile?.nickname || userProfile?.username || 'Kasir',
+            cashier_id: userProfile?.id || null
+          }
+        ],
         total_amount: subtotal,
         payment_amount: pay,
         change_amount: pay - subtotal,
@@ -220,6 +227,18 @@ export default function POS({ onNavigate }: { onNavigate: (page: any) => void })
           <div className="hidden md:flex flex-col text-right">
              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Waktu Sekarang</span>
              <span className="text-sm font-bold text-slate-700">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+
+          <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>
+
+          <div className="hidden md:flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Kasir Aktif</p>
+              <h3 className="text-sm font-bold text-slate-800 leading-none">{userProfile?.nickname || userProfile?.username || 'Kasir'}</h3>
+            </div>
+            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+               <User className="w-5 h-5" />
+            </div>
           </div>
 
           <button 
