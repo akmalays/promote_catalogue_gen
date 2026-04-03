@@ -53,7 +53,8 @@ export default function Supply() {
   // History UI State
   const [expandedSuppliers, setExpandedSuppliers] = useState<string[]>([]);
   const [isFullHistoryOpen, setIsFullHistoryOpen] = useState(false);
-  const [fullHistoryFilter, setFullHistoryFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const [fullHistoryFilter, setFullHistoryFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('all');
+  const [fullHistoryDate, setFullHistoryDate] = useState('');
   const [fullHistorySearch, setFullHistorySearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -170,9 +171,15 @@ export default function Supply() {
       // Time Filter
       const logDate = new Date(log.created_at);
       let timeMatch = true;
-      if (fullHistoryFilter === 'today') timeMatch = logDate.toDateString() === now.toDateString();
-      else if (fullHistoryFilter === 'week') timeMatch = logDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      else if (fullHistoryFilter === 'month') timeMatch = logDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      if (fullHistoryFilter === 'custom' && fullHistoryDate) {
+        timeMatch = logDate.toLocaleDateString('id-ID') === new Date(fullHistoryDate).toLocaleDateString('id-ID');
+      } else if (fullHistoryFilter === 'today') {
+        timeMatch = logDate.toDateString() === now.toDateString();
+      } else if (fullHistoryFilter === 'week') {
+        timeMatch = logDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (fullHistoryFilter === 'month') {
+        timeMatch = logDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
 
       // Search Filter
       const s = fullHistorySearch.toLowerCase();
@@ -185,20 +192,22 @@ export default function Supply() {
 
       return timeMatch && searchMatch;
     });
-  }, [history, fullHistoryFilter, fullHistorySearch]);
+  }, [history, fullHistoryFilter, fullHistorySearch, fullHistoryDate]);
 
   const totalPages = Math.ceil(filteredFullHistory.length / itemsPerPage);
   const paginatedHistory = filteredFullHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
-      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <Truck className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Supply Inbound</h1>
+      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
+            <Truck className="w-8 h-8" />
           </div>
-          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Manajemen logistik dan kedatangan stok produk</p>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Supply Inbound</h1>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Manajemen logistik dan kedatangan stok produk</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
            {cart.length > 0 && (
@@ -277,34 +286,65 @@ export default function Supply() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsFullHistoryOpen(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-[40px] w-full max-w-6xl h-[85vh] shadow-2xl relative overflow-hidden flex flex-col z-[110]">
-               <div className="p-8 border-b flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white sticky top-0">
-                  <div className="flex items-center gap-4">
-                     <div>
-                        <h2 className="text-2xl font-black text-slate-800 leading-none mb-1">Laporan Supply Inbound</h2>
-                        <div className="flex items-center gap-4">
-                           <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Total {filteredFullHistory.length} Log Data</p>
-                           <div className="w-1 h-1 rounded-full bg-slate-200"/>
-                           <div className="flex items-center gap-2">
-                              {['all', 'today', 'week', 'month'].map(f => (
-                                <button key={f} onClick={() => { setFullHistoryFilter(f as any); setCurrentPage(1); }} className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full border", fullHistoryFilter === f ? "bg-[#8b7365] text-white border-[#8b7365]" : "text-slate-400 border-slate-100")}>{f === 'all' ? 'Semua' : f === 'today' ? 'Hari Ini' : f === 'week' ? 'Minggu Ini' : 'Bulan Ini'}</button>
-                              ))}
+               <div className="p-7 border-b flex flex-col items-start relative bg-white sticky top-0 z-20">
+                  <button onClick={() => setIsFullHistoryOpen(false)} className="absolute top-7 right-7 p-3 hover:bg-slate-100 rounded-2xl transition-colors">
+                     <X className="w-6 h-6 text-slate-400"/>
+                  </button>
+                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-4 shadow-sm shadow-[#8b7365]/10">
+                     <History className="w-8 h-8" />
+                  </div>
+                  <div className="mb-6">
+                     <h2 className="text-2xl font-black text-slate-800 leading-none mb-2">Laporan Supply Inbound</h2>
+                     <p className="text-xs text-slate-400 font-bold tracking-widest">Cek Semua Laporan Barang Masuk Yang Tercatat</p>
+                  </div>
+                  
+                  <div className="w-full flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+                     <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                           {['all', 'today', 'week', 'month'].map(f => (
+                             <button 
+                               key={f} 
+                               onClick={() => { setFullHistoryFilter(f as any); setFullHistoryDate(''); setCurrentPage(1); }} 
+                               className={cn(
+                                 "text-[9px] font-black uppercase px-4 py-2 rounded-xl transition-all whitespace-nowrap", 
+                                 fullHistoryFilter === f ? "bg-[#8b7365] text-white shadow-lg shadow-[#8b7365]/20" : "text-slate-400 hover:text-slate-600"
+                               )}
+                             >
+                                {f === 'all' ? 'Semua' : f === 'today' ? 'Hari Ini' : f === 'week' ? 'Minggu Ini' : 'Bulan Ini'}
+                             </button>
+                           ))}
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100 group">
+                           <div className={cn(
+                             "flex items-center gap-2 px-3 py-2 rounded-xl transition-all",
+                             fullHistoryFilter === 'custom' ? "bg-[#8b7365] text-white shadow-lg shadow-[#8b7365]/20" : "text-slate-400"
+                           )}>
+                              <Calendar className={cn("w-3.5 h-3.5", fullHistoryFilter === 'custom' ? "text-white" : "text-slate-400")} />
+                              <input 
+                                type="date"
+                                value={fullHistoryDate}
+                                onChange={(e) => {
+                                   setFullHistoryDate(e.target.value);
+                                   setFullHistoryFilter('custom');
+                                   setCurrentPage(1);
+                                }}
+                                className="bg-transparent border-none text-[9px] font-black uppercase outline-none focus:ring-0 p-0 cursor-pointer"
+                              />
                            </div>
                         </div>
                      </div>
-                  </div>
                   
                   {/* GLOBAL SEARCH IN MODAL */}
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-full md:w-64">
-                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                       <input 
-                         value={fullHistorySearch}
-                         onChange={(e) => { setFullHistorySearch(e.target.value); setCurrentPage(1); }}
-                         placeholder="Cari Supplier / Produk / PLU..." 
-                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-xs focus:border-[#8b7365] transition-all"
-                       />
-                    </div>
-                    <button onClick={() => setIsFullHistoryOpen(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-colors"><X className="w-6 h-6 text-slate-400"/></button>
+                     <div className="relative w-full xl:w-80">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input 
+                          value={fullHistorySearch}
+                          onChange={(e) => { setFullHistorySearch(e.target.value); setCurrentPage(1); }}
+                          placeholder="Cari Supplier / Produk / PLU..." 
+                          className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-xs focus:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] transition-all"
+                        />
+                     </div>
                   </div>
                </div>
 
@@ -320,7 +360,52 @@ export default function Supply() {
                   {paginatedHistory.length === 0 && <div className="py-20 text-center text-slate-300 italic">Tidak ada riwayat yang cocok dengan pencarian Anda.</div>}
                </div>
 
-               <div className="p-6 border-t bg-white flex items-center justify-between"><p className="text-[10px] font-bold text-slate-400">Total {filteredFullHistory.length} data ditemukan.</p><div className="flex items-center gap-4"><button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} className="p-2 border rounded-xl hover:bg-slate-50 transition-all disabled:opacity-30" disabled={currentPage === 1}><ChevronLeft className="w-5 h-5 text-[#8b7365]"/></button><span className="text-sm font-black text-[#8b7365]">Halaman {currentPage} dari {totalPages || 1}</span><button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} className="p-2 border rounded-xl hover:bg-slate-50 transition-all disabled:opacity-30" disabled={currentPage === totalPages}><ChevronRight className="w-5 h-5 text-[#8b7365]"/></button></div></div>
+               <div className="p-6 border-t bg-white flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                     <p className="text-[10px] font-black text-slate-400 tracking-widest leading-none">
+                        HALAMAN {currentPage} DARI {totalPages || 1} <span className="mx-2 text-slate-200">|</span> TOTAL {filteredFullHistory.length} DATA TEMUKAN
+                     </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                     <button 
+                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                       disabled={currentPage === 1}
+                       className="px-4 py-2 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all disabled:opacity-30"
+                     >
+                        Sebelumnya
+                     </button>
+                     
+                     <div className="flex items-center gap-1.5">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                           // Simple pagination logic for demo, can be enhanced if totalPages is large
+                           const pageNum = i + 1;
+                           return (
+                             <button
+                               key={pageNum}
+                               onClick={() => setCurrentPage(pageNum)}
+                               className={cn(
+                                 "w-9 h-9 rounded-xl text-[10px] font-black transition-all flex items-center justify-center",
+                                 currentPage === pageNum 
+                                   ? "bg-[#8b7365] text-white shadow-lg shadow-[#8b7365]/30" 
+                                   : "border border-slate-100 text-slate-400 hover:bg-slate-50"
+                               )}
+                             >
+                                {pageNum}
+                             </button>
+                           );
+                        })}
+                     </div>
+
+                     <button 
+                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                       disabled={currentPage === totalPages || totalPages === 0}
+                       className="px-4 py-2 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#8b7365] hover:bg-[#8b7365]/5 transition-all disabled:opacity-30"
+                     >
+                        Berikutnya
+                     </button>
+                  </div>
+               </div>
             </motion.div>
           </div>
         )}

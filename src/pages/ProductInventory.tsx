@@ -457,7 +457,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="px-8 py-5 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  <p className="text-xs font-bold text-slate-400 tracking-widest">
                     Halaman {currentPage} dari {totalPages} <span className="mx-2">|</span> Total {filteredProducts.length} Produk
                   </p>
                   <div className="flex items-center gap-2">
