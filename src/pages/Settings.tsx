@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Save, User, UserCircle, Key, Shield, Eye, EyeOff, Loader2, UserPlus, Users, BadgeCheck, AlertCircle } from 'lucide-react';
+import { Save, User, UserCircle, Key, Shield, Eye, EyeOff, Loader2, UserPlus, Users, BadgeCheck, AlertCircle, X, Check, Pencil, Trash2 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
+import toast from 'react-hot-toast';
 
 interface SettingsProps {
   userProfile: UserProfile;
@@ -21,6 +23,25 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
   const [isFetchingUsers, setIsFetchingUsers] = useState(false);
   const [newUser, setNewUser] = useState({ username: '', nickname: '', role: 'editor', password: 'password123' });
   const [isAddingUser, setIsAddingUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<UserProfile>({ username: '', nickname: '', role: 'kasir' });
+  const [isUpdatingOtherUser, setIsUpdatingOtherUser] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: 'profile_update' | 'add_new' | 'edit_other' | 'delete' | null;
+    title: string;
+    message: string;
+    targetId?: string;
+  }>({
+    isOpen: false,
+    type: null,
+    title: '',
+    message: ''
+  });
 
   const isAdmin = userProfile.role?.toLowerCase().includes('admin');
 
@@ -53,10 +74,22 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
     setIsSaved(false);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'profile_update',
+      title: 'Update Profil?',
+      message: 'Apakah Anda yakin ingin memperbarui informasi profil Anda saat ini?'
+    });
+  };
+
+  const executeUpdateProfile = async () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    
     if (!userProfile.id) {
       onUpdateProfile(formData);
       setIsSaved(true);
+      toast.success('✅ Profil berhasil diperbarui secara lokal!');
       setTimeout(() => setIsSaved(false), 3000);
       return;
     }
@@ -71,37 +104,129 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
       });
       onUpdateProfile(updated);
       setIsSaved(true);
+      toast.success('✨ Profil berhasil diperbarui di Cloud!');
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err) {
       console.error('Gagal update profil:', err);
+      toast.error('❌ Gagal memperbarui profil. Coba lagi.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddUser = async (e: React.FormEvent) => {
+  const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUser.username || !newUser.nickname) return;
+    if (!newUser.username || !newUser.nickname) {
+      toast.error('⚠️ Nickname dan Username wajib diisi!');
+      return;
+    }
 
+    setConfirmModal({
+      isOpen: true,
+      type: 'add_new',
+      title: 'Daftarkan Pengguna?',
+      message: `Daftarkan ${newUser.nickname} sebagai anggota tim baru?`
+    });
+  };
+
+  const executeAddUser = async () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    
     try {
       setIsAddingUser(true);
       await api.addUser(newUser);
+      toast.success(`🚀 ${newUser.nickname} berhasil terdaftar!`);
       setNewUser({ username: '', nickname: '', role: 'editor', password: 'password123' });
       fetchUsers();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gagal tambah user:', err);
-      alert('Gagal menambah user. Username mungkin sudah ada.');
+      toast.error('❌ Pendaftaran gagal. Username mungkin sudah terpakai.');
     } finally {
       setIsAddingUser(false);
     }
   };
 
+  const handleEditOtherUserRequest = () => {
+    if (!editFormData.username || !editFormData.nickname) {
+      toast.error('⚠️ Data tidak boleh kosong!');
+      return;
+    }
+    setConfirmModal({
+      isOpen: true,
+      type: 'edit_other',
+      title: 'Simpan Perubahan?',
+      message: `Simpan pembaruan data untuk ${editFormData.nickname}?`
+    });
+  };
+
+  const executeEditOtherUser = async () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    if (!editingUser?.id) return;
+
+    try {
+      setIsUpdatingOtherUser(true);
+      await api.updateProfile(editingUser.id, editFormData);
+      toast.success(`✨ Data ${editFormData.nickname} diperbarui!`);
+      setIsEditModalOpen(false);
+      fetchUsers();
+    } catch (err) {
+      console.error('Gagal update user:', err);
+      toast.error('❌ Gagal memperbarui data user.');
+    } finally {
+      setIsUpdatingOtherUser(false);
+    }
+  };
+
+  const handleDeleteUser = (user: UserProfile) => {
+    if (user.id === userProfile.id) {
+      toast.error('🚫 Anda tidak bisa menghapus akun Anda sendiri!');
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'delete',
+      title: 'Hapus Pengguna?',
+      message: `Apakah Anda yakin ingin menghapus ${user.nickname}? Aksi ini tidak dapat dibatalkan.`,
+      targetId: user.id
+    });
+  };
+
+  const executeDeleteUser = async () => {
+    const id = confirmModal.targetId;
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    
+    if (!id) return;
+
+    try {
+      await api.deleteUser(id);
+      toast.success('🗑️ Pengguna telah dihapus');
+      fetchUsers();
+    } catch (err) {
+      console.error('Gagal hapus user:', err);
+      toast.error('❌ Gagal menghapus pengguna');
+    }
+  };
+
+  const handleEditOtherUser = (user: UserProfile) => {
+    setEditingUser(user);
+    setEditFormData({
+      username: user.username,
+      nickname: user.nickname,
+      role: user.role,
+      password: user.password || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
   const handleUpdateOtherUserRole = async (userId: string, newRole: string) => {
     try {
       await api.updateProfile(userId, { role: newRole });
+      toast.success('✅ Peran user diperbarui');
       fetchUsers();
     } catch (err) {
       console.error('Gagal update role:', err);
+      toast.error('❌ Gagal mengubah peran');
     }
   };
 
@@ -242,20 +367,37 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                      {users.map(u => (
                        <tr key={u.id} className="hover:bg-slate-50/50 transition-colors group">
                          <td className="px-6 py-4">
-                            <span className="font-bold text-slate-800 text-sm">{u.nickname}</span>
-                            {u.id === userProfile.id && <span className="ml-2 px-1.5 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase rounded">Anda</span>}
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-800 text-sm">{u.nickname}</span>
+                              {u.id === userProfile.id && <span className="text-[9px] font-black uppercase text-emerald-600">Anda (Sedang Login)</span>}
+                            </div>
                          </td>
                          <td className="px-6 py-4 text-xs font-mono text-slate-500">{u.username}</td>
                          <td className="px-6 py-4">
-                            <select 
-                              value={u.role}
-                              onChange={(e) => handleUpdateOtherUserRole(u.id!, e.target.value)}
-                              className="bg-transparent border-none text-xs font-bold text-[#8b7365] focus:ring-0 cursor-pointer hover:bg-white hover:shadow-sm px-2 py-1 rounded transition-all"
-                            >
-                               <option value="admin">Administrator</option>
-                               <option value="manager">Manager</option>
-                               <option value="kasir">Kasir</option>
-                            </select>
+                             <div className="flex items-center justify-between gap-4">
+                               <span className="text-xs font-bold text-[#8b7365] px-2 py-1 bg-slate-100 rounded-lg">
+                                  {u.role === 'admin' ? 'Administrator' : u.role === 'manager' ? 'Manager' : 'Kasir'}
+                               </span>
+
+                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <button 
+                                   onClick={() => handleEditOtherUser(u)}
+                                   className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                   title="Edit Data"
+                                 >
+                                   <Pencil className="w-3.5 h-3.5" />
+                                 </button>
+                                 {u.id !== userProfile.id && (
+                                   <button 
+                                     onClick={() => handleDeleteUser(u)}
+                                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                     title="Hapus User"
+                                   >
+                                     <Trash2 className="w-3.5 h-3.5" />
+                                   </button>
+                                 )}
+                              </div>
+                            </div>
                          </td>
                        </tr>
                      ))}
@@ -273,7 +415,10 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                    <UserPlus className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-lg leading-tight">Tambah Anggota Tim</h3>
+                <div>
+                   <h3 className="font-bold text-lg leading-tight uppercase tracking-tighter">Tambah Anggota Baru</h3>
+                   <p className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Pendaftaran Tim</p>
+                </div>
              </div>
              
              <form onSubmit={handleAddUser} className="space-y-4">
@@ -354,6 +499,175 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
            </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+               className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl p-8 z-10"
+            >
+               <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mb-6">
+                  <AlertCircle className="w-8 h-8" />
+               </div>
+               
+               <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-3">
+                 {confirmModal.title}
+               </h3>
+               <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
+                 {confirmModal.message}
+               </p>
+               
+               <div className="flex gap-3">
+                 <button 
+                   onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                   className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                 >
+                   Batal
+                 </button>
+                 <button 
+                   onClick={
+                     confirmModal.type === 'profile_update' ? executeUpdateProfile : 
+                     confirmModal.type === 'add_new' ? executeAddUser : 
+                     confirmModal.type === 'edit_other' ? executeEditOtherUser :
+                     executeDeleteUser
+                   }
+                   className={cn(
+                     "flex-1 py-3.5 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl",
+                     confirmModal.type === 'delete' ? "bg-red-500 hover:bg-red-600 shadow-red-500/20" : "bg-[#8b7365] hover:bg-[#7a6458] shadow-[#8b7365]/20"
+                   )}
+                 >
+                   {confirmModal.type === 'delete' ? 'Ya, Hapus' : 'Ya, Lanjutkan'}
+                 </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit User Modal Popup */}
+      <AnimatePresence>
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setIsEditModalOpen(false)}
+               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+               className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col z-10"
+            >
+               {/* Modal Header */}
+               <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365]">
+                       <Pencil className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Edit Anggota Tim</h2>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Perbarui Akses & Informasi</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+               </div>
+
+               {/* Modal Body */}
+               <div className="p-8 space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                     <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Nickname</label>
+                        <input 
+                          type="text" 
+                          value={editFormData.nickname}
+                          onChange={e => setEditFormData({...editFormData, nickname: e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all"
+                        />
+                     </div>
+                     <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Username</label>
+                        <input 
+                          type="text" 
+                          value={editFormData.username}
+                          onChange={e => setEditFormData({...editFormData, username: e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all"
+                        />
+                     </div>
+                  </div>
+
+                  <div>
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Peran (Role)</label>
+                     <select 
+                       value={editFormData.role}
+                       onChange={e => setEditFormData({...editFormData, role: e.target.value})}
+                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all appearance-none"
+                     >
+                        <option value="admin">Administrator</option>
+                        <option value="manager">Manager</option>
+                        <option value="kasir">Kasir</option>
+                     </select>
+                  </div>
+
+                  <div>
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Ganti Password</label>
+                     <div className="relative">
+                        <input 
+                          type={showEditPassword ? "text" : "password"} 
+                          value={editFormData.password || ''}
+                          onChange={e => setEditFormData({...editFormData, password: e.target.value})}
+                          placeholder="••••••••"
+                          className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => setShowEditPassword(!showEditPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                           {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Modal Footer */}
+               <div className="p-8 border-t border-slate-50 bg-slate-50/10 flex gap-4">
+                  <button 
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={handleEditOtherUserRequest}
+                    disabled={isUpdatingOtherUser}
+                    className="flex-1 py-4 bg-[#8b7365] text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 disabled:opacity-50"
+                  >
+                    {isUpdatingOtherUser ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

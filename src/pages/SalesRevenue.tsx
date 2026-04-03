@@ -193,22 +193,20 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10"
             >
                {/* Modal Header */}
-               <div className="p-8 border-b border-slate-50 flex items-center justify-between no-print">
-                  <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
-                        <FileText className="w-6 h-6" />
-                     </div>
-                     <div>
-                        <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Rekap Harian</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(selectedDate).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
-                     </div>
-                  </div>
+               <div className="p-8 border-b border-slate-50 flex flex-col items-start relative no-print">
                   <button 
                     onClick={() => setIsReportModalOpen(false)}
-                    className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
+                    className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
                   >
                      <X className="w-6 h-6" />
                   </button>
+                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm shadow-[#8b7365]/10">
+                     <FileText className="w-8 h-8" />
+                  </div>
+                  <div>
+                     <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">Rekap Harian</h2>
+                     <p className="text-[10px] font-black text-slate-400 tracking-widest">{new Date(selectedDate).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
+                  </div>
                </div>
 
                {/* Report Area for Printing */}
@@ -225,7 +223,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                         {[
                            { label: 'Total Tunai', value: stats.cashRevenue, color: 'text-slate-900', bg: 'bg-white border-2 border-slate-900/5' },
                            { label: 'Total QRIS/Debit', value: stats.digitalRevenue, color: 'text-slate-900', bg: 'bg-white border-2 border-slate-900/5' },
-                           { label: 'TOTAL OMZET', value: stats.totalRevenue, color: 'text-slate-900', bg: 'bg-slate-900' }
+                           { label: 'TOTAL OMZET', value: stats.totalRevenue, color: 'text-white', bg: 'bg-[#8b7365]' }
                         ].map((p, i) => (
                            <div key={i} className={cn("p-6 rounded-[32px]", p.bg)}>
                               <p className={cn("text-[10px] font-black uppercase tracking-widest mb-1", i === 2 ? "text-slate-300" : "text-slate-400")}>{p.label}</p>
@@ -286,7 +284,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                </div>
 
                {/* Modal Footer */}
-               <div className="p-8 border-t border-slate-50 flex gap-4 bg-slate-50/20 no-print">
+                <div className="p-8 border-t border-slate-50 bg-slate-50/20 no-print">
                   <button 
                     onClick={() => {
                        const originalTitle = document.title;
@@ -294,7 +292,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                        window.print();
                        setTimeout(() => { document.title = originalTitle; }, 100);
                     }}
-                    className="flex-1 py-4 bg-slate-900 text-white rounded-3xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-[#8b7365] text-white rounded-3xl text-sm font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 flex items-center justify-center gap-3"
                   >
                      <Printer className="w-5 h-5" /> Download PDF / Cetak
                   </button>
@@ -321,77 +319,75 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                exit={{ opacity: 0, scale: 0.95, y: 20 }}
                className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-               <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white">
-                        <TrendingUp className="w-6 h-6" />
-                     </div>
-                     <div>
-                        <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Pengaturan Target</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Atur Goal & Item Prioritas</p>
-                     </div>
-                  </div>
-                  <button onClick={() => setIsTargetModalOpen(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400">
+               <div className="p-8 border-b border-slate-50 flex flex-col items-start relative">
+                  <button onClick={() => setIsTargetModalOpen(false)} className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400">
                      <X className="w-6 h-6" />
                   </button>
+                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm shadow-[#8b7365]/10">
+                     <TrendingUp className="w-8 h-8" />
+                  </div>
+                  <div>
+                     <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">Pengaturan Target</h2>
+                     <p className="text-[10px] font-black text-slate-400 tracking-widest">Atur goal & item prioritas</p>
+                  </div>
                </div>
 
                <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
                   {/* Daily Target Amount */}
                   <div>
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Target Omzet Harian (Rp)</label>
-                     <div className="relative">
-                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                        <input 
-                          type="number"
-                          value={dailyTargetAmount}
-                          onChange={e => setDailyTargetAmount(Number(e.target.value))}
-                          className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-lg font-black text-slate-800 focus:ring-2 focus:ring-emerald-500/10 transition-all"
-                        />
-                     </div>
-                  </div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block px-1">Target Omzet Harian (Rp)</label>
+                      <div className="relative">
+                         <input 
+                           type="number"
+                           value={dailyTargetAmount}
+                           onChange={e => setDailyTargetAmount(Number(e.target.value))}
+                           placeholder="Contoh: 5000000"
+                           className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black text-slate-800 focus:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] transition-all outline-none"
+                         />
+                      </div>
+                   </div>
 
                   {/* Focus Items List */}
                   <div>
-                     <div className="flex items-center justify-between mb-4">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Fokus Utama</label>
-                        <button 
-                          onClick={() => setFocusItemsConfig([...focusItemsConfig, { name: '', target: 50 }])}
-                          className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg hover:bg-emerald-100 transition-all uppercase tracking-widest"
-                        >
-                           + Tambah Item
-                        </button>
-                     </div>
+                      <div className="flex items-center justify-between mb-4 px-1">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Fokus Utama</label>
+                         <button 
+                           onClick={() => setFocusItemsConfig([...focusItemsConfig, { name: '', target: 50 }])}
+                           className="text-[9px] font-black text-[#8b7365] bg-[#8b7365]/5 px-3 py-1.5 rounded-lg hover:bg-[#8b7365]/10 transition-all uppercase tracking-widest border border-[#8b7365]/10"
+                         >
+                            + Tambah Item
+                         </button>
+                      </div>
                      <div className="space-y-3">
                         {focusItemsConfig.map((item, idx) => (
                            <div key={idx} className="flex gap-3 items-center group">
                               <div className="flex-1">
-                                 <button 
-                                   onClick={() => {
-                                      setEditingIndex(idx);
-                                      setIsProductPickerOpen(true);
-                                   }}
-                                   className={cn(
-                                     "w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-bold text-left transition-all hover:bg-slate-100 focus:ring-2 focus:ring-[#8b7365]/10 flex items-center justify-between",
-                                     item.name ? "text-slate-700" : "text-slate-300"
-                                   )}
-                                 >
-                                    <span className="truncate">{item.name || 'Klik untuk pilih produk...'}</span>
-                                    <ChevronRight className="w-4 h-4 text-slate-300" />
-                                 </button>
+                                  <button 
+                                    onClick={() => {
+                                       setEditingIndex(idx);
+                                       setIsProductPickerOpen(true);
+                                    }}
+                                    className={cn(
+                                      "w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-left transition-all hover:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] flex items-center justify-between outline-none group/btn",
+                                      item.name ? "text-slate-700" : "text-slate-300"
+                                    )}
+                                  >
+                                     <span className="truncate">{item.name || 'Pilih produk...'}</span>
+                                     <ChevronRight className="w-4 h-4 text-slate-300 group-hover/btn:translate-x-0.5 transition-transform" />
+                                  </button>
                               </div>
                               <div className="w-24">
-                                 <input 
-                                   type="number"
-                                   value={item.target}
-                                   onChange={e => {
-                                      const newConfig = [...focusItemsConfig];
-                                      newConfig[idx].target = Number(e.target.value);
-                                      setFocusItemsConfig(newConfig);
-                                   }}
-                                   placeholder="Goal"
-                                   className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-black text-center text-[#8b7365] focus:ring-2 focus:ring-[#8b7365]/10"
-                                 />
+                                  <input 
+                                    type="number"
+                                    value={item.target}
+                                    onChange={e => {
+                                       const newConfig = [...focusItemsConfig];
+                                       newConfig[idx].target = Number(e.target.value);
+                                       setFocusItemsConfig(newConfig);
+                                    }}
+                                    placeholder="Goal"
+                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black text-center text-[#8b7365] focus:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all"
+                                  />
                               </div>
                               <button 
                                 onClick={() => setFocusItemsConfig(focusItemsConfig.filter((_, i) => i !== idx))}
@@ -420,7 +416,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
                   <button 
                     onClick={saveStoreSettings}
                     disabled={isSavingTargets}
-                    className="flex-1 py-4 bg-emerald-600 text-white rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3"
+                    className="flex-1 py-4 bg-[#8b7365] text-white rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 flex items-center justify-center gap-3"
                   >
                      {isSavingTargets ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
