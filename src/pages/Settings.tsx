@@ -476,7 +476,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                 <button 
                   type="submit"
                   disabled={isAddingUser}
-                  className="w-full bg-white text-[#8b7365] font-black uppercase text-xs tracking-widest py-3.5 rounded-xl hover:bg-slate-50 transition-colors shadow-lg shadow-black/10 mt-4 disabled:opacity-50"
+                  className="w-full bg-white text-[#8b7365] font-black text-xs py-3.5 rounded-xl hover:bg-slate-50 transition-colors shadow-lg shadow-black/10 mt-4 disabled:opacity-50"
                 >
                   {isAddingUser ? 'Mendaftarkan...' : 'Daftarkan Pengguna'}
                 </button>

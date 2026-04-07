@@ -1386,7 +1386,7 @@ export default function App() {
                      <User className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="hidden md:flex flex-col items-start leading-tight">
-                     <span className="text-xs font-display font-black text-slate-800 uppercase tracking-tighter truncate max-w-[100px]">
+                     <span className="text-xs font-display font-black text-slate-800 tracking-tighter truncate max-w-[100px]">
                         {userProfile.nickname}
                      </span>
                      <span className="text-[9px] font-bold text-[#8b7365] uppercase tracking-widest truncate max-w-[100px]">
