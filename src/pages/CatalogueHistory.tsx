@@ -128,17 +128,19 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
         )}
       </AnimatePresence>
 
-      <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <BookOpen className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Catalogue Drafts</h1>
+      <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-2">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
+            <BookOpen className="w-8 h-8" />
           </div>
-          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Daftar katalog yang sedang dalam proses pengerjaan</p>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Catalogue Drafts</h1>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Daftar katalog yang sedang dalam proses pengerjaan</p>
+          </div>
         </div>
         <button 
           onClick={() => onNavigate('catalogue')}
-          className="bg-[#8b7365] text-white px-5 py-2.5 rounded-xl hover:bg-[#725e52] transition flex items-center gap-2 font-bold shadow-sm text-sm"
+          className="bg-[#8b7365] text-white px-6 py-3 rounded-2xl hover:bg-[#725e52] transition flex items-center gap-2 font-black shadow-xl shadow-[#8b7365]/20 text-sm"
         >
           <Plus className="w-4 h-4" />
           Buat Katalog Baru

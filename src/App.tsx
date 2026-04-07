@@ -6,7 +6,7 @@ import {
   BookOpen, Megaphone, LayoutDashboard, Search, TrendingUp,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
   Menu, LogOut, Bell, Settings as SettingsIcon, User, X, ChevronLeft,
-  History, Truck, BarChart3
+  History, Truck, BarChart3, ClipboardCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -25,9 +25,10 @@ import Supply from './pages/Supply';
 import POS from './pages/POS';
 import SalesRevenue from './pages/SalesRevenue';
 import Notifications from './pages/Notifications';
+import StockOpname from './pages/StockOpname';
 import NotificationPopup from './components/NotificationPopup';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -351,13 +352,15 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
   return (
     <div className="flex-1 flex flex-col">
       {/* Catalogue Header */}
-      <div className="px-8 pt-8 pb-4 flex items-center justify-between">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <BookOpen className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl text-slate-800 tracking-tight leading-none">Catalogue Generator</h1>
+      <div className="px-8 pt-8 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
+            <BookOpen className="w-8 h-8" />
           </div>
-          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Buat katalog promosi profesional dengan mudah</p>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Catalogue Generator</h1>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Buat katalog promosi profesional dengan mudah</p>
+          </div>
         </div>
         <div className="flex gap-3">
           {editingCatalogue ? (
@@ -1125,8 +1128,8 @@ export default function App() {
     const isManager = role.includes('manager');
     
     const allowed: Page[] = ['dashboard', 'settings', 'pos', 'revenue'];
-    if (isManager) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'notifications');
-    if (isAdmin) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'activity', 'analytics', 'notifications');
+    if (isManager) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'notifications', 'stock_opname');
+    if (isAdmin) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'activity', 'analytics', 'notifications', 'stock_opname');
     
     if (!allowed.includes(currentPage)) {
       setCurrentPage('dashboard');
@@ -1152,6 +1155,7 @@ export default function App() {
     { id: 'revenue', label: 'Sales Report', icon: <TrendingUp className="w-5 h-5 shrink-0" /> },
     { id: 'products', label: 'Product Database', icon: <Package className="w-5 h-5 shrink-0" /> },
     { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-5 h-5 shrink-0" /> },
+    { id: 'stock_opname', label: 'Stock Opname', icon: <ClipboardCheck className="w-5 h-5 shrink-0" /> },
     { id: 'pos', label: 'POS', icon: <QrCode className="w-5 h-5 shrink-0" /> },
     { id: 'activity', label: 'Activity Log', icon: <History className="w-5 h-5 shrink-0" /> },
     { id: 'analytics', label: 'Revenue', icon: <BarChart3 className="w-5 h-5 shrink-0" /> },
@@ -1177,7 +1181,7 @@ export default function App() {
     if (item.id === 'settings' || item.id === 'dashboard' || isAdmin) return true;
     
     // Role Manager
-    if (isManager) return ['catalogue', 'promotions', 'history', 'revenue', 'pos', 'products', 'supply', 'notifications'].includes(item.id);
+    if (isManager) return ['catalogue', 'promotions', 'history', 'revenue', 'pos', 'products', 'supply', 'notifications', 'stock_opname'].includes(item.id);
     
     // Role Kasir
     if (isKasir) return ['pos', 'revenue'].includes(item.id);
@@ -1236,7 +1240,7 @@ export default function App() {
         }}
         transition={{ type: "spring", stiffness: 400, damping: 40 }}
         className={cn(
-          "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative",
+          "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative no-print",
           "fixed lg:relative top-0 left-0"
         )}
       >
@@ -1317,7 +1321,7 @@ export default function App() {
       <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
         {/* Top Header - Redesigned Sticky */}
         {currentPage !== 'pos' && (
-          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm no-print">
             <div className="flex items-center gap-3 md:gap-8 flex-1">
               <button 
                 onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
@@ -1425,6 +1429,7 @@ export default function App() {
                 { currentPage === 'pos' && <POS onNavigate={setCurrentPage} userProfile={userProfile} /> }
                 { currentPage === 'revenue' && <SalesRevenue userProfile={userProfile} /> }
                 { currentPage === 'notifications' && <Notifications userProfile={userProfile} /> }
+                { currentPage === 'stock_opname' && <StockOpname /> }
                 { currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} /> }
               </motion.div>
             </AnimatePresence>

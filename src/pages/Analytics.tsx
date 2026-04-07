@@ -108,12 +108,14 @@ export default function Analytics() {
   return (
     <div className="flex-1 flex flex-col h-screen bg-slate-50 overflow-hidden relative">
       <div className="px-8 py-6 bg-transparent flex items-center justify-between z-10 transition-all">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none ">Revenue</h1>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
+            <BarChart3 className="w-8 h-8" />
           </div>
-          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none ">Laporan & Analisis Omzet</p>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Revenue</h1>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Laporan & Analisis Omzet</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -123,7 +125,7 @@ export default function Analytics() {
                   key={r}
                   onClick={() => setTimeRange(r)}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                    "px-4 py-2 rounded-xl text-[12px] font-black transition-all",
                     timeRange === r ? "bg-[#8b7365] text-white shadow-lg shadow-[#8b7365]/20" : "text-slate-400 hover:text-slate-600"
                   )}
                 >

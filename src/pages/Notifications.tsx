@@ -153,17 +153,19 @@ export default function Notifications({ userProfile }: NotificationsProps) {
   return (
     <div className="flex-1 flex flex-col h-screen bg-slate-50 overflow-hidden">
       {/* Header */}
-      <div className="px-8 py-6 bg-transparent flex items-center justify-between z-10">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Bell className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">
+      <div className="px-8 py-6 bg-transparent flex flex-col md:flex-row md:items-center justify-between gap-6 z-10 no-print">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
+            <Bell className="w-8 h-8" />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">
               {isAdmin ? 'Pusat Notifikasi' : 'Notifikasi'}
             </h1>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">
+              {isAdmin ? 'Kelola & Jadwalkan Notifikasi untuk Tim' : 'Kotak Masuk Pesan & Info Toko'}
+            </p>
           </div>
-          <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">
-            {isAdmin ? 'Kelola & Jadwalkan Notifikasi untuk Tim' : 'Kotak Masuk Pesan & Info Toko'}
-          </p>
         </div>
 
         {isAdmin && (
