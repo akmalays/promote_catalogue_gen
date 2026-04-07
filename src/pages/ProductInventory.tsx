@@ -3,6 +3,7 @@ import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
+import LoadingScreen from '../components/LoadingScreen';
 import toast from 'react-hot-toast';
 
 interface Product {
@@ -274,10 +275,10 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
       </div>
 
       {isLoading ? (
-        <div className="h-[400px] flex items-center justify-center flex-col gap-4">
-           <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#8b7365] border-t-transparent"></div>
-           <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">Sinkronisasi Database...</p>
-        </div>
+        <LoadingScreen 
+          message="Sinkronisasi Database Produk..."
+          subMessage="Kami sedang mengambil seluruh daftar stok dan item terbaru untuk Anda."
+        />
       ) : (
         <>
           {/* Low Stock Alerts (Expandable) */}

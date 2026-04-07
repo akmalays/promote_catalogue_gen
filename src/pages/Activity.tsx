@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, History, User, Users, ChevronLeft, ChevronRight, X, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import LoadingScreen from '../components/LoadingScreen';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
 
@@ -218,10 +219,10 @@ export default function Activity() {
       </div>
 
       {isLoading ? (
-        <div className="h-96 flex items-center justify-center flex-col text-slate-400">
-          <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div>
-          <p className="font-bold">Menyiapkan Kalender Aktivitas...</p>
-        </div>
+        <LoadingScreen 
+          message="Menyiapkan Kalender Aktivitas..."
+          subMessage="Kami sedang menyinkronkan riwayat promosi dan blast terbaru untuk Anda."
+        />
       ) : (
         <div className="grid grid-cols-7 gap-4">
           {renderCalendar()}

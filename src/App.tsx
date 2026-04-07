@@ -5,7 +5,7 @@ import {
   Palette, CheckCircle2,
   BookOpen, Megaphone, LayoutDashboard, Search, TrendingUp,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
-  Menu, LogOut, Bell, Settings as SettingsIcon, User, X,
+  Menu, LogOut, Bell, Settings as SettingsIcon, User, X, ChevronLeft,
   History, Truck, BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -72,7 +72,7 @@ function SaveDraftModal({ isOpen, onCancel, onConfirm, initialName }: {
           <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
             <Plus className="w-6 h-6 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Simpan Draft</h2>
+          <h2 className="text-2xl font-display font-black text-slate-800 tracking-tight">Simpan Draft</h2>
           <p className="text-slate-500 text-sm mt-1">Beri nama atau tema untuk draf katalog ini.</p>
         </div>
 
@@ -355,7 +355,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <BookOpen className="w-5 h-5 text-[#8b7365]" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Catalogue Generator</h1>
+            <h1 className="text-2xl text-slate-800 tracking-tight leading-none">Catalogue Generator</h1>
           </div>
           <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Buat katalog promosi profesional dengan mudah</p>
         </div>
@@ -580,10 +580,10 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                           <label className="text-xs font-bold text-slate-500">Gaya Teks (Font Style)</label>
                           <select value={catalog.headerFontFamily} onChange={e => setCatalog(p => ({ ...p, headerFontFamily: e.target.value }))}
                             className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="font-black">Tebal / Extra Bold (Default)</option>
-                            <option value="font-sans font-bold">Sans-Serif Bold</option>
-                            <option value="font-serif font-black">Serif Black (Klasik)</option>
-                            <option value="font-mono font-bold">Monospace Bold</option>
+                             <option value="font-display font-black">Jakarta Black (Modern)</option>
+                             <option value="font-sans font-bold">Jakarta Bold (Clean)</option>
+                             <option value="font-serif font-black">Playfair Black (Klasik)</option>
+                             <option value="font-mono font-bold">Grotesk Mono (Modern+)</option>
                           </select>
                        </div>
                     </div>
@@ -836,7 +836,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                                   catalog.templateId === 'floral-tropical' && "bg-white/90 border-emerald-200 shadow-emerald-50/50",
                                   catalog.templateId === 'floral-vintage' && "bg-[#fffbf0]/90 border-amber-200 shadow-amber-50/50")}>
                               <div className="w-full mb-1 h-10 overflow-hidden relative z-10">
-                                <h3 className={cn("text-[9px] font-black leading-none uppercase text-slate-900 truncate",
+                                <h3 className={cn("text-[9px] font-display font-black leading-none uppercase text-slate-900 truncate",
                                   catalog.templateId === 'modern-dark' && "text-white")}>{item.brand}</h3>
                                 <div className={cn("text-[8px] font-bold leading-tight text-slate-800 line-clamp-1",
                                   catalog.templateId === 'modern-dark' && "text-slate-200")}>{item.name}</div>
@@ -862,15 +862,15 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                                   <>
                                     <div className={cn("bg-[#ffcc00] transform -skew-x-[15deg] origin-bottom-left rounded-t-sm shadow-sm inline-flex items-center justify-center gap-1 relative z-0 translate-y-[2px] ml-1",
                                       row.items.length === 4 ? "px-2.5 py-0.5 min-w-[65px]" : "px-4 py-0.5 min-w-[70px]")}>
-                                      <span className={cn("font-black text-slate-800 skew-x-[15deg] uppercase leading-none whitespace-nowrap",
-                                        row.items.length === 4 ? "text-[10px]" : "text-[12px]")}>Beli {item.buyQuantity || 2}</span>
+                                      <span className={cn("font-display font-black text-slate-800 skew-x-[15deg] uppercase leading-none whitespace-nowrap",
+                                        row.items.length === 4 ? "text-[8px]" : row.items.length === 3 ? "text-[9px]" : "text-[10px]")}>Beli {item.buyQuantity || 2}</span>
                                     </div>
                                     <div className={cn("bg-[#ed1c24] transform -skew-x-[15deg] origin-top-left rounded-sm shadow-md inline-flex items-center justify-center gap-0.5 relative z-10",
                                       row.items.length === 4 ? "px-3.5 py-1 min-w-[95px]" : "px-5 py-1.5 min-w-[100px]",
                                       catalog.templateId === 'floral-spring' && "bg-rose-500",
                                       catalog.templateId === 'floral-tropical' && "bg-teal-600",
                                       catalog.templateId === 'floral-vintage' && "bg-orange-700")}>
-                                      <span className={cn("font-black text-white skew-x-[15deg] uppercase tracking-tighter leading-none whitespace-nowrap",
+                                      <span className={cn("font-display font-black text-white skew-x-[15deg] uppercase tracking-tighter leading-none whitespace-nowrap",
                                         row.items.length === 4 ? "text-[13px]" : "text-[16px]")}>Gratis {item.getQuantity || 1}</span>
                                     </div>
                                   </>
@@ -889,7 +889,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
                                       catalog.templateId === 'floral-tropical' && "bg-teal-600",
                                       catalog.templateId === 'floral-vintage' && "bg-orange-700")}>
                                       <span className="text-[7px] font-black text-white skew-x-[15deg] uppercase">Rp</span>
-                                      <span className="text-[15px] font-black text-white skew-x-[15deg] tracking-tighter leading-none">{item.discountedPrice.toLocaleString('id-ID')}</span>
+                                      <span className="text-[15px] font-display font-black text-white skew-x-[15deg] tracking-tighter leading-none">{item.discountedPrice.toLocaleString('id-ID')}</span>
                                       <span className="text-[7px] font-black text-white skew-x-[15deg] opacity-90">/{item.unit}</span>
                                     </div>
                                   </>
@@ -987,7 +987,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
               </button>
 
               <div className="mb-6">
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Cari di Database Master</h2>
+                <h2 className="text-2xl font-display font-black text-slate-800 tracking-tight">Cari di Database Master</h2>
                 <p className="text-slate-500 text-sm font-medium">Pilih produk untuk mengisi baris katalog secara otomatis.</p>
               </div>
 
@@ -1231,58 +1231,17 @@ export default function App() {
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isSidebarExpanded ? 260 : 72,
+          width: isSidebarExpanded ? 260 : 80,
           x: (typeof window !== 'undefined' && window.innerWidth < 1024 && !isSidebarExpanded) ? -260 : 0
         }}
+        transition={{ type: "spring", stiffness: 400, damping: 40 }}
         className={cn(
-          "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative transition-all duration-300",
+          "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative",
           "fixed lg:relative top-0 left-0"
         )}
       >
-        {/* Toggle Button Container for Alignment */}
-        <div className={cn("flex items-center px-6 py-8 transition-all duration-300", 
-           isSidebarExpanded ? "justify-between" : "justify-center")}>
-          
-          <AnimatePresence mode="wait">
-            {isSidebarExpanded && (
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                key="logo-expanded"
-                className="flex items-center gap-0 overflow-hidden ml-0"
-              >
-                 <div className="w-14 h-14 shrink-0 flex items-center justify-center">
-                    <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
-                 </div>
-                 <div className="flex flex-col min-w-0">
-                   <p className="font-black text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis uppercase tracking-tighter">MY STORE</p>
-                   <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5 whitespace-nowrap">STUDIO</p>
-                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <button 
-            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            className="p-2.5 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800 group relative cursor-pointer active:scale-95 z-[110] lg:flex hidden items-center justify-center"
-          >
-            <Menu className="w-5 h-5" />
-            {!isSidebarExpanded && (
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-3 py-2 bg-slate-800 text-white text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700">
-                    Expand Menu
-                    <div className="absolute top-1/2 -left-1.5 transform -translate-y-1/2 border-y-[5px] border-y-transparent border-r-[6px] border-r-slate-800" />
-                </div>
-            )}
-          </button>
-          
-          <button 
-            onClick={() => setIsSidebarExpanded(false)}
-            className="p-2 lg:hidden text-slate-500 hover:text-slate-800"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Top Spacer - Minimalist */}
+        <div className="h-10" />
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-visible">
@@ -1295,8 +1254,8 @@ export default function App() {
               }}
               title={item.label}
               className={cn(
-                "w-full flex items-center group relative transition-all duration-200 rounded-xl px-4 py-3.5",
-                isSidebarExpanded ? "justify-start" : "justify-center",
+                "flex items-center group relative transition-all duration-200 rounded-xl",
+                isSidebarExpanded ? "w-full px-4 py-3.5 justify-start" : "w-12 h-12 justify-center mx-auto",
                 currentPage === item.id
                   ? "bg-[#8b7365] text-white shadow-lg shadow-[#8b7365]/20 translate-x-1"
                   : "text-slate-400 hover:bg-slate-100 hover:text-slate-800"
@@ -1358,23 +1317,30 @@ export default function App() {
       <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
         {/* Top Header - Redesigned Sticky */}
         {currentPage !== 'pos' && (
-          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all duration-300">
+          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
             <div className="flex items-center gap-3 md:gap-8 flex-1">
               <button 
-                onClick={() => setIsSidebarExpanded(true)}
-                className="p-2 lg:hidden text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+                onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                className="w-12 h-12 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-900 rounded-xl transition-all duration-300 shadow-sm border border-slate-100 flex items-center justify-center group active:scale-95 shrink-0"
+                title={isSidebarExpanded ? "Sembunyikan Sidebar" : "Tampilkan Sidebar"}
               >
-                <Menu className="w-6 h-6" />
+                <div className="relative">
+                   {isSidebarExpanded ? (
+                     <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+                   ) : (
+                     <Menu className="w-5 h-5" />
+                   )}
+                </div>
               </button>
 
               <div className="flex items-center gap-0 -ml-2">
-                <div className="h-16 shrink-0 hidden md:flex items-center justify-center">
+                <div className="h-12 shrink-0 hidden md:flex items-center justify-center">
                   <img src={logoAsset} alt="Logo" className="h-full w-auto object-contain" />
                 </div>
                 <div className="flex flex-col">
-                   <h1 className="text-lg md:text-xl font-black text-[#6d4d42] tracking-tight leading-none uppercase">myStore</h1>
-                   <span className="text-[10px] font-black text-[#6d4d42]/40 uppercase tracking-[0.2em] mt-1 ml-0.5">Studio</span>
-                </div>
+                    <h1 className="text-lg md:text-xl font-display font-black text-slate-900 tracking-tighter leading-none uppercase">myStore</h1>
+                    <span className="text-[9px] font-display font-bold text-[#8b7365]/60 uppercase tracking-[0.3em] mt-1 ml-0.5 leading-none">Studio</span>
+                 </div>
               </div>
               
               <div className="relative w-full max-w-lg hidden lg:flex items-center">
@@ -1391,16 +1357,23 @@ export default function App() {
 
             <div className="flex items-center gap-2 md:gap-5 text-[#6d4d42]/70 ml-2 md:ml-8">
                <NotificationPopup onBellClick={() => setCurrentPage('notifications')} />               
-               <button 
-                 onClick={() => setCurrentPage('settings')}
-                 title="Pengaturan Profil"
-                 className={cn(
-                   "hidden sm:flex p-2.5 rounded-full hover:bg-slate-100 transition-all items-center justify-center group transform active:scale-95 shadow-sm border",
-                   currentPage === 'settings' ? "bg-[#8b7365] text-white border-[#8b7365]" : "bg-white border-slate-100 text-[#6d4d42]/70"
-                 )}
-               >
-                  <SettingsIcon className="w-5 h-5 group-hover:text-inherit" />
-               </button>
+               <div className="relative group/settings">
+                 <button 
+                   onClick={() => setCurrentPage('settings')}
+                   className={cn(
+                     "hidden sm:flex p-2.5 rounded-full hover:bg-slate-100 transition-all items-center justify-center group transform active:scale-95 shadow-sm border",
+                     currentPage === 'settings' ? "bg-[#8b7365] text-white border-[#8b7365]" : "bg-white border-slate-100 text-[#6d4d42]/70"
+                   )}
+                 >
+                    <SettingsIcon className="w-5 h-5 group-hover:text-inherit" />
+                 </button>
+                 
+                 {/* Custom Tooltip */}
+                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/settings:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700 translate-y-2 group-hover/settings:translate-y-0">
+                    Pengaturan Profil
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-[6px] border-x-transparent border-b-[6px] border-b-slate-800" />
+                 </div>
+               </div>
 
                <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block" />
 
@@ -1413,7 +1386,7 @@ export default function App() {
                      <User className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="hidden md:flex flex-col items-start leading-tight">
-                     <span className="text-xs font-black text-slate-800 uppercase tracking-tighter truncate max-w-[100px]">
+                     <span className="text-xs font-display font-black text-slate-800 uppercase tracking-tighter truncate max-w-[100px]">
                         {userProfile.nickname}
                      </span>
                      <span className="text-[9px] font-bold text-[#8b7365] uppercase tracking-widest truncate max-w-[100px]">

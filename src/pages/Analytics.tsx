@@ -11,6 +11,7 @@ import {
   PieChart, Pie
 } from 'recharts';
 import { motion } from 'motion/react';
+import LoadingScreen from '../components/LoadingScreen';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 
@@ -98,21 +99,10 @@ export default function Analytics() {
   const COLORS = ['#8b7365', '#a38b7d', '#bdab9f', '#d7ccc4', '#f1edea'];
 
   if (isLoading) return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 h-[70vh] w-full">
-       <motion.div 
-         animate={{ rotate: 360 }}
-         transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-         className="w-12 h-12 border-4 border-[#8b7365] border-t-transparent rounded-full mb-6 shadow-xl shadow-[#8b7365]/10" 
-       />
-       <motion.p 
-         initial={{ opacity: 0 }}
-         animate={{ opacity: 1 }}
-         transition={{ repeat: Infinity, duration: 1.5, repeatType: 'reverse' }}
-         className="text-[10px] font-black text-[#8b7365] uppercase tracking-[0.3em] text-center"
-       >
-         Menyiapkan Laporan Revenue...
-       </motion.p>
-    </div>
+    <LoadingScreen 
+      message="Menganalisis Laporan Omzet..."
+      subMessage="Kami sedang menghitung statistik penjualan dan pertumbuhan bisnis Anda."
+    />
   );
 
   return (
