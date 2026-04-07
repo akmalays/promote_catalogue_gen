@@ -244,6 +244,24 @@ export const api = {
     if (error) throw error;
     return true;
   },
+  // Stock Opname Session Management
+  getOpnameSessions: async () => {
+    const { data, error } = await supabase
+      .from('stock_opname_sessions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+  addOpnameSession: async (session: any) => {
+    const { data, error } = await supabase
+      .from('stock_opname_sessions')
+      .insert([session])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
   // Sales & POS Management
   addSale: async (sale: any) => {
     const { data, error } = await supabase

@@ -125,7 +125,7 @@ export default function Analytics() {
                   key={r}
                   onClick={() => setTimeRange(r)}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                    "px-4 py-2 rounded-xl text-[12px] font-black transition-all",
                     timeRange === r ? "bg-[#8b7365] text-white shadow-lg shadow-[#8b7365]/20" : "text-slate-400 hover:text-slate-600"
                   )}
                 >

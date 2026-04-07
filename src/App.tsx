@@ -1240,7 +1240,7 @@ export default function App() {
         }}
         transition={{ type: "spring", stiffness: 400, damping: 40 }}
         className={cn(
-          "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative",
+          "h-full flex flex-col bg-white border-r border-slate-200 z-[100] relative no-print",
           "fixed lg:relative top-0 left-0"
         )}
       >
@@ -1321,7 +1321,7 @@ export default function App() {
       <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
         {/* Top Header - Redesigned Sticky */}
         {currentPage !== 'pos' && (
-          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+          <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm no-print">
             <div className="flex items-center gap-3 md:gap-8 flex-1">
               <button 
                 onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
