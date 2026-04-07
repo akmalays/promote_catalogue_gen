@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
+import LoadingScreen from '../components/LoadingScreen';
 import { UserProfile } from '../types';
 
 interface DashboardProps {
@@ -46,24 +47,10 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
 
   if (isLoading || !data) {
     return (
-      <div className="flex-1 min-h-[80vh] bg-slate-50 flex items-center justify-center p-12">
-         <motion.div 
-           initial={{ opacity: 0, scale: 0.9 }}
-           animate={{ opacity: 1, scale: 1 }}
-           className="flex flex-col items-center gap-5 text-center"
-         >
-            <div className="relative">
-               <div className="w-16 h-16 border-4 border-[#8b7365]/10 border-t-[#8b7365] rounded-full animate-spin" />
-               <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-[#8b7365] rounded-full animate-pulse" />
-               </div>
-            </div>
-            <div className="space-y-1">
-               <p className="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">SINKRONISASI DATA</p>
-               <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">MOHON TUNGGU SEBENTAR...</p>
-            </div>
-         </motion.div>
-      </div>
+      <LoadingScreen 
+        message={`Halo, ${userProfile.nickname || 'User'}`}
+        subMessage="Kami sedang mengumpulkan laporan performa bisnis toko Anda hari ini."
+      />
     );
   }
 
@@ -79,7 +66,7 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
                <LayoutDashboard className="w-6 h-6" />
             </div>
             <div>
-               <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Dashboard</h1>
+               <h1 className="text-2xl text-slate-800 tracking-tight leading-none mb-1.5">Dashboard</h1>
                <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Pantau performa bisnis hari ini</p>
             </div>
           </div>
@@ -101,7 +88,7 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
         animate={{ opacity: 1, x: 0 }}
         className="mb-8 px-2"
       >
-        <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Halo, {userProfile.nickname || 'User'}!</h2>
+        <h2 className="text-2xl text-slate-800 tracking-tight leading-none">Halo, {userProfile.nickname || 'User'}!</h2>
       </motion.div>
 
       {/* Primary Metrics */}

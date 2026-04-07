@@ -1,19 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 @import "tailwindcss";
 
 @theme {
+  --font-plus: "Plus Jakarta Sans", sans-serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  
   --color-indomaret-blue: #0054a6;
   --color-indomaret-yellow: #ffcc00;
   --color-indomaret-red: #ed1c24;
-  
-  --font-display: "Inter", sans-serif;
-  --font-serif: "Playfair Display", serif;
-  --font-mono: "Space Grotesk", monospace;
 }
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 font-display;
+  *, ::before, ::after {
+    font-family: inherit;
+  }
+
+  html, body {
+    @apply bg-slate-50 text-slate-900;
+    font-family: "Plus Jakarta Sans", sans-serif !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .display-font, .font-display {
+    @apply tracking-tight font-black;
+    font-family: "Plus Jakarta Sans", sans-serif !important;
   }
 }
 

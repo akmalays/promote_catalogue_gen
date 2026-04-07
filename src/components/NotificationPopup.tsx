@@ -137,9 +137,8 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
   return (
     <>
       {/* Bell Button with Badge */}
-      <div ref={dropdownRef} className="relative">
+      <div ref={dropdownRef} className="relative group/bell">
         <button
-          title="Notifikasi"
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="p-2.5 rounded-full hover:bg-slate-100 transition-all flex items-center justify-center group relative transform active:scale-95 shadow-sm bg-white border border-slate-100"
         >
@@ -154,6 +153,12 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
             </motion.span>
           )}
         </button>
+
+        {/* Custom Tooltip */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/bell:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700 translate-y-2 group-hover/bell:translate-y-0">
+            Notifikasi
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-[6px] border-x-transparent border-b-[6px] border-b-slate-800" />
+        </div>
 
         {/* Dropdown Panel */}
         <AnimatePresence>

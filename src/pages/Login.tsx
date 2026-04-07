@@ -116,10 +116,11 @@ export default function Login({ onLogin }: LoginProps) {
                 className="w-full h-full object-contain filter brightness-125 saturate-110"
               />
             </motion.div>
-            <h1 className="text-3xl md:text-4xl font-black leading-none mb-6 tracking-tighter min-h-[3em]">
-              <span className="text-white tracking-[-0.05em]">myStore Studio</span><br />
+            <h1 className="text-3xl md:text-4xl font-display font-black leading-none mb-6 tracking-tighter min-h-[3em]">
+              <span className="text-white tracking-[-0.05em] uppercase">myStore </span>
+              <span className="text-white/40 tracking-[0.3em] uppercase text-xl font-bold">Studio</span><br />
               <span className="text-lg md:text-xl text-slate-500 font-bold block my-3 lowercase italic opacity-80">untuk</span>
-              <TypingText texts={["POS & Stok Terintegrasi", "Desain Katalog Otomatis", "WhatsApp Blast", "Laporan Penjualan", "Stock Opname & Inbound"]} /><br />
+              <TypingText texts={["POS & Stok Terintegrated", "Desain Katalog Otomatis", "WhatsApp Blast", "Laporan Penjualan", "Stock Opname & Inbound"]} /><br />
               <span className="text-white tracking-[-0.05em]">Bisnis Retail Anda.</span>
             </h1>
             <p className="text-slate-400 text-base max-w-sm leading-relaxed font-medium">
@@ -145,8 +146,8 @@ export default function Login({ onLogin }: LoginProps) {
               <img src={logoAsset} alt="Logo" className="w-full h-full object-contain drop-shadow-lg" />
             </motion.div>
             <div className="text-center">
-              <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">myStore</h1>
-              <span className="text-[9px] font-black text-slate-400 tracking-[0.3em] uppercase block mb-2">Studio</span>
+              <h1 className="text-2xl font-display font-black text-slate-900 tracking-tighter uppercase leading-none">myStore</h1>
+              <span className="text-[10px] font-display font-bold text-[#8b7365]/60 tracking-[0.4em] uppercase block mb-2 mt-1 leading-none">Studio</span>
               <div className="text-[10px] font-bold text-[#8b7365]">
                 <TypingText texts={["POS & Stok Terintegrasi", "Desain Katalog Otomatis", "WhatsApp Blast", "Laporan Penjualan", "Stock Opname & Inbound"]} />
               </div>
@@ -154,7 +155,7 @@ export default function Login({ onLogin }: LoginProps) {
           </div>
 
           <div className="mb-8 text-center lg:text-left">
-            <h2 className="text-2xl font-bold text-slate-800 mb-1.5">Selamat Datang</h2>
+            <h2 className="text-2xl font-display font-bold text-slate-800 mb-1.5">Selamat Datang</h2>
             <p className="text-slate-500 text-[13px] font-medium">Silahkan login untuk masuk ke akun anda</p>
           </div>
 

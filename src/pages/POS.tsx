@@ -746,15 +746,21 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                className="bg-white rounded-[40px] w-full max-w-lg shadow-2xl relative z-[610] overflow-hidden flex flex-col"
              >
-                <div className="p-8 bg-slate-50 border-b flex items-center justify-between">
-                   <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#8b7365] rounded-xl flex items-center justify-center text-white">
-                         <SettingsIcon className="w-5 h-5" />
+                <div className="p-8 pb-6 border-b border-slate-50 flex items-start justify-between bg-slate-50">
+                   <div className="flex flex-col items-start text-left">
+                      <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-5">
+                         <SettingsIcon className="w-6 h-6" />
                       </div>
-                      <h3 className="font-black text-slate-800 uppercase tracking-tight">Pengaturan Struk</h3>
+                      <div>
+                        <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Pengaturan Struk</h3>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Branding & Informasi Toko</p>
+                      </div>
                    </div>
-                   <button onClick={() => setIsSettingsOpen(false)} className="p-2 hover:bg-white rounded-full text-slate-300 hover:text-slate-500 transition-all">
-                      <X className="w-6 h-6" />
+                   <button 
+                     onClick={() => setIsSettingsOpen(false)} 
+                     className="p-2.5 hover:bg-white rounded-xl text-slate-400 hover:text-slate-500 transition-all -mr-2 -mt-2"
+                   >
+                     <X className="w-5 h-5" />
                    </button>
                 </div>
 
@@ -808,7 +814,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                         setIsSettingsOpen(false);
                         toast.success('Pengaturan Struk Disimpan!');
                       }}
-                      className="w-full py-4 bg-[#8b7365] text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-[#8b7365]/20 hover:bg-[#7a6458] transition-all"
+                      className="w-full py-3.5 bg-[#8b7365] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-[#8b7365]/20 hover:bg-[#7a6458] transition-all"
                    >
                       Simpan & Terapkan
                    </button>

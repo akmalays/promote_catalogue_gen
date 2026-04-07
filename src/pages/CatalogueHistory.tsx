@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Package, Plus, Search, Trash2, User, Calendar, X, Edit, Eye, BookOpen } from 'lucide-react';
 import { SavedCatalogue, UserProfile, CatalogData } from '../types';
+import LoadingScreen from '../components/LoadingScreen';
 import { api } from '../lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -158,10 +159,10 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
         </div>
         
         {isLoading ? (
-          <div className="p-20 text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-[#8b7365] border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-slate-400 font-medium">Memuat riwayat...</p>
-          </div>
+          <LoadingScreen 
+            message="Mengambil Daftar Draft..."
+            subMessage="Kami sedang menyiapkan seluruh katalog dan kampanye yang tersimpan untuk Anda."
+          />
         ) : filtered.length === 0 ? (
            <div className="p-16 text-center flex flex-col items-center justify-center">
              <div className="w-16 h-16 bg-[#f4f2ef] flex items-center justify-center rounded-full mb-4">
