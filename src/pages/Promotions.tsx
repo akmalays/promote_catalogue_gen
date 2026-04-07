@@ -244,13 +244,15 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
         animate={{ opacity: 1, y: 0 }}
         className="px-8 pt-8 pb-4"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-1">
-              <Megaphone className="w-5 h-5 text-[#8b7365]" />
-              <h1 className="text-2xl font-display font-black text-slate-800 tracking-tight leading-none">Promotions Blast</h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
+              <Megaphone className="w-8 h-8" />
             </div>
-            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Kelola kontak pelanggan dan broadcast promo via WhatsApp</p>
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Promotions Blast</h1>
+              <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Kelola kontak pelanggan dan broadcast promo via WhatsApp</p>
+            </div>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}

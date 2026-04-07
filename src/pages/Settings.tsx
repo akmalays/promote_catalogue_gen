@@ -233,18 +233,22 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
   return (
     <div className="flex-1 p-8 overflow-y-auto space-y-12 max-w-6xl mx-auto custom-scrollbar pb-24">
       {/* Header */}
-      <div className="flex flex-col mb-12 px-2">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield className="w-5 h-5 text-[#8b7365]" />
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">
-            {isAdmin ? 'Account & Team Settings' : 'Account Security'}
-          </h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2 mb-12">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
+            <Shield className="w-8 h-8" />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">
+              {isAdmin ? 'Account & Team Settings' : 'Account Security'}
+            </h1>
+            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">
+              {isAdmin 
+                ? 'Kelola profil pribadi Anda dan manajemen akses pengguna aplikasi.' 
+                : 'Atur keamanan akun dan kata sandi Anda untuk perlindungan data.'}
+            </p>
+          </div>
         </div>
-        <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">
-          {isAdmin 
-            ? 'Kelola profil pribadi Anda dan manajemen akses pengguna aplikasi.' 
-            : 'Atur keamanan akun dan kata sandi Anda untuk perlindungan data.'}
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
