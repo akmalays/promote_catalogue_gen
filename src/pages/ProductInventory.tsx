@@ -25,7 +25,9 @@ const CATEGORIES = [
 
 const INITIAL_PRODUCTS: Product[] = [];
 
-export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any) => void }) {
+import { UserProfile } from '../types';
+
+export default function ProductDatabase({ onNavigate, userProfile }: { onNavigate: (page: any) => void, userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
@@ -73,7 +75,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getProducts();
+      const data = await api.getProducts(userProfile.company_id!);
       setProducts(data);
     } catch (e: any) {
       console.warn('Gagal memuat produk dari DB cloud:', e);
@@ -96,7 +98,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
     
     setIsDeleting(true);
     try {
-      await api.deleteProduct(productToDelete.id);
+      await api.deleteProduct(productToDelete.id, userProfile.company_id!);
       toast.success('Produk berhasil dihapus');
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
@@ -117,10 +119,10 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
     setIsSubmitting(true);
     try {
       if (editingProduct) {
-        await api.updateProduct(editingProduct.id, formData);
+        await api.updateProduct(editingProduct.id, { ...formData, company_id: userProfile.company_id });
         toast.success('Produk berhasil diperbarui');
       } else {
-        await api.addProduct(formData);
+        await api.addProduct({ ...formData, company_id: userProfile.company_id });
         toast.success('Produk baru ditambahkan');
       }
       setIsFormOpen(false);
@@ -171,7 +173,7 @@ export default function ProductDatabase({ onNavigate }: { onNavigate: (page: any
   const fetchProductHistory = async (productId: string) => {
     setIsHistoryLoading(true);
     try {
-      const history = await api.getSupplyHistory();
+      const history = await api.getSupplyHistory(userProfile.company_id!);
       const productLogs = history.filter((h: any) => h.product_id === productId);
       setProductSupplyHistory(productLogs);
     } catch (e) {

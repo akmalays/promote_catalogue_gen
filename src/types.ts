@@ -28,12 +28,23 @@ export interface SavedCatalogue {
   thumbnail?: string;
 }
 
+export interface Company {
+  id?: string;
+  name: string;
+  email: string;
+  logo_url?: string;
+  created_at?: string;
+}
+
 export interface UserProfile {
   id?: string;
+  company_id?: string;
+  email?: string;
   username: string;
   nickname: string;
   role: string;
   password?: string;
+  company?: Company;
 }
 
 export interface CatalogData {

@@ -34,7 +34,9 @@ interface SupplyLog {
   unit: string;
 }
 
-export default function Supply() {
+import { UserProfile } from '../types';
+
+export default function Supply({ userProfile }: { userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [history, setHistory] = useState<SupplyLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,8 +73,8 @@ export default function Supply() {
     setIsLoading(true);
     try {
       const [prodData, histData] = await Promise.all([
-        api.getProducts(),
-        api.getSupplyHistory()
+        api.getProducts(userProfile.company_id!),
+        api.getSupplyHistory(userProfile.company_id!)
       ]);
       setProducts(prodData);
       setHistory(histData);
@@ -174,9 +176,12 @@ export default function Supply() {
            const product = products.find(p => p.id === log.product_id);
            if (product) {
               const revertedStock = Math.max(0, (product.stock || 0) - log.quantity);
-              await api.updateProduct(product.id, { stock: revertedStock });
+              await api.updateProduct(product.id, { 
+                stock: revertedStock,
+                company_id: userProfile.company_id
+              });
            }
-           await api.deleteSupplyHistory(log.id);
+           await api.deleteSupplyHistory(log.id, userProfile.company_id!);
         }
 
         toast.success('Transaksi dihapus & stok disesuaikan');
@@ -202,9 +207,12 @@ export default function Supply() {
             if (product) {
                const revertedStock = Math.max(0, (product.stock || 0) - oldLog.quantity);
                product.stock = revertedStock;
-               await api.updateProduct(product.id, { stock: revertedStock });
+               await api.updateProduct(product.id, { 
+                 stock: revertedStock,
+                 company_id: userProfile.company_id
+               });
             }
-            await api.deleteSupplyHistory(oldLog.id);
+            await api.deleteSupplyHistory(oldLog.id, userProfile.company_id!);
          }
       }
 
@@ -213,7 +221,10 @@ export default function Supply() {
         const currentStock = productFromState ? (productFromState.stock || 0) : (item.product.stock || 0);
         const newStock = currentStock + item.quantity;
         
-        await api.updateProduct(item.product.id, { stock: newStock });
+        await api.updateProduct(item.product.id, { 
+          stock: newStock,
+          company_id: userProfile.company_id
+        });
         await api.addSupplyHistory({
           product_id: item.product.id,
           product_name: item.product.name,
@@ -223,7 +234,8 @@ export default function Supply() {
           salesman: salesman,
           supplier: supplier,
           invoice_image: invoiceImage,
-          unit: item.product.unit
+          unit: item.product.unit,
+          company_id: userProfile.company_id
         });
       }
 

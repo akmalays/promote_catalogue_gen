@@ -60,7 +60,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
   const fetchUsers = async () => {
     try {
       setIsFetchingUsers(true);
-      const data = await api.getUsers();
+      const data = await api.getUsers(userProfile.company_id!);
       setUsers(data);
     } catch (err) {
       console.error('Gagal mengambil daftar user:', err);
@@ -134,7 +134,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
     
     try {
       setIsAddingUser(true);
-      await api.addUser(newUser);
+      await api.addUser({ ...newUser, company_id: userProfile.company_id });
       toast.success(`${newUser.nickname} berhasil terdaftar!`);
       setNewUser({ username: '', nickname: '', role: 'editor', password: 'password123' });
       fetchUsers();
@@ -199,7 +199,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
     if (!id) return;
 
     try {
-      await api.deleteUser(id);
+      await api.deleteUser(id, userProfile.company_id!);
       toast.success('Pengguna telah dihapus');
       fetchUsers();
     } catch (err) {

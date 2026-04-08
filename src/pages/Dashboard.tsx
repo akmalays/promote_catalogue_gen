@@ -26,7 +26,7 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const stats = await api.getDashboardStats();
+      const stats = await api.getDashboardStats(userProfile.company_id!);
       setData(stats);
     } catch (e) {
       console.error('Failed to load dashboard:', e);

@@ -8,6 +8,7 @@ import { UserProfile } from '../types';
 
 interface LoginProps {
   onLogin: (user: UserProfile) => void;
+  onNavigateToSignup: () => void;
 }
 
 const TypingText = ({ texts }: { texts: string[] }) => {
@@ -55,7 +56,7 @@ const TypingText = ({ texts }: { texts: string[] }) => {
   );
 };
 
-export default function Login({ onLogin }: LoginProps) {
+export default function Login({ onLogin, onNavigateToSignup }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -221,7 +222,7 @@ export default function Login({ onLogin }: LoginProps) {
           </form>
 
           <p className="mt-8 text-center text-sm text-slate-500 font-medium">
-            Belum memiliki akun? <a href="#" className="text-[#8b7365] font-bold hover:underline">Daftar sekarang</a>
+            Belum memiliki akun? <button onClick={onNavigateToSignup} className="text-[#8b7365] font-bold hover:underline">Daftar sekarang</button>
           </p>
         </motion.div>
       </div>

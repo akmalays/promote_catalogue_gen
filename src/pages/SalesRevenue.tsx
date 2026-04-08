@@ -27,12 +27,14 @@ interface Sale {
   created_at: string;
 }
 
+import { UserProfile } from '../types';
+
 interface SalesRevenueProps {
-  userProfile: { nickname: string; username: string; role: string };
+  userProfile: UserProfile;
 }
 
 export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
-  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'owner';
+  const isAdmin = userProfile?.role === 'admin' || (userProfile?.role as string) === 'owner';
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingTargets, setIsSavingTargets] = useState(false);
@@ -74,7 +76,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
 
   const fetchProducts = async () => {
     try {
-      const data = await api.getProducts();
+      const data = await api.getProducts(userProfile.company_id!);
       setAvailableProducts(data);
     } catch (e) {
       console.error('Cant fetch products:', e);
@@ -83,7 +85,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
 
   const fetchStoreSettings = async () => {
     try {
-      const settings = await api.getStoreSettings();
+      const settings = await api.getStoreSettings(userProfile.company_id!);
       if (settings.daily_sales_target) {
         setDailyTargetAmount(settings.daily_sales_target.amount || 5000000);
       }
@@ -98,8 +100,8 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
   const saveStoreSettings = async () => {
     setIsSavingTargets(true);
     try {
-      await api.updateStoreSetting('daily_sales_target', { amount: dailyTargetAmount });
-      await api.updateStoreSetting('focus_items', focusItemsConfig);
+      await api.updateStoreSetting(userProfile.company_id!, 'daily_sales_target', { amount: dailyTargetAmount });
+      await api.updateStoreSetting(userProfile.company_id!, 'focus_items', focusItemsConfig);
       toast.success('Target berhasil diperbarui!');
       setIsTargetModalOpen(false);
     } catch (e) {
@@ -117,7 +119,7 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
   const fetchSales = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getSales();
+      const data = await api.getSales(userProfile.company_id!);
       setSales(data);
     } catch (e) {
       toast.error('Gagal memuat data penjualan');

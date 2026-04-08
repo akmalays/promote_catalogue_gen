@@ -27,8 +27,11 @@ import SalesRevenue from './pages/SalesRevenue';
 import Notifications from './pages/Notifications';
 import StockOpname from './pages/StockOpname';
 import NotificationPopup from './components/NotificationPopup';
+import Signup from './pages/Signup';
 
 type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname';
+
+type AuthView = 'login' | 'signup';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -132,7 +135,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
   const fetchDbProducts = async () => {
     setIsDbLoading(true);
     try {
-      const data = await api.getProducts();
+      const data = await api.getProducts(userProfile.company_id!);
       setDbProducts(data);
     } catch (e) {
       console.error('Gagal ambil data DB:', e);
@@ -221,7 +224,8 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
         name: draftName,
         data: finalCatalog,
         creator_name: userProfile.nickname || userProfile.username,
-        thumbnail: dataUrl
+        thumbnail: dataUrl,
+        company_id: userProfile.company_id
       });
       
       if (data && onDraftSaved) {
@@ -259,7 +263,8 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
         name: editingCatalogue.name,
         data: catalog,
         thumbnail: dataUrl,
-        creator_name: userProfile.nickname || userProfile.username
+        creator_name: userProfile.nickname || userProfile.username,
+        company_id: userProfile.company_id
       });
       toast.success('Perubahan draft berhasil disimpan!');
     } catch (err: any) {
@@ -1093,6 +1098,13 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
+  const [authView, setAuthView] = useState<AuthView>('login');
+
+  const handleAuthSuccess = (user: UserProfile) => {
+    setUserProfile(user);
+    localStorage.setItem('user_profile', JSON.stringify(user));
+    setIsLoggedIn(true);
+  };
 
   const handleContinueEdit = (cat: SavedCatalogue) => {
     setEditingCatalogue(cat);
@@ -1143,11 +1155,17 @@ export default function App() {
   }, [currentPage]);
 
   if (!isLoggedIn) {
-     return <Login onLogin={(user) => {
-       setUserProfile(user);
-       localStorage.setItem('user_profile', JSON.stringify(user));
-       setIsLoggedIn(true);
-     }} />;
+     return authView === 'login' ? (
+       <Login 
+         onLogin={handleAuthSuccess} 
+         onNavigateToSignup={() => setAuthView('signup')}
+       />
+     ) : (
+       <Signup 
+         onSignup={handleAuthSuccess} 
+         onNavigateToLogin={() => setAuthView('login')}
+       />
+     );
   }
 
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
@@ -1298,7 +1316,10 @@ export default function App() {
         {/* Bottom Section */}
         <div className="px-4 py-6 border-t border-slate-100">
            <button 
-             onClick={() => setIsLoggedIn(false)} 
+             onClick={() => {
+                localStorage.removeItem('user_profile');
+                setIsLoggedIn(false);
+             }} 
              className={cn(
                "w-full flex items-center group relative p-3.5 rounded-xl transition-all duration-200",
                isSidebarExpanded ? "justify-start gap-3 bg-red-50 text-red-600 hover:bg-red-100" : "justify-center text-slate-400 hover:text-red-500 hover:bg-red-50"
@@ -1360,7 +1381,7 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2 md:gap-5 text-[#6d4d42]/70 ml-2 md:ml-8">
-               <NotificationPopup onBellClick={() => setCurrentPage('notifications')} />               
+               <NotificationPopup onBellClick={() => setCurrentPage('notifications')} userProfile={userProfile} />               
                <div className="relative group/settings">
                  <button 
                    onClick={() => setCurrentPage('settings')}
@@ -1390,12 +1411,22 @@ export default function App() {
                      <User className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="hidden md:flex flex-col items-start leading-tight">
-                     <span className="text-xs font-display font-black text-slate-800 tracking-tighter truncate max-w-[100px]">
+                     <span className="text-xs font-display font-black text-slate-800 tracking-tighter truncate max-w-[120px]">
                         {userProfile.nickname}
                      </span>
-                     <span className="text-[9px] font-bold text-[#8b7365] uppercase tracking-widest truncate max-w-[100px]">
-                        {userProfile.role}
-                     </span>
+                     <div className="flex items-center gap-1.5 truncate max-w-[140px]">
+                       <span className="text-[9px] font-bold text-[#8b7365] uppercase tracking-widest whitespace-nowrap">
+                          {userProfile.role}
+                       </span>
+                       {userProfile.company?.name && (
+                         <>
+                           <span className="text-[8px] text-slate-300">•</span>
+                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">
+                              {userProfile.company.name}
+                           </span>
+                         </>
+                       )}
+                     </div>
                   </div>
                </button>
             </div>
@@ -1413,8 +1444,8 @@ export default function App() {
                 transition={{ duration: 0.3, ease: 'easeOut' }}
               >
                 {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} userProfile={userProfile} />}
-                {currentPage === 'activity' && <Activity />}
-                {currentPage === 'analytics' && <Analytics />}
+                {currentPage === 'activity' && <Activity userProfile={userProfile} />}
+                {currentPage === 'analytics' && <Analytics userProfile={userProfile} />}
                 {currentPage === 'catalogue' && (
                   <CatalogueEditor 
                     userProfile={userProfile} 
@@ -1424,12 +1455,12 @@ export default function App() {
                 )}
                 {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
-                {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} />}
-                {currentPage === 'supply' && <Supply />}
+                {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} userProfile={userProfile} />}
+                {currentPage === 'supply' && <Supply userProfile={userProfile} />}
                 { currentPage === 'pos' && <POS onNavigate={setCurrentPage} userProfile={userProfile} /> }
                 { currentPage === 'revenue' && <SalesRevenue userProfile={userProfile} /> }
                 { currentPage === 'notifications' && <Notifications userProfile={userProfile} /> }
-                { currentPage === 'stock_opname' && <StockOpname /> }
+                { currentPage === 'stock_opname' && <StockOpname userProfile={userProfile} /> }
                 { currentPage === 'settings' && <SettingsPage userProfile={userProfile} onUpdateProfile={handleUpdateProfile} /> }
               </motion.div>
             </AnimatePresence>

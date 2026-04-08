@@ -28,7 +28,9 @@ interface CartItem {
   quantity: number;
 }
 
-export default function POS({ onNavigate, userProfile }: { onNavigate: (page: any) => void, userProfile?: any }) {
+import { UserProfile } from '../types';
+
+export default function POS({ onNavigate, userProfile }: { onNavigate: (page: any) => void, userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,7 +75,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getProducts();
+      const data = await api.getProducts(userProfile.company_id!);
       setProducts(data);
     } catch (e) {
       toast.error('Gagal memuat produk');
@@ -151,6 +153,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
     try {
       // 1. Create Transaction Header
       const sale = await api.addSale({
+        company_id: userProfile.company_id,
         items: [
           ...cart.map(i => ({
             product_id: i.product.id,
@@ -175,7 +178,8 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
       // 2. Update Stocks
       for (const item of cart) {
         await api.updateProduct(item.product.id, {
-          stock: item.product.stock - item.quantity
+          stock: item.product.stock - item.quantity,
+          company_id: userProfile.company_id
         });
       }
 

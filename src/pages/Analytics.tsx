@@ -15,7 +15,9 @@ import LoadingScreen from '../components/LoadingScreen';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 
-export default function Analytics() {
+import { UserProfile } from '../types';
+
+export default function Analytics({ userProfile }: { userProfile: UserProfile }) {
   const [sales, setSales] = useState<any[]>([]);
   const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +29,7 @@ export default function Analytics() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getSales();
+      const data = await api.getSales(userProfile.company_id!);
       setSales(data || []);
     } catch (err) {
       console.error(err);

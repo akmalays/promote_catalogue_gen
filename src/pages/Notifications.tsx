@@ -30,8 +30,10 @@ const NOTIF_TYPES = [
   { value: 'success', label: 'Sukses', icon: CheckCircle2, color: 'bg-green-500', textColor: 'text-green-600', bgLight: 'bg-green-50' },
 ];
 
+import { UserProfile } from '../types';
+
 interface NotificationsProps {
-  userProfile: { nickname: string; username: string; role: string };
+  userProfile: UserProfile;
 }
 
 export default function Notifications({ userProfile }: NotificationsProps) {
@@ -60,7 +62,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
   const fetchNotifications = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getNotifications();
+      const data = await api.getNotifications(userProfile.company_id!);
       setNotifications(data);
     } catch (e) {
       toast.error('Gagal memuat notifikasi');
@@ -84,7 +86,8 @@ export default function Notifications({ userProfile }: NotificationsProps) {
         scheduled_at: isScheduleMode && composeScheduledAt ? new Date(composeScheduledAt).toISOString() : null,
         target_role: composeTargetRole === 'all' ? undefined : composeTargetRole,
         sender_name: userProfile.nickname || userProfile.username,
-      });
+        company_id: userProfile.company_id
+      } as any);
 
       toast.success(isScheduleMode ? 'Notifikasi berhasil dijadwalkan!' : 'Notifikasi berhasil dikirim!');
       resetComposeForm();
@@ -108,7 +111,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
 
   const handleDeleteNotification = async (id: any) => {
     try {
-      await api.deleteNotification(id);
+      await api.deleteNotification(id, userProfile.company_id!);
       toast.success('Notifikasi dihapus');
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (e) {
@@ -119,13 +122,13 @@ export default function Notifications({ userProfile }: NotificationsProps) {
   const handleRunScheduler = async () => {
     setIsRunningScheduler(true);
     try {
-      const dueNotifs = await api.getScheduledDueNotifications();
+      const dueNotifs = await api.getScheduledDueNotifications(userProfile.company_id!);
       if (dueNotifs.length === 0) {
         toast('Tidak ada notifikasi terjadwal yang perlu dikirim saat ini.');
       } else {
         let sentCount = 0;
         for (const notif of dueNotifs) {
-          await api.markNotificationSent(notif.id);
+          await api.markNotificationSent(notif.id, userProfile.company_id!);
           sentCount++;
         }
         toast.success(`${sentCount} notifikasi terjadwal berhasil dikirim!`);
