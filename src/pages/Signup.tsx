@@ -152,8 +152,8 @@ export default function Signup({ onSignup, onNavigateToLogin }: SignupProps) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block uppercase tracking-wider flex items-center gap-2">
-                <Building2 className="w-3.5 h-3.5" /> Nama Perusahaan / Toko
+              <label className="text-sm font-bold text-slate-700 block">
+                Nama Perusahaan / Toko
               </label>
               <input 
                 type="text" 
@@ -166,8 +166,8 @@ export default function Signup({ onSignup, onNavigateToLogin }: SignupProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block uppercase tracking-wider flex items-center gap-2">
-                  <User className="w-3.5 h-3.5" /> Username Admin
+                <label className="text-sm font-bold text-slate-700 block">
+                  Username Admin
                 </label>
                 <input 
                   type="text" 
@@ -178,8 +178,8 @@ export default function Signup({ onSignup, onNavigateToLogin }: SignupProps) {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block uppercase tracking-wider flex items-center gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Nama Panggilan
+                <label className="text-sm font-bold text-slate-700 block">
+                  Nama Panggilan
                 </label>
                 <input 
                   type="text" 
@@ -192,8 +192,8 @@ export default function Signup({ onSignup, onNavigateToLogin }: SignupProps) {
             </div>
             
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block uppercase tracking-wider flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5" /> Email Bisnis
+              <label className="text-sm font-bold text-slate-700 block">
+                Email Bisnis
               </label>
               <input 
                 type="email" 
@@ -205,7 +205,7 @@ export default function Signup({ onSignup, onNavigateToLogin }: SignupProps) {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block uppercase tracking-wider">Kata Sandi</label>
+              <label className="text-sm font-bold text-slate-700 block">Kata Sandi</label>
               <div className="relative">
                 <input 
                   type={showPassword ? "text" : "password"} 

@@ -28,10 +28,11 @@ import Notifications from './pages/Notifications';
 import StockOpname from './pages/StockOpname';
 import NotificationPopup from './components/NotificationPopup';
 import Signup from './pages/Signup';
+import ResetPassword from './pages/ResetPassword';
 
 type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname';
 
-type AuthView = 'login' | 'signup';
+type AuthView = 'login' | 'signup' | 'reset-password';
 
 const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -1154,18 +1155,35 @@ export default function App() {
     }
   }, [currentPage]);
 
+  // Detect Reset Password (Recovery) Link
+  useEffect(() => {
+    // Check if URL suggests we are in a recovery flow
+    // Supabase appends #access_token=... or the path is /reset-password
+    const isRecovery = window.location.hash.includes('type=recovery') || 
+                       window.location.pathname.includes('reset-password');
+    
+    if (isRecovery) {
+      setAuthView('reset-password');
+      setIsLoggedIn(false);
+    }
+  }, []);
+
   if (!isLoggedIn) {
-     return authView === 'login' ? (
-       <Login 
-         onLogin={handleAuthSuccess} 
-         onNavigateToSignup={() => setAuthView('signup')}
-       />
-     ) : (
-       <Signup 
-         onSignup={handleAuthSuccess} 
-         onNavigateToLogin={() => setAuthView('login')}
-       />
-     );
+      if (authView === 'reset-password') {
+        return <ResetPassword onBackToLogin={() => setAuthView('login')} />;
+      }
+
+      return authView === 'login' ? (
+        <Login 
+          onLogin={handleAuthSuccess} 
+          onNavigateToSignup={() => setAuthView('signup')}
+        />
+      ) : (
+        <Signup 
+          onSignup={handleAuthSuccess} 
+          onNavigateToLogin={() => setAuthView('login')}
+        />
+      );
   }
 
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [

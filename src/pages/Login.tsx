@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, AlertCircle, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
 import logoAsset from '../assets/img/pcs_logo.png';
@@ -63,17 +63,25 @@ export default function Login({ onLogin, onNavigateToSignup }: LoginProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      const result = await api.login({ username: email, password });
-      if (result.success && result.user) {
-        onLogin(result.user);
+      if (isResetMode) {
+        await api.resetPassword(email);
+        setResetSent(true);
       } else {
-        setError('Username atau password salah.');
+        const result = await api.login({ username: email, password });
+        if (result.success && result.user) {
+          onLogin(result.user);
+        } else {
+          setError('Username atau password salah.');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Gagal menyambung ke server.');
@@ -156,8 +164,14 @@ export default function Login({ onLogin, onNavigateToSignup }: LoginProps) {
           </div>
 
           <div className="mb-8 text-center lg:text-left">
-            <h2 className="text-2xl font-display font-bold text-slate-800 mb-1.5">Selamat Datang</h2>
-            <p className="text-slate-500 text-[13px] font-medium">Silahkan login untuk masuk ke akun anda</p>
+            <h2 className="text-2xl font-display font-bold text-slate-800 mb-1.5">
+              {isResetMode ? 'Reset Kata Sandi' : 'Selamat Datang'}
+            </h2>
+            <p className="text-slate-500 text-[13px] font-medium">
+              {isResetMode 
+                ? 'Masukkan email untuk menerima tautan reset' 
+                : 'Silahkan login untuk masuk ke akun anda'}
+            </p>
           </div>
 
           {error && (
@@ -171,59 +185,103 @@ export default function Login({ onLogin, onNavigateToSignup }: LoginProps) {
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 block">Username / Email</label>
-              <input 
-                type="text" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Masukkan username atau email"
-                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all placeholder:text-slate-400 text-sm"
-              />
-            </div>
-            
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-slate-700 block">Kata Sandi</label>
-                <a href="#" className="text-xs font-bold text-[#8b7365] hover:text-[#7a6458]">Lupa sandi?</a>
+          {resetSent ? (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-6 rounded-2xl text-center space-y-4">
+              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
               </div>
-              <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all placeholder:text-slate-400 text-sm"
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="pt-2">
+              <h3 className="font-bold">Email Terkirim!</h3>
+              <p className="text-sm">Silakan periksa kotak masuk email Anda untuk melanjutkan reset kata sandi.</p>
               <button 
-                type="submit" 
-                disabled={isLoading}
-                className="w-full bg-[#8b7365] hover:bg-[#7a6458] text-white font-bold py-3.5 px-4 rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-[#8b7365]/30 flex items-center justify-center gap-2 disabled:opacity-70"
+                onClick={() => {
+                  setResetSent(false);
+                  setIsResetMode(false);
+                }}
+                className="text-[#8b7365] font-bold text-sm hover:underline"
               >
-                {isLoading ? (
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>Masuk ke Dashboard <ArrowRight className="w-4 h-4" /></>
-                )}
+                Kembali ke Login
               </button>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700 block">Email Bisnis</label>
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Masukkan email terdaftar"
+                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all placeholder:text-slate-400 text-sm"
+                  required
+                />
+              </div>
+              
+              {!isResetMode && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-bold text-slate-700 block">Kata Sandi</label>
+                    <button 
+                      type="button"
+                      onClick={() => setIsResetMode(true)}
+                      className="text-xs font-bold text-[#8b7365] hover:text-[#7a6458]"
+                    >
+                      Lupa sandi?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all placeholder:text-slate-400 text-sm"
+                      required={!isResetMode}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-          <p className="mt-8 text-center text-sm text-slate-500 font-medium">
-            Belum memiliki akun? <button onClick={onNavigateToSignup} className="text-[#8b7365] font-bold hover:underline">Daftar sekarang</button>
-          </p>
+              <div className="pt-2">
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full bg-[#8b7365] hover:bg-[#7a6458] text-white font-bold py-3.5 px-4 rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-[#8b7365]/30 flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                  {isLoading ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      {isResetMode ? 'Kirim Link Reset' : 'Masuk ke Dashboard'} 
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+                
+                {isResetMode && (
+                  <button 
+                    type="button"
+                    onClick={() => setIsResetMode(false)}
+                    className="w-full mt-4 text-slate-500 font-bold text-sm hover:text-slate-700"
+                  >
+                    Batal
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+
+          {!isResetMode && (
+            <p className="mt-8 text-center text-sm text-slate-500 font-medium">
+              Belum memiliki akun? <button onClick={onNavigateToSignup} className="text-[#8b7365] font-bold hover:underline">Daftar sekarang</button>
+            </p>
+          )}
         </motion.div>
       </div>
     </div>

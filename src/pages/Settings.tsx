@@ -21,7 +21,7 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
   // User Management State (Admins only)
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isFetchingUsers, setIsFetchingUsers] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', nickname: '', role: 'editor', password: 'password123' });
+  const [newUser, setNewUser] = useState({ username: '', nickname: '', role: 'kasir', password: 'password123' });
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -384,13 +384,15 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                                </span>
 
                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <button 
-                                   onClick={() => handleEditOtherUser(u)}
-                                   className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
-                                   title="Edit Data"
-                                 >
-                                   <Pencil className="w-3.5 h-3.5" />
-                                 </button>
+                                 {u.role !== 'admin' && (
+                                   <button 
+                                     onClick={() => handleEditOtherUser(u)}
+                                     className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                     title="Edit Data"
+                                   >
+                                     <Pencil className="w-3.5 h-3.5" />
+                                   </button>
+                                 )}
                                  {u.id !== userProfile.id && (
                                    <button 
                                      onClick={() => handleDeleteUser(u)}
@@ -453,7 +455,6 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                      onChange={e => setNewUser({...newUser, role: e.target.value})}
                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 appearance-none"
                    >
-                      <option value="admin" className="text-slate-800">Administrator</option>
                       <option value="manager" className="text-slate-800">Manager</option>
                       <option value="kasir" className="text-slate-800">Kasir</option>
                    </select>
@@ -625,7 +626,6 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                        onChange={e => setEditFormData({...editFormData, role: e.target.value})}
                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all appearance-none"
                      >
-                        <option value="admin">Administrator</option>
                         <option value="manager">Manager</option>
                         <option value="kasir">Kasir</option>
                      </select>

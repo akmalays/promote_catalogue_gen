@@ -175,12 +175,9 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
         created_at: new Date().toISOString()
       });
 
-      // 2. Update Stocks
+      // 2. Update Stocks (Atomic)
       for (const item of cart) {
-        await api.updateProduct(item.product.id, {
-          stock: item.product.stock - item.quantity,
-          company_id: userProfile.company_id
-        });
+        await api.decrementStock(item.product.id, item.quantity, userProfile.company_id!);
       }
 
       setCompletedTransaction({

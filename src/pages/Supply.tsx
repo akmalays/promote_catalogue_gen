@@ -175,11 +175,7 @@ export default function Supply({ userProfile }: { userProfile: UserProfile }) {
         for (const log of logsToDelete) {
            const product = products.find(p => p.id === log.product_id);
            if (product) {
-              const revertedStock = Math.max(0, (product.stock || 0) - log.quantity);
-              await api.updateProduct(product.id, { 
-                stock: revertedStock,
-                company_id: userProfile.company_id
-              });
+              await api.decrementStock(product.id, log.quantity, userProfile.company_id!);
            }
            await api.deleteSupplyHistory(log.id, userProfile.company_id!);
         }
@@ -205,26 +201,15 @@ export default function Supply({ userProfile }: { userProfile: UserProfile }) {
          for (const oldLog of editingLogs) {
             const product = products.find(p => p.id === oldLog.product_id);
             if (product) {
-               const revertedStock = Math.max(0, (product.stock || 0) - oldLog.quantity);
-               product.stock = revertedStock;
-               await api.updateProduct(product.id, { 
-                 stock: revertedStock,
-                 company_id: userProfile.company_id
-               });
+                await api.decrementStock(product.id, oldLog.quantity, userProfile.company_id!);
             }
             await api.deleteSupplyHistory(oldLog.id, userProfile.company_id!);
          }
       }
 
       for (const item of cart) {
-        const productFromState = products.find(p => p.id === item.product.id);
-        const currentStock = productFromState ? (productFromState.stock || 0) : (item.product.stock || 0);
-        const newStock = currentStock + item.quantity;
         
-        await api.updateProduct(item.product.id, { 
-          stock: newStock,
-          company_id: userProfile.company_id
-        });
+        await api.incrementStock(item.product.id, item.quantity, userProfile.company_id!);
         await api.addSupplyHistory({
           product_id: item.product.id,
           product_name: item.product.name,
@@ -454,7 +439,7 @@ export default function Supply({ userProfile }: { userProfile: UserProfile }) {
                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                        PROCESSING...
                     </div>
-                  ) : editingLogs ? 'SIMPAN PERUBAHAN' : 'SIMPAN SUPPLY SEKARANG'}
+                  ) : editingLogs ? 'Simpan Perubahan' : 'Simpan Supply'}
                 </button>
              </div>
           </div>

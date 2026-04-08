@@ -2,18 +2,51 @@ import { supabase } from './supabase';
 
 export const api = {
   login: async (credentials: any) => {
-    const { data, error } = await supabase
+    let email = credentials.username;
+
+    // 1. Jika input bukan email (tidak ada @), coba cari email aslinya dari tabel users
+    if (!email.includes('@')) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', credentials.username)
+        .single();
+      
+      if (userError || !userData) {
+        throw new Error('Username tidak ditemukan.');
+      }
+      throw new Error('Silakan gunakan Email untuk login (Username login sedang dalam pemeliharaan).');
+    }
+
+    // 2. Sign in with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: credentials.password
+    });
+
+    if (authError) {
+      throw new Error('Email atau password salah.');
+    }
+
+    // 2. Fetch the full profile including company info
+    const { data: userProfile, error: profileError } = await supabase
       .from('users')
       .select('*, company:companies(*)')
-      .eq('username', credentials.username)
-      .eq('password', credentials.password)
+      .eq('id', authData.user?.id)
       .single();
-    
-    if (error || !data) {
-      throw new Error('Username atau password salah.');
+
+    if (profileError || !userProfile) {
+      throw new Error('Profil tidak ditemukan.');
     }
-    
-    return { success: true, user: data };
+
+    return { success: true, user: userProfile };
+  },
+  resetPassword: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password',
+    });
+    if (error) throw error;
+    return { success: true };
   },
   signup: async (details: { 
     companyName: string; 
@@ -35,25 +68,44 @@ export const api = {
 
     if (companyError) throw companyError;
 
-    // 2. Create Admin User
+    // 2. Create Auth User (Trigger will automatically create public.users profile)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: details.email,
+      password: details.password,
+      options: {
+        data: {
+          username: details.username,
+          company_id: company.id,
+          role: 'admin',
+          nickname: details.nickname
+        }
+      }
+    });
+
+    if (authError) {
+      await supabase.from('companies').delete().eq('id', company.id);
+      throw authError;
+    }
+
+    // 3. Create Public Profile (Kita kembalikan manual agar Role Admin terpaku dengan benar)
     const { data: user, error: userError } = await supabase
       .from('users')
       .insert([{
+        id: authData.user?.id,
         company_id: company.id,
         username: details.username,
-        email: details.email,
         nickname: details.nickname,
-        password: details.password,
-        role: 'admin',
+        role: 'admin', // <--- Memastikan role adalah Admin
         created_at: new Date().toISOString()
       }])
       .select()
       .single();
 
     if (userError) {
-      // Cleanup company if user creation fails
+      // Jika profil gagal, kita bersihkan auth & company agar tidak sisa data rusak
       await supabase.from('companies').delete().eq('id', company.id);
-      throw userError;
+      console.error('Error creating profile:', userError);
+      throw new Error('Gagal membuat profil admin. Silakan coba lagi.');
     }
 
     return { success: true, user: { ...user, company }, company };
@@ -254,6 +306,24 @@ export const api = {
       .single();
     if (error) throw error;
     return data;
+  },
+  decrementStock: async (id: string, quantity: number, companyId: string) => {
+    const { error } = await supabase.rpc('decrement_stock', {
+      p_id: id,
+      p_quantity: quantity,
+      p_company_id: companyId
+    });
+    if (error) throw error;
+    return true;
+  },
+  incrementStock: async (id: string, quantity: number, companyId: string) => {
+    const { error } = await supabase.rpc('increment_stock', {
+      p_id: id,
+      p_quantity: quantity,
+      p_company_id: companyId
+    });
+    if (error) throw error;
+    return true;
   },
   deleteProduct: async (id: any, companyId: string) => {
     const { error } = await supabase

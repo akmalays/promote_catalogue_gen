@@ -373,19 +373,19 @@ export default function Notifications({ userProfile }: NotificationsProps) {
               className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col z-10"
             >
               {/* Header */}
-              <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#8b7365] rounded-2xl flex items-center justify-center text-white">
-                    <Megaphone className="w-6 h-6" />
+              <div className="p-8 pb-3 border-b border-slate-50 flex items-start justify-between">
+                <div className="flex flex-col items-start gap-4">
+                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365]">
+                    <Megaphone className="w-7 h-7" />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Buat Notifikasi</h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim atau Jadwalkan</p>
+                  <div className="flex flex-col gap-1.5">
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Buat Notifikasi</h2>
+                    <p className="text-[10px] font-black text-slate-400 tracking-[0.2em] ">Kirim atau Jadwalkan Pesan</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsComposeOpen(false)}
-                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
+                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400 -mr-2 -mt-2"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -502,7 +502,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
               <div className="p-8 border-t border-slate-50 flex gap-4">
                 <button
                   onClick={() => setIsComposeOpen(false)}
-                  className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[12px] font-black  tracking-widest hover:bg-slate-200 transition-all"
                 >
                   Batal
                 </button>
@@ -510,7 +510,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                   onClick={handleSendNotification}
                   disabled={isSending}
                   className={cn(
-                    "flex-1 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl",
+                    "flex-1 py-3.5 rounded-2xl text-[12px] font-black  tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl",
                     isScheduleMode
                       ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
                       : "bg-[#8b7365] text-white hover:bg-[#7a6458] shadow-[#8b7365]/20"
@@ -524,7 +524,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" /> Kirim Sekarang
+                      <Send className="w-4 h-4" /> Kirim 
                     </>
                   )}
                 </button>
