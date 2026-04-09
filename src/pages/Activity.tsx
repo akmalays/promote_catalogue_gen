@@ -15,7 +15,9 @@ interface BlastLog {
   catalogue_preview?: string;
 }
 
-export default function Activity() {
+import { UserProfile } from '../types';
+
+export default function Activity({ userProfile }: { userProfile: UserProfile }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [logs, setLogs] = useState<BlastLog[]>([]);
   const [selectedDayLogs, setSelectedDayLogs] = useState<BlastLog[] | null>(null);
@@ -29,7 +31,7 @@ export default function Activity() {
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getBlastLogs();
+      const data = await api.getBlastLogs(userProfile.company_id!);
       setLogs(data);
     } catch (e) {
       console.error('Gagal ambil log:', e);

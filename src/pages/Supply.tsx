@@ -12,12 +12,14 @@ interface Product {
   brand: string;
   stock: number;
   unit: string;
-  image_url: string;
+  price: number;
+  cost_price: number;
 }
 
 interface CartItem {
   product: Product;
   quantity: number;
+  purchase_price: number;
 }
 
 interface SupplyLog {
@@ -34,7 +36,9 @@ interface SupplyLog {
   unit: string;
 }
 
-export default function Supply() {
+import { UserProfile } from '../types';
+
+export default function Supply({ userProfile }: { userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [history, setHistory] = useState<SupplyLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,8 +75,8 @@ export default function Supply() {
     setIsLoading(true);
     try {
       const [prodData, histData] = await Promise.all([
-        api.getProducts(),
-        api.getSupplyHistory()
+        api.getProducts(userProfile.company_id!),
+        api.getSupplyHistory(userProfile.company_id!)
       ]);
       setProducts(prodData);
       setHistory(histData);
@@ -95,13 +99,17 @@ export default function Supply() {
       toast.error('Produk sudah ada di daftar.');
       return;
     }
-    setCart([...cart, { product: p, quantity: 1 }]);
+    setCart([...cart, { product: p, quantity: 1, purchase_price: p.cost_price || 0 }]);
     setSearchTerm('');
     setIsSearching(false);
   };
 
   const updateCartQuantity = (id: string, qty: number) => {
     setCart(cart.map(item => item.product.id === id ? { ...item, quantity: Math.max(1, qty) } : item));
+  };
+
+  const updateCartPrice = (id: string, price: number) => {
+    setCart(cart.map(item => item.product.id === id ? { ...item, purchase_price: Math.max(0, price) } : item));
   };
 
   const removeFromCart = (id: string) => {
@@ -173,10 +181,9 @@ export default function Supply() {
         for (const log of logsToDelete) {
            const product = products.find(p => p.id === log.product_id);
            if (product) {
-              const revertedStock = Math.max(0, (product.stock || 0) - log.quantity);
-              await api.updateProduct(product.id, { stock: revertedStock });
+              await api.decrementStock(product.id, log.quantity, userProfile.company_id!);
            }
-           await api.deleteSupplyHistory(log.id);
+           await api.deleteSupplyHistory(log.id, userProfile.company_id!);
         }
 
         toast.success('Transaksi dihapus & stok disesuaikan');
@@ -200,30 +207,21 @@ export default function Supply() {
          for (const oldLog of editingLogs) {
             const product = products.find(p => p.id === oldLog.product_id);
             if (product) {
-               const revertedStock = Math.max(0, (product.stock || 0) - oldLog.quantity);
-               product.stock = revertedStock;
-               await api.updateProduct(product.id, { stock: revertedStock });
+                await api.decrementStock(product.id, oldLog.quantity, userProfile.company_id!);
             }
-            await api.deleteSupplyHistory(oldLog.id);
+            await api.deleteSupplyHistory(oldLog.id, userProfile.company_id!);
          }
       }
 
       for (const item of cart) {
-        const productFromState = products.find(p => p.id === item.product.id);
-        const currentStock = productFromState ? (productFromState.stock || 0) : (item.product.stock || 0);
-        const newStock = currentStock + item.quantity;
-        
-        await api.updateProduct(item.product.id, { stock: newStock });
-        await api.addSupplyHistory({
+        await api.processInbound({
           product_id: item.product.id,
-          product_name: item.product.name,
-          brand: item.product.brand,
-          plu: item.product.plu,
           quantity: item.quantity,
-          salesman: salesman,
+          purchase_price: item.purchase_price,
+          company_id: userProfile.company_id!,
           supplier: supplier,
-          invoice_image: invoiceImage,
-          unit: item.product.unit
+          salesman: salesman,
+          invoice_image: invoiceImage
         });
       }
 
@@ -397,21 +395,55 @@ export default function Supply() {
              <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar min-h-[200px] max-h-[400px] pr-2">
                {cart.length === 0 ? (<div className="py-20 flex flex-col items-center justify-center text-slate-300 border-2 border-dashed rounded-3xl"><Package className="w-12 h-12 mb-3 opacity-20"/><p className="text-xs font-black uppercase tracking-widest">Daftar Item Kosong</p></div>) : (
                  cart.map(item => (
-                    <div key={item.product.id} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between group"><div className="flex items-center gap-4 flex-1"><div className="w-11 h-11 bg-white rounded-lg border flex items-center justify-center p-1"><img src={item.product.image_url || 'https://via.placeholder.com/100'} alt="" className="max-h-full max-w-full"/></div><div className="min-w-0"><p className="text-[9px] font-black text-[#8b7365] mb-0.5">{item.product.brand}</p><p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p></div></div><div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border">
-                      <button onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-                        <Minus className="w-3 h-3"/>
+                   <div key={item.product.id} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between group">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-11 h-11 bg-white rounded-lg border flex items-center justify-center p-1">
+                        <img src={item.product.image_url || 'https://via.placeholder.com/100'} alt="" className="max-h-full max-w-full object-contain"/>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black text-[#8b7365] mb-0.5">{item.product.brand}</p>
+                        <p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-end">
+                         <label className="text-[8px] font-black text-slate-400 uppercase mb-0.5">Harga Beli</label>
+                         <div className="flex items-center gap-1 bg-white px-2 py-1.5 rounded-xl border border-slate-100 shadow-sm">
+                            <span className="text-[10px] font-black text-slate-300">Rp</span>
+                            <input 
+                               type="number" 
+                               value={item.purchase_price} 
+                               onChange={(e) => updateCartPrice(item.product.id, parseInt(e.target.value) || 0)}
+                               className="text-xs font-black w-20 bg-transparent border-none outline-none focus:ring-0 p-0 text-right"
+                            />
+                         </div>
+                      </div>
+
+                      <div className="flex flex-col items-end">
+                         <label className="text-[8px] font-black text-slate-400 uppercase mb-0.5">Jumlah</label>
+                         <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm">
+                            <button onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                               <Minus className="w-3 h-3"/>
+                            </button>
+                            <input 
+                               type="number" 
+                               value={item.quantity} 
+                               onChange={(e) => updateCartQuantity(item.product.id, parseInt(e.target.value) || 1)}
+                               className="text-sm font-black w-8 text-center bg-transparent border-none outline-none focus:ring-0 p-0"
+                            />
+                            <button onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-slate-100 rounded text-[#8b7365]">
+                               <Plus className="w-3 h-3"/>
+                            </button>
+                            <span className="text-[9px] font-black text-slate-400 uppercase">{item.product.unit}</span>
+                         </div>
+                      </div>
+
+                      <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                        <Trash2 className="w-4 h-4"/>
                       </button>
-                      <input 
-                        type="number" 
-                        value={item.quantity} 
-                        onChange={(e) => updateCartQuantity(item.product.id, parseInt(e.target.value) || 1)}
-                        className="text-sm font-black w-12 text-center bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:ring-0"
-                      />
-                      <button onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-slate-100 rounded text-[#8b7365]">
-                        <Plus className="w-3 h-3"/>
-                      </button>
-                      <span className="text-[9px] font-black text-slate-400 uppercase">{item.product.unit}</span>
-                    </div><button onClick={() => removeFromCart(item.product.id)} className="ml-4 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="w-4 h-4"/></button></div>
+                    </div>
+                  </div>
                  ))
                )}
              </div>
@@ -442,7 +474,7 @@ export default function Supply() {
                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                        PROCESSING...
                     </div>
-                  ) : editingLogs ? 'SIMPAN PERUBAHAN' : 'SIMPAN SUPPLY SEKARANG'}
+                  ) : editingLogs ? 'Simpan Perubahan' : 'Simpan Supply'}
                 </button>
              </div>
           </div>

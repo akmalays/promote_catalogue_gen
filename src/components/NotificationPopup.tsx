@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
+import { UserProfile } from '../types';
 
 interface NotifItem {
   id: any;
@@ -27,9 +28,10 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bgLight: string; b
 
 interface NotificationPopupProps {
   onBellClick?: () => void;
+  userProfile: UserProfile;
 }
 
-export default function NotificationPopup({ onBellClick }: NotificationPopupProps) {
+export default function NotificationPopup({ onBellClick, userProfile }: NotificationPopupProps) {
   const [unreadNotifs, setUnreadNotifs] = useState<NotifItem[]>([]);
   const [popupNotif, setPopupNotif] = useState<NotifItem | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -39,10 +41,10 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
   // Run the scheduler check (mark due scheduled notifications as sent)
   const runSchedulerCheck = useCallback(async () => {
     try {
-      const dueNotifs = await api.getScheduledDueNotifications();
+      const dueNotifs = await api.getScheduledDueNotifications(userProfile.company_id!);
       if (dueNotifs.length > 0) {
         for (const notif of dueNotifs) {
-          await api.markNotificationSent(notif.id);
+          await api.markNotificationSent(notif.id, userProfile.company_id!);
         }
       }
     } catch (e) {}
@@ -50,7 +52,7 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
 
   const fetchActiveNotifications = useCallback(async () => {
     try {
-      const activeNotifs = await api.getActiveNotifications();
+      const activeNotifs = await api.getActiveNotifications(userProfile.company_id!);
       setUnreadNotifs(activeNotifs);
     } catch (e) {}
   }, []);
@@ -114,7 +116,7 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
 
   const handleMarkRead = async (id: any) => {
     try {
-      await api.markNotificationRead(id);
+      await api.markNotificationRead(id, userProfile.company_id!);
       setUnreadNotifs(prev => prev.filter(n => n.id !== id));
       if (popupNotif?.id === id) setPopupNotif(null);
     } catch (e) {}
@@ -122,7 +124,7 @@ export default function NotificationPopup({ onBellClick }: NotificationPopupProp
 
   const handleMarkAllRead = async () => {
     try {
-      await api.markAllNotificationsRead();
+      await api.markAllNotificationsRead(userProfile.company_id!);
       setUnreadNotifs([]);
       setPopupNotif(null);
     } catch (e) {}

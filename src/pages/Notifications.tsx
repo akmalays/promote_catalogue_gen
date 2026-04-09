@@ -30,8 +30,10 @@ const NOTIF_TYPES = [
   { value: 'success', label: 'Sukses', icon: CheckCircle2, color: 'bg-green-500', textColor: 'text-green-600', bgLight: 'bg-green-50' },
 ];
 
+import { UserProfile } from '../types';
+
 interface NotificationsProps {
-  userProfile: { nickname: string; username: string; role: string };
+  userProfile: UserProfile;
 }
 
 export default function Notifications({ userProfile }: NotificationsProps) {
@@ -60,7 +62,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
   const fetchNotifications = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getNotifications();
+      const data = await api.getNotifications(userProfile.company_id!);
       setNotifications(data);
     } catch (e) {
       toast.error('Gagal memuat notifikasi');
@@ -84,7 +86,8 @@ export default function Notifications({ userProfile }: NotificationsProps) {
         scheduled_at: isScheduleMode && composeScheduledAt ? new Date(composeScheduledAt).toISOString() : null,
         target_role: composeTargetRole === 'all' ? undefined : composeTargetRole,
         sender_name: userProfile.nickname || userProfile.username,
-      });
+        company_id: userProfile.company_id
+      } as any);
 
       toast.success(isScheduleMode ? 'Notifikasi berhasil dijadwalkan!' : 'Notifikasi berhasil dikirim!');
       resetComposeForm();
@@ -108,7 +111,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
 
   const handleDeleteNotification = async (id: any) => {
     try {
-      await api.deleteNotification(id);
+      await api.deleteNotification(id, userProfile.company_id!);
       toast.success('Notifikasi dihapus');
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (e) {
@@ -119,13 +122,13 @@ export default function Notifications({ userProfile }: NotificationsProps) {
   const handleRunScheduler = async () => {
     setIsRunningScheduler(true);
     try {
-      const dueNotifs = await api.getScheduledDueNotifications();
+      const dueNotifs = await api.getScheduledDueNotifications(userProfile.company_id!);
       if (dueNotifs.length === 0) {
         toast('Tidak ada notifikasi terjadwal yang perlu dikirim saat ini.');
       } else {
         let sentCount = 0;
         for (const notif of dueNotifs) {
-          await api.markNotificationSent(notif.id);
+          await api.markNotificationSent(notif.id, userProfile.company_id!);
           sentCount++;
         }
         toast.success(`${sentCount} notifikasi terjadwal berhasil dikirim!`);
@@ -162,7 +165,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
             <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">
               {isAdmin ? 'Pusat Notifikasi' : 'Notifikasi'}
             </h1>
-            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">
+            <p className="text-xs font-medium text-slate-400 tracking-widest leading-none">
               {isAdmin ? 'Kelola & Jadwalkan Notifikasi untuk Tim' : 'Kotak Masuk Pesan & Info Toko'}
             </p>
           </div>
@@ -216,7 +219,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                 <stat.icon className={cn("w-5 h-5", stat.textColor)} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-[11px] font-bold text-slate-400">{stat.label}</p>
                 <p className="text-xl font-black text-slate-800">{stat.value}</p>
               </div>
             </motion.div>
@@ -237,7 +240,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
               key={tab.key}
               onClick={() => setFilterTab(tab.key as any)}
               className={cn(
-                "px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                "px-6 py-2 rounded-lg text-xs font-bold transition-all",
                 filterTab === tab.key ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -265,7 +268,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
           ) : filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 opacity-30">
               <Bell className="w-16 h-16 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest">Tidak ada notifikasi</p>
+              <p className="text-sm font-bold text-slate-400">Tidak ada notifikasi baru</p>
             </div>
           ) : (
             filteredNotifications.map((notif, i) => {
@@ -298,22 +301,22 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-sm font-black text-slate-800 truncate">{notif.title}</h3>
-                        <span className={cn("text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", typeConfig.bgLight, typeConfig.textColor)}>
+                        <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded-full", typeConfig.bgLight, typeConfig.textColor)}>
                           {typeConfig.label}
                         </span>
                         {!notif.is_sent && (
-                          <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 flex items-center gap-1">
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" /> Terjadwal
                           </span>
                         )}
                         {notif.is_read && (
-                          <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-slate-100 text-slate-400">
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400">
                             Dibaca
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2">{notif.message}</p>
-                      <div className="flex items-center gap-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-4 text-[10px] font-semibold text-slate-400">
                         {notif.sender_name && <span>Dari: {notif.sender_name}</span>}
                         {notif.scheduled_at && !notif.is_sent && (
                           <span className="text-amber-500 flex items-center gap-1">
@@ -370,19 +373,19 @@ export default function Notifications({ userProfile }: NotificationsProps) {
               className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col z-10"
             >
               {/* Header */}
-              <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#8b7365] rounded-2xl flex items-center justify-center text-white">
-                    <Megaphone className="w-6 h-6" />
+              <div className="p-8 pb-3 border-b border-slate-50 flex items-start justify-between">
+                <div className="flex flex-col items-start gap-4">
+                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365]">
+                    <Megaphone className="w-7 h-7" />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">Buat Notifikasi</h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim atau Jadwalkan</p>
+                  <div className="flex flex-col gap-1.5">
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Buat Notifikasi</h2>
+                    <p className="text-[10px] font-black text-slate-400 tracking-[0.2em] ">Kirim atau Jadwalkan Pesan</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsComposeOpen(false)}
-                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
+                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400 -mr-2 -mt-2"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -499,7 +502,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
               <div className="p-8 border-t border-slate-50 flex gap-4">
                 <button
                   onClick={() => setIsComposeOpen(false)}
-                  className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[12px] font-black  tracking-widest hover:bg-slate-200 transition-all"
                 >
                   Batal
                 </button>
@@ -507,7 +510,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                   onClick={handleSendNotification}
                   disabled={isSending}
                   className={cn(
-                    "flex-1 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl",
+                    "flex-1 py-3.5 rounded-2xl text-[12px] font-black  tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl",
                     isScheduleMode
                       ? "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
                       : "bg-[#8b7365] text-white hover:bg-[#7a6458] shadow-[#8b7365]/20"
@@ -521,7 +524,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" /> Kirim Sekarang
+                      <Send className="w-4 h-4" /> Kirim 
                     </>
                   )}
                 </button>

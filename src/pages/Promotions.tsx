@@ -111,7 +111,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
 
   const fetchVisitors = async () => {
     try {
-      const data = await api.getVisitors();
+      const data = await api.getVisitors(userProfile.company_id!);
       setVisitors(data);
     } catch (err) {
       console.error('Gagal mengambil data pengunjung:', err);
@@ -124,6 +124,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
     const newV = {
       name: newName.trim(),
       phone,
+      company_id: userProfile.company_id
     };
     try {
       await api.addVisitor(newV);
@@ -140,7 +141,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
 
   const removeVisitor = async (id: string) => {
     try {
-      await api.deleteVisitor(id);
+      await api.deleteVisitor(id, userProfile.company_id!);
       fetchVisitors();
       toast.success('Kontak berhasil dihapus!');
     } catch (err) {
@@ -159,7 +160,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
     if (!editingId) return;
     const phone = editPhone.replace(/\D/g, '').replace(/^0/, '62');
     try {
-      await api.updateVisitor(editingId, { name: editName, phone });
+      await api.updateVisitor(editingId, { name: editName, phone, company_id: userProfile.company_id });
       setEditingId(null);
       fetchVisitors();
       toast.success('Data pengunjung berhasil diperbarui!');
@@ -202,6 +203,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
         promo_name: campaignName || (attachedImage ? "Katalog Blast" : "Pesan Promosi"),
         sender_name: userProfile.nickname || userProfile.username,
         recipient_count: total,
+        company_id: userProfile.company_id!,
         catalogue_preview: attachedImage || undefined
       });
     } catch (e: any) {
@@ -211,7 +213,8 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
         await api.saveBlastHistory({
           promo_name: campaignName || (attachedImage ? "Katalog Blast" : "Pesan Promosi"),
           sender_name: userProfile.nickname || userProfile.username,
-          recipient_count: total
+          recipient_count: total,
+          company_id: userProfile.company_id!
         });
       } catch (e2) { console.error('Final history fail:', e2); }
     }

@@ -51,7 +51,9 @@ interface OpnameItem {
   status: 'pending' | 'warning' | 'ok';
 }
 
-export default function StockOpname() {
+import { UserProfile } from '../types';
+
+export default function StockOpname({ userProfile }: { userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [opnameItems, setOpnameItems] = useState<OpnameItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,10 +121,10 @@ export default function StockOpname() {
 
   const fetchStoreInfo = async () => {
      try {
-        const settings = await api.getStoreSettings();
+        const settings = await api.getStoreSettings(userProfile.company_id!);
         if (settings.store_name) setStoreName(settings.store_name);
         
-        const users = await api.getUsers();
+        const users = await api.getUsers(userProfile.company_id!);
         // Mencari user berdasarkan role yang ada di screenshot: Manager, Kasir, Administrator
         const m = users.find((u: any) => u.role?.toLowerCase() === 'manager');
         const a = users.find((u: any) => u.role?.toLowerCase() === 'administrator');
@@ -146,7 +148,7 @@ export default function StockOpname() {
   const fetchHistory = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getOpnameSessions();
+      const data = await api.getOpnameSessions(userProfile.company_id!);
       setUnfilteredSessions(data);
       
       const filtered = data.filter((s: any) => {
@@ -224,7 +226,7 @@ export default function StockOpname() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getProducts();
+      const data = await api.getProducts(userProfile.company_id!);
       setProducts(data);
       const items: OpnameItem[] = data.map((p: any) => ({
         product_id: p.id,
@@ -328,7 +330,8 @@ export default function StockOpname() {
 
         if (item.diff !== 0) {
           await api.updateProduct(item.product_id, {
-            stock: item.finalCount
+            stock: item.finalCount,
+            company_id: userProfile.company_id
           });
           
           await api.addSupplyHistory({
@@ -340,13 +343,14 @@ export default function StockOpname() {
             supplier: 'STOCK OPNAME',
             salesman: 'SYSTEM',
             unit: 'pcs',
+            company_id: userProfile.company_id,
             created_at: new Date().toISOString()
           });
         }
       }
 
       // Record the session summary
-      const currentAdmin = await api.getUsers().then(users => users.find((u: any) => u.username === localStorage.getItem('username')) || users[0]);
+      const currentAdmin = await api.getUsers(userProfile.company_id!).then(users => users.find((u: any) => u.username === localStorage.getItem('username')) || users[0]);
       
       await api.addOpnameSession({
         processor_name: currentAdmin?.name || 'Administrator',
@@ -356,7 +360,8 @@ export default function StockOpname() {
         items_surplus_count: surplusCount,
         items_minus_count: minusCount,
         items_data: finishedItems,
-        session_code: sessionCode || "SO-MANUAL"
+        session_code: sessionCode || "SO-MANUAL",
+        company_id: userProfile.company_id
       });
       
       setIsFinalized(true);

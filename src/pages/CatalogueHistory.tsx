@@ -57,7 +57,7 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
   const fetchHistory = async () => {
     setIsLoading(true);
     try {
-      const dbData = await api.getCatalogues();
+      const dbData = await api.getCatalogues(userProfile.company_id!);
       const formatted = dbData.map((item: any) => ({
         id: item.id,
         name: item.name,
@@ -83,7 +83,7 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await api.deleteCatalogueFromDB(deleteId);
+      await api.deleteCatalogueFromDB(deleteId, userProfile.company_id!);
       setCatalogues(prev => prev.filter(c => c.id !== deleteId));
       setDeleteId(null);
       toast.success('Draft berhasil dihapus permanen!');
