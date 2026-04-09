@@ -21,6 +21,7 @@ interface Product {
   unit: string;
   image_url: string;
   category: string;
+  cost_price: number;
 }
 
 interface CartItem {
@@ -159,7 +160,8 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
             product_id: i.product.id,
             name: i.product.name,
             qty: i.quantity,
-            price: i.product.price
+            price: i.product.price,
+            cost_price: i.product.cost_price || 0
           })),
           {
             is_metadata: true,
@@ -220,13 +222,13 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">POS Premium</h1>
-            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Sinkronisasi stok real-time</p>
+            <p className="text-xs font-semibold text-slate-400 leading-none">Sinkronisasi stok real-time</p>
           </div>
         </div>
         
         <div className="flex items-center gap-6">
           <div className="hidden md:flex flex-col text-right">
-             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Waktu Sekarang</span>
+             <span className="text-[10px] font-bold text-slate-400">Waktu Sekarang</span>
              <span className="text-sm font-bold text-slate-700">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
 
@@ -234,7 +236,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
 
           <div className="hidden md:flex items-center gap-3">
             <div className="text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Kasir Aktif</p>
+              <p className="text-[10px] font-bold text-slate-400 transition-colors leading-none mb-1">Kasir Aktif</p>
               <h3 className="text-sm font-bold text-slate-800 leading-none">{userProfile?.nickname || userProfile?.username || 'Kasir'}</h3>
             </div>
             <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
@@ -271,7 +273,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Scan QR / Ketik Nama Produk / PLU..."
-                className="w-full pl-16 pr-8 py-6 bg-white border-none rounded-[32px] text-lg font-black text-slate-800 placeholder-slate-300 shadow-xl shadow-slate-200/50 outline-none focus:ring-4 focus:ring-[#8b7365]/5 transition-all"
+                className="w-full pl-16 pr-8 py-6 bg-white border-none rounded-[32px] text-lg font-bold text-slate-800 placeholder-slate-300 shadow-xl shadow-slate-200/50 outline-none focus:ring-4 focus:ring-[#8b7365]/5 transition-all"
               />
               
               {/* Floating Results */}
@@ -299,13 +301,13 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                              <img src={p.image_url} alt="" className="max-h-full max-w-full object-contain" />
                           </div>
                           <div className="flex-1">
-                             <p className="text-[10px] font-black text-[#8b7365] uppercase tracking-widest">{p.brand}</p>
+                             <p className="text-[10px] font-bold text-[#8b7365] mb-0.5">{p.brand}</p>
                              <h4 className="text-sm font-black text-slate-800 leading-tight">{p.name}</h4>
                              <p className="text-[10px] font-bold text-rose-500 uppercase mt-0.5">PLU: {p.plu}</p>
                           </div>
                           <div className="text-right">
                              <p className="text-lg font-black text-[#8b7365]">Rp {p.price.toLocaleString()}</p>
-                             <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border", p.stock < 10 ? "text-amber-600 bg-amber-50 border-amber-200" : "text-emerald-600 bg-emerald-50 border-emerald-200")}>Stok: {p.stock}</span>
+                             <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", p.stock < 10 ? "text-amber-600 bg-amber-50 border-amber-200" : "text-emerald-600 bg-emerald-50 border-emerald-200")}>Stok: {p.stock}</span>
                           </div>
                         </button>
                       ))
@@ -318,7 +320,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
            {/* Dashboard Stats or Quick Recommendations can go here */}
            <div className="flex-1 flex flex-col items-center justify-center text-slate-300 opacity-20">
               <ShoppingCart className="w-48 h-48 mb-6" />
-              <p className="text-2xl font-black uppercase tracking-[0.2em] italic">Ready to Serve</p>
+              <p className="text-2xl font-black italic text-slate-300">Ready to Serve</p>
            </div>
         </div>
 
@@ -330,7 +332,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 border border-slate-100">
                       <ShoppingCart className="w-5 h-5" />
                    </div>
-                   <h3 className="font-black text-slate-800 uppercase tracking-tight text-lg">Keranjang Belanja</h3>
+                   <h3 className="font-bold text-slate-800 text-lg">Keranjang Belanja</h3>
                 </div>
                 <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black text-slate-500 uppercase">{totalItems} Items</span>
              </div>
@@ -340,7 +342,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20 border-2 border-dashed border-slate-100 rounded-[32px] mx-2">
                    <Package className="w-12 h-12 mb-3 opacity-20" />
-                   <p className="text-xs font-black uppercase tracking-widest">Belum ada barang</p>
+                   <p className="text-sm font-bold text-slate-300">Belum ada barang</p>
                 </div>
               ) : (
                 cart.map(item => (
@@ -382,15 +384,15 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
            <div className="p-8 bg-slate-50 border-t border-slate-200 space-y-6">
               <div className="space-y-3">
                  <div className="flex items-center justify-between text-slate-500">
-                    <span className="text-xs font-bold uppercase tracking-widest">Subtotal</span>
+                    <span className="text-xs font-semibold text-slate-500">Subtotal</span>
                     <span className="text-sm font-black">Rp {subtotal.toLocaleString()}</span>
                  </div>
                  <div className="flex items-center justify-between text-slate-500 pb-2 border-b border-white">
-                    <span className="text-xs font-bold uppercase tracking-widest">Diskon / Promo</span>
+                    <span className="text-xs font-semibold text-slate-500">Diskon / Promo</span>
                     <span className="text-sm font-black text-emerald-600">- Rp 0</span>
                  </div>
                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-sm font-black text-slate-800 uppercase tracking-tighter">Total Akhir</span>
+                    <span className="text-sm font-bold text-slate-800">Total Akhir</span>
                     <span className="text-3xl font-black text-slate-800 tracking-tighter">Rp {subtotal.toLocaleString()}</span>
                  </div>
               </div>
@@ -399,7 +401,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                   <button 
                     disabled={cart.length === 0}
                     onClick={() => setIsDebitQRISModalOpen(true)}
-                    className="flex flex-col items-center justify-center p-4 bg-white border border-slate-200 rounded-2xl hover:bg-slate-100 transition-all font-black text-[10px] text-slate-500 gap-2 uppercase"
+                    className="flex flex-col items-center justify-center p-4 bg-white border border-slate-200 rounded-2xl hover:bg-slate-100 transition-all font-bold text-[11px] text-slate-500 gap-2"
                   >
                      <CreditCard className="w-5 h-5" />
                      Debit / QRIS
@@ -407,7 +409,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                  <button 
                   disabled={cart.length === 0}
                   onClick={() => setIsPaymentModalOpen(true)}
-                  className="flex flex-col items-center justify-center p-4 bg-[#8b7365] text-white rounded-3xl hover:bg-[#7a6458] transition-all font-black text-xs gap-2 uppercase shadow-xl shadow-[#8b7365]/20 disabled:opacity-50 disabled:grayscale"
+                  className="flex flex-col items-center justify-center p-4 bg-[#8b7365] text-white rounded-3xl hover:bg-[#7a6458] transition-all font-bold text-sm gap-2 shadow-xl shadow-[#8b7365]/20 disabled:opacity-50 disabled:grayscale"
                  >
                     <Banknote className="w-6 h-6" />
                     Bayar Tunai

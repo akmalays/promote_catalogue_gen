@@ -165,7 +165,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
             <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">
               {isAdmin ? 'Pusat Notifikasi' : 'Notifikasi'}
             </h1>
-            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">
+            <p className="text-xs font-medium text-slate-400 tracking-widest leading-none">
               {isAdmin ? 'Kelola & Jadwalkan Notifikasi untuk Tim' : 'Kotak Masuk Pesan & Info Toko'}
             </p>
           </div>
@@ -219,7 +219,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                 <stat.icon className={cn("w-5 h-5", stat.textColor)} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-[11px] font-bold text-slate-400">{stat.label}</p>
                 <p className="text-xl font-black text-slate-800">{stat.value}</p>
               </div>
             </motion.div>
@@ -240,7 +240,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
               key={tab.key}
               onClick={() => setFilterTab(tab.key as any)}
               className={cn(
-                "px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                "px-6 py-2 rounded-lg text-xs font-bold transition-all",
                 filterTab === tab.key ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -268,7 +268,7 @@ export default function Notifications({ userProfile }: NotificationsProps) {
           ) : filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 opacity-30">
               <Bell className="w-16 h-16 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest">Tidak ada notifikasi</p>
+              <p className="text-sm font-bold text-slate-400">Tidak ada notifikasi baru</p>
             </div>
           ) : (
             filteredNotifications.map((notif, i) => {
@@ -301,22 +301,22 @@ export default function Notifications({ userProfile }: NotificationsProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-sm font-black text-slate-800 truncate">{notif.title}</h3>
-                        <span className={cn("text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", typeConfig.bgLight, typeConfig.textColor)}>
+                        <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded-full", typeConfig.bgLight, typeConfig.textColor)}>
                           {typeConfig.label}
                         </span>
                         {!notif.is_sent && (
-                          <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 flex items-center gap-1">
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" /> Terjadwal
                           </span>
                         )}
                         {notif.is_read && (
-                          <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-slate-100 text-slate-400">
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400">
                             Dibaca
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2">{notif.message}</p>
-                      <div className="flex items-center gap-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-4 text-[10px] font-semibold text-slate-400">
                         {notif.sender_name && <span>Dari: {notif.sender_name}</span>}
                         {notif.scheduled_at && !notif.is_sent && (
                           <span className="text-amber-500 flex items-center gap-1">

@@ -14,9 +14,9 @@ interface Product {
   price: number;
   category: string;
   image_url: string;
-  stock: number;
   unit: string;
   plu: string;
+  cost_price: number;
 }
 
 const CATEGORIES = [
@@ -60,7 +60,8 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
     image_url: '',
     stock: 0,
     unit: 'pcs',
-    plu: ''
+    plu: '',
+    cost_price: 0
   });
 
   useEffect(() => {
@@ -432,8 +433,17 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                             {p.unit || 'pcs'}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-sm font-black text-emerald-600">
-                          Rp {p.price.toLocaleString()}
+                        <td className="px-6 py-3">
+                           <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1">JUAL</span>
+                              <span className="text-sm font-black text-emerald-600">Rp {p.price?.toLocaleString()}</span>
+                           </div>
+                        </td>
+                        <td className="px-6 py-3">
+                           <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1">BELI</span>
+                              <span className="text-sm font-black text-slate-400">Rp {p.cost_price?.toLocaleString() || 0}</span>
+                           </div>
                         </td>
                         <td className="px-6 py-3">
                           <div className="flex items-center justify-center gap-1.5">
@@ -586,14 +596,26 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                   />
                 </div>
                 <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Harga (Rupiah)</label>
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Harga Beli (Cogs)</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">Rp</span>
                     <input 
                       type="number"
+                      value={formData.cost_price}
+                      onChange={e => setFormData({...formData, cost_price: Number(e.target.value)})}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-black text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Harga Jual</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-emerald-400 text-sm">Rp</span>
+                    <input 
+                      type="number"
                       value={formData.price}
                       onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-black text-sm"
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-black text-sm text-emerald-600"
                     />
                   </div>
                 </div>

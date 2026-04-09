@@ -325,6 +325,62 @@ export const api = {
     if (error) throw error;
     return true;
   },
+  processInbound: async (details: {
+    product_id: string;
+    quantity: number;
+    purchase_price: number;
+    company_id: string;
+    supplier?: string;
+    salesman?: string;
+    invoice_image?: string | null;
+  }) => {
+    // 1. Get current product to calculate moving average
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('stock, cost_price')
+      .eq('id', details.product_id)
+      .eq('company_id', details.company_id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const currentStock = Number(product.stock || 0);
+    const currentCost = Number(product.cost_price || 0);
+    const newQty = Number(details.quantity);
+    const newPurchasePrice = Number(details.purchase_price);
+
+    // Moving Average Formula
+    const totalStock = currentStock + newQty;
+    let newCostPrice = newPurchasePrice;
+    
+    if (currentStock > 0 && totalStock > 0) {
+      newCostPrice = ((currentStock * currentCost) + (newQty * newPurchasePrice)) / totalStock;
+    }
+
+    // 2. Update Product (Stock & Cost Price)
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ 
+        stock: totalStock,
+        cost_price: Math.round(newCostPrice)
+      })
+      .eq('id', details.product_id)
+      .eq('company_id', details.company_id);
+
+    if (updateError) throw updateError;
+
+    // 3. Add to Supply History
+    return api.addSupplyHistory({
+      product_id: details.product_id,
+      quantity: details.quantity,
+      purchase_price: details.purchase_price,
+      company_id: details.company_id,
+      supplier: details.supplier,
+      salesman: details.salesman,
+      invoice_image: details.invoice_image,
+      created_at: new Date().toISOString()
+    });
+  },
   deleteProduct: async (id: any, companyId: string) => {
     const { error } = await supabase
       .from('products')
@@ -347,7 +403,10 @@ export const api = {
   addSupplyHistory: async (log: any) => {
     const { data, error } = await supabase
       .from('supply_history')
-      .insert([log])
+      .insert([{
+        ...log,
+        purchase_price: Number(log.purchase_price || 0)
+      }])
       .select()
       .single();
     if (error) throw error;

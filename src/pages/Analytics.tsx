@@ -72,8 +72,9 @@ export default function Analytics({ userProfile }: { userProfile: UserProfile })
   }, [sales, timeRange]);
 
   const stats = useMemo(() => {
-    const total = sales.reduce((acc, s) => acc + s.total_amount, 0);
+    const total = sales.reduce((acc, s) => acc + (s.total_amount || 0), 0);
     const count = sales.length;
+    let totalCost = 0;
     
     // Comparison (Mocked logic for demo, real would compare prev periods)
     const prevMonthTotal = total * 0.85; // Mock
@@ -82,11 +83,18 @@ export default function Analytics({ userProfile }: { userProfile: UserProfile })
     // Top Products (Aggregated)
     const items: Record<string, { qty: number, revenue: number }> = {};
     sales.forEach(s => {
-      s.items?.forEach((it: any) => {
-        const name = it.name || 'Produk';
+      const saleItems = Array.isArray(s.items) ? s.items : (typeof s.items === 'string' ? JSON.parse(s.items) : []);
+      saleItems.forEach((it: any) => {
+        if (it.is_metadata) return;
+        const qty = Number(it.qty || it.quantity || 0);
+        const price = Number(it.price || 0);
+        const cost = Number(it.cost_price || 0);
+        totalCost += (qty * cost);
+        
+        const name = it.name || it.product_name || 'Produk';
         if (!items[name]) items[name] = { qty: 0, revenue: 0 };
-        items[name].qty += (it.qty || it.quantity || 0);
-        items[name].revenue += ((it.qty || it.quantity || 0) * (it.price || 0));
+        items[name].qty += qty;
+        items[name].revenue += (qty * price);
       });
     });
 
@@ -95,7 +103,7 @@ export default function Analytics({ userProfile }: { userProfile: UserProfile })
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5);
 
-    return { total, count, growth, bestsellers };
+    return { total, totalProfit: total - totalCost, count, growth, bestsellers };
   }, [sales]);
 
   const COLORS = ['#8b7365', '#a38b7d', '#bdab9f', '#d7ccc4', '#f1edea'];
@@ -173,11 +181,16 @@ export default function Analytics({ userProfile }: { userProfile: UserProfile })
                className="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100 relative overflow-hidden group"
             >
                <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-6">
-                  <Activity className="w-6 h-6" />
+                  <CreditCard className="w-6 h-6" />
                </div>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Volume Transaksi</p>
-               <h3 className="text-3xl font-black text-slate-800 tracking-tighter mb-2">{stats.count} <span className="text-lg text-slate-300">Order</span></h3>
-               <p className="text-[11px] font-bold text-slate-400 leading-none">Total pesanan hari ini</p>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estimasi Laba Kotor</p>
+               <div className="flex items-end gap-3 mb-2">
+                  <h3 className="text-3xl font-black text-slate-800 tracking-tighter">Rp {stats.totalProfit.toLocaleString()}</h3>
+                  <div className="flex items-center gap-1 mb-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold">
+                     {stats.total > 0 ? ((stats.totalProfit / stats.total) * 100).toFixed(1) : 0}%
+                  </div>
+               </div>
+               <p className="text-[11px] font-bold text-slate-400 leading-none">Net profit margin dari total omzet</p>
             </motion.div>
 
             <motion.div 
