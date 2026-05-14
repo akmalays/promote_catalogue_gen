@@ -11,18 +11,20 @@
   --color-indomaret-red: #ed1c24;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   *, ::before, ::after {
     font-family: inherit;
   }
 
   html, body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100;
     font-family: "Plus Jakarta Sans", sans-serif !important;
   }
   
   h1, h2, h3, h4, h5, h6, .display-font, .font-display {
-    @apply tracking-tight font-black;
+    @apply tracking-tight font-bold;
     font-family: "Plus Jakarta Sans", sans-serif !important;
   }
 }

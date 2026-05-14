@@ -33,9 +33,21 @@ type AuthView = 'login' | 'signup' | 'reset-password';
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
   const [authView, setAuthView] = useState<AuthView>('login');
+
+  // Dark mode
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('dark_mode');
+    if (saved !== null) return saved === 'true';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('dark_mode', String(isDarkMode));
+  }, [isDarkMode]);
 
   const handleAuthSuccess = (user: UserProfile) => {
     setUserProfile(user);
@@ -128,7 +140,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased overflow-hidden relative">
+    <div className="flex h-screen w-screen bg-stone-50 dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 antialiased overflow-hidden relative">
       <Toaster 
         position="bottom-right" 
         reverseOrder={false} 
@@ -136,15 +148,15 @@ export default function App() {
         toastOptions={{ 
           duration: 4000,
           style: {
-            borderRadius: '12px',
-            background: '#333',
+            borderRadius: '8px',
+            background: isDarkMode ? '#292524' : '#1c1917',
             color: '#fff',
             fontSize: '13px',
-            fontWeight: '600',
-            padding: '12px 16px',
+            fontWeight: '500',
+            padding: '10px 14px',
           },
           success: { style: { background: '#059669' } },
-          error: { style: { background: '#e11d48' } },
+          error: { style: { background: '#dc2626' } },
         }} 
       />
 
@@ -156,7 +168,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsSidebarExpanded(false)}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] lg:hidden"
+            className="fixed inset-0 bg-black/30 z-[90] lg:hidden"
           />
         )}
       </AnimatePresence>
@@ -172,25 +184,27 @@ export default function App() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
+      <main className="flex-1 overflow-y-auto relative bg-stone-50 dark:bg-stone-950 h-full w-full">
         {currentPage !== 'pos' && (
           <AppHeader
             currentPage={currentPage}
             isSidebarExpanded={isSidebarExpanded}
             userProfile={userProfile}
+            isDarkMode={isDarkMode}
             onToggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)}
             onNavigate={setCurrentPage}
+            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
           />
         )}
 
-        <section className="relative p-0 transition-all duration-300">
+        <section className="relative p-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPage}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
             >
               {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} userProfile={userProfile} />}
               {currentPage === 'activity' && <Activity userProfile={userProfile} />}
