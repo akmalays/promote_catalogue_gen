@@ -6,7 +6,7 @@ import {
   BookOpen, Megaphone, LayoutDashboard, Search, TrendingUp,
   Facebook, Twitter, Instagram, Youtube, Music, QrCode,
   Menu, LogOut, Bell, Settings as SettingsIcon, User, X, ChevronLeft,
-  History, Truck, BarChart3, ClipboardCheck
+  History, Truck, BarChart3, ClipboardCheck, Tag, Gift
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -29,8 +29,11 @@ import StockOpname from './pages/StockOpname';
 import NotificationPopup from './components/NotificationPopup';
 import Signup from './pages/Signup';
 import ResetPassword from './pages/ResetPassword';
+import CampaignManager from './pages/CampaignManager';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname';
+
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns';
+
 
 type AuthView = 'login' | 'signup' | 'reset-password';
 
@@ -145,6 +148,7 @@ function CatalogueEditor({ userProfile, editingCatalogue, onDraftSaved }: {
       setIsDbLoading(false);
     }
   };
+
 
   const openDbLookup = (rowId: string, itemId: string) => {
     setTargetLookup({ rowId, itemId });
@@ -1137,17 +1141,20 @@ export default function App() {
   // RBAC: Redirect if unauthorized page access
   useEffect(() => {
     const role = userProfile.role?.toLowerCase() || 'kasir';
-    const isAdmin = role.includes('admin');
+    const isAdmin = role.includes('admin')
     const isManager = role.includes('manager');
     
     const allowed: Page[] = ['dashboard', 'settings', 'pos', 'revenue'];
-    if (isManager) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'notifications', 'stock_opname');
-    if (isAdmin) allowed.push('catalogue', 'promotions', 'history', 'products', 'supply', 'activity', 'analytics', 'notifications', 'stock_opname');
+    if (isManager || isAdmin) { 
+       allowed.push('catalogue', 'promotions', 'campaigns', 'history', 'products', 'supply', 'notifications', 'stock_opname', 'activity', 'analytics');
+    }
     
     if (!allowed.includes(currentPage)) {
       setCurrentPage('dashboard');
     }
   }, [userProfile.role, currentPage]);
+
+
 
   useEffect(() => {
     if (currentPage === 'pos') {
@@ -1188,6 +1195,7 @@ export default function App() {
 
   const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+    { id: 'campaigns', label: 'Promo & Campaign', icon: <Gift className="w-5 h-5 shrink-0" /> },
     { id: 'revenue', label: 'Sales Report', icon: <TrendingUp className="w-5 h-5 shrink-0" /> },
     { id: 'products', label: 'Product Database', icon: <Package className="w-5 h-5 shrink-0" /> },
     { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-5 h-5 shrink-0" /> },
@@ -1202,27 +1210,29 @@ export default function App() {
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5 shrink-0" /> },
   ];
 
-  const clearEditingState = () => {
-    setEditingCatalogue(null);
-    setCurrentPage('catalogue');
-  };
-
   const navItems = allNavItems.filter(item => {
     const role = userProfile.role?.toLowerCase() || 'kasir';
-    const isAdmin = role.includes('admin');
+    const isAdmin = role.includes('admin') || role.includes('owner') || role.includes('administrator');
     const isManager = role.includes('manager');
     const isKasir = role.includes('kasir');
 
-    // Semua role bisa akses settings, revenue, dashboard, & Admin akses semua
-    if (item.id === 'settings' || item.id === 'dashboard' || isAdmin) return true;
+    // Always show for Admin roles
+    if (isAdmin) return true;
+
+
     
-    // Role Manager
-    if (isManager) return ['catalogue', 'promotions', 'history', 'revenue', 'pos', 'products', 'supply', 'notifications', 'stock_opname'].includes(item.id);
+    // Safety fallback: items everyone sees
+    if (['settings', 'dashboard'].includes(item.id)) return true;
+    
+    // Role Manager & Other Staff (non-kasir)
+    if (isManager || isAdmin) return ['catalogue', 'promotions', 'campaigns', 'history', 'revenue', 'pos', 'products', 'supply', 'notifications', 'stock_opname'].includes(item.id);
     
     // Role Kasir
     if (isKasir) return ['pos', 'revenue'].includes(item.id);
 
     return false;
+
+
   });
 
   return (
@@ -1243,18 +1253,17 @@ export default function App() {
           },
           success: {
             style: {
-              background: '#059669', // Emerald 600
+              background: '#059669',
             },
           },
           error: {
             style: {
-              background: '#e11d48', // Rose 600
+              background: '#e11d48',
             },
           },
         }} 
       />
 
-      {/* Mobile Sidebar Backdrop */}
       <AnimatePresence>
         {isSidebarExpanded && (
           <motion.div 
@@ -1267,7 +1276,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Left Sidebar - Responsive */}
       <motion.aside 
         initial={false}
         animate={{ 
@@ -1280,10 +1288,8 @@ export default function App() {
           "fixed lg:relative top-0 left-0"
         )}
       >
-        {/* Top Spacer - Minimalist */}
         <div className="h-10" />
 
-        {/* Navigation */}
         <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-visible">
           {navItems.map(item => (
             <button
@@ -1315,7 +1321,6 @@ export default function App() {
                 )}
               </AnimatePresence>
 
-              {/* Tooltip for Collapsed State */}
               {!isSidebarExpanded && (
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-3 py-2 bg-slate-800 text-white text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 group-hover:translate-x-1 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700">
                     {item.label}
@@ -1323,7 +1328,6 @@ export default function App() {
                 </div>
               )}
               
-              {/* Active Indicator Line */}
               {currentPage === item.id && isSidebarExpanded && (
                 <div className="absolute left-0 w-1.5 h-6 bg-yellow-400 rounded-full my-auto inset-y-0 -translate-x-1/2" />
               )}
@@ -1331,7 +1335,6 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Bottom Section */}
         <div className="px-4 py-6 border-t border-slate-100">
            <button 
              onClick={() => {
@@ -1356,9 +1359,7 @@ export default function App() {
         </div>
       </motion.aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative bg-[#f8f9fb] custom-scrollbar h-full w-full">
-        {/* Top Header - Redesigned Sticky */}
         {currentPage !== 'pos' && (
           <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm no-print">
             <div className="flex items-center gap-3 md:gap-8 flex-1">
@@ -1377,9 +1378,6 @@ export default function App() {
               </button>
 
               <div className="flex items-center gap-0 -ml-2">
-                <div className="h-12 shrink-0 hidden md:flex items-center justify-center">
-                  <img src={logoAsset} alt="Logo" className="h-full w-auto object-contain" />
-                </div>
                 <div className="flex flex-col">
                     <h1 className="text-lg md:text-xl font-display font-black text-slate-900 tracking-tighter leading-none uppercase">myStore</h1>
                     <span className="text-[9px] font-display font-bold text-[#8b7365]/60 uppercase tracking-[0.3em] mt-1 ml-0.5 leading-none">Studio</span>
@@ -1411,7 +1409,6 @@ export default function App() {
                     <SettingsIcon className="w-5 h-5 group-hover:text-inherit" />
                  </button>
                  
-                 {/* Custom Tooltip */}
                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-3 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/settings:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-[120] shadow-xl border border-slate-700 translate-y-2 group-hover/settings:translate-y-0">
                     Pengaturan Profil
                     <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-[6px] border-x-transparent border-b-[6px] border-b-slate-800" />
@@ -1451,7 +1448,6 @@ export default function App() {
           </header>
         )}
 
-        {/* Workspace Content */}
         <section className="relative p-0 transition-all duration-300">
             <AnimatePresence mode="wait">
               <motion.div
@@ -1472,6 +1468,7 @@ export default function App() {
                   />
                 )}
                 {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
+                {currentPage === 'campaigns' && <CampaignManager userProfile={userProfile} />}
                 {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
                 {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} userProfile={userProfile} />}
                 {currentPage === 'supply' && <Supply userProfile={userProfile} />}

@@ -4,7 +4,7 @@ import {
   CreditCard, Banknote, Receipt, CheckCircle2, 
   Package, Calculator, QrCode, User, Calendar, 
   ArrowRight, Printer, RefreshCw, AlertCircle,
-  Menu, LayoutDashboard, Truck, Megaphone, Settings as SettingsIcon
+  Menu, LayoutDashboard, Truck, Megaphone, Settings as SettingsIcon, Gift, Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
@@ -27,6 +27,11 @@ interface Product {
 interface CartItem {
   product: Product;
   quantity: number;
+  promoType?: 'price_cut' | 'b1g1' | 'b2g1' | 'buy_x_get_y' | null;
+  promoPrice?: number | null;  // effective price per unit after promo
+  isFreeItem?: boolean;         // true = this row is the gratisan
+  buyQty?: number;
+  getQty?: number;
 }
 
 import { UserProfile } from '../types';
@@ -54,24 +59,36 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
     phone: '0812-3456-7890'
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Active Campaign
+  const [activeCampaign, setActiveCampaign] = useState<any>(null);
+  const [campaignPromoMap, setCampaignPromoMap] = useState<Map<string, any>>(new Map());
   
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProducts();
-    // Auto focus search for scanner support
+    fetchActiveCampaign();
     const timer = setTimeout(() => searchInputRef.current?.focus(), 500);
-    
-    // Load branding
     const savedBrand = localStorage.getItem('pos_branding_settings');
     if (savedBrand) {
-      try {
-        setPosSettings(JSON.parse(savedBrand));
-      } catch(e) {}
+      try { setPosSettings(JSON.parse(savedBrand)); } catch(e) {}
     }
-
     return () => clearTimeout(timer);
   }, []);
+
+  const fetchActiveCampaign = async () => {
+    try {
+      const campaign = await api.getActiveCampaign(userProfile.company_id!);
+      if (campaign) {
+        setActiveCampaign(campaign);
+        const prods = await api.getCampaignProducts(campaign.id);
+        const map = new Map();
+        prods.forEach((cp: any) => map.set(cp.product_id, cp));
+        setCampaignPromoMap(map);
+      }
+    } catch (e) { /* silent */ }
+  };
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -100,16 +117,54 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
       toast.error('Stok habis!');
       return;
     }
-    const existing = cart.find(item => item.product.id === p.id);
-    if (existing) {
-      if (existing.quantity >= p.stock) {
-        toast.error('Stok tidak mencukupi');
+
+    const promo = campaignPromoMap.get(p.id);
+
+    if (promo && (promo.promo_type === 'b1g1' || promo.promo_type === 'b2g1' || promo.promo_type === 'buy_x_get_y')) {
+      // Volume promo: add paying item + free item as separate row
+      const buyQty = promo.promo_type === 'b1g1' ? 1 : promo.promo_type === 'b2g1' ? 2 : (promo.buy_qty || 1);
+      const getQty = promo.promo_type === 'b1g1' ? 1 : promo.promo_type === 'b2g1' ? 1 : (promo.get_qty || 1);
+      const totalNeeded = buyQty + getQty;
+
+      if (p.stock < totalNeeded) {
+        toast.error(`Stok kurang untuk promo ini (butuh ${totalNeeded} unit)`);
         return;
       }
-      setCart(cart.map(item => item.product.id === p.id ? { ...item, quantity: item.quantity + 1 } : item));
+
+      const existingPay = cart.find(i => i.product.id === p.id && !i.isFreeItem);
+      if (existingPay) {
+        // Already in cart, just increment bundle by buyQty
+        if ((existingPay.quantity + buyQty) > p.stock) {
+          toast.error('Stok tidak mencukupi');
+          return;
+        }
+        setCart(cart.map(i => {
+          if (i.product.id === p.id && !i.isFreeItem) return { ...i, quantity: i.quantity + buyQty };
+          if (i.product.id === p.id && i.isFreeItem) return { ...i, quantity: i.quantity + getQty };
+          return i;
+        }));
+      } else {
+        const promoLabel = promo.promo_type === 'b1g1' ? 'B1G1' : promo.promo_type === 'b2g1' ? 'B2G1' : `B${buyQty}G${getQty}`;
+        setCart(prev => [
+          ...prev,
+          { product: p, quantity: buyQty, promoType: promo.promo_type, promoPrice: p.price, isFreeItem: false, buyQty, getQty },
+          { product: { ...p, name: `${p.name} (GRATIS ${promoLabel})` }, quantity: getQty, promoType: promo.promo_type, promoPrice: 0, isFreeItem: true }
+        ]);
+      }
     } else {
-      setCart([...cart, { product: p, quantity: 1 }]);
+      const effectivePrice = promo?.promo_type === 'price_cut' && promo.promo_price ? promo.promo_price : p.price;
+      const existing = cart.find(item => item.product.id === p.id && !item.isFreeItem);
+      if (existing) {
+        if (existing.quantity >= p.stock) {
+          toast.error('Stok tidak mencukupi');
+          return;
+        }
+        setCart(cart.map(item => item.product.id === p.id && !item.isFreeItem ? { ...item, quantity: item.quantity + 1 } : item));
+      } else {
+        setCart([...cart, { product: p, quantity: 1, promoType: promo?.promo_type || null, promoPrice: effectivePrice }]);
+      }
     }
+
     setSearchTerm('');
     searchInputRef.current?.focus();
   };
@@ -126,12 +181,21 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
     setCart(cart.map(i => i.product.id === id ? { ...i, quantity: newQty } : i));
   };
 
-  const removeFromCart = (id: string) => {
-    setCart(cart.filter(item => item.product.id !== id));
+  const removeFromCart = (id: string, isFree?: boolean) => {
+    // Remove paying item + its free-item pair together
+    const target = cart.find(i => i.product.id === id && (isFree ? i.isFreeItem : !i.isFreeItem));
+    if (target?.promoType && target.promoType !== 'price_cut') {
+      setCart(cart.filter(i => i.product.id !== id)); // remove both
+    } else {
+      setCart(cart.filter(item => item.product.id !== id));
+    }
   };
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => acc + ((item.promoPrice ?? item.product.price) * item.quantity), 0);
+  const originalTotal = cart.reduce((acc, item) => acc + (item.isFreeItem ? 0 : item.product.price * item.quantity), 0);
+  const totalDiscount = originalTotal - subtotal;
+  const totalItems = cart.filter(i => !i.isFreeItem).reduce((acc, item) => acc + item.quantity, 0);
+
 
   const handleQuickPay = (amount: number) => {
     setPaymentAmount(amount);
@@ -160,8 +224,11 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
             product_id: i.product.id,
             name: i.product.name,
             qty: i.quantity,
-            price: i.product.price,
-            cost_price: i.product.cost_price || 0
+            price: i.isFreeItem ? 0 : (i.promoPrice ?? i.product.price),
+            original_price: i.product.price,
+            cost_price: i.product.cost_price || 0,
+            promo_type: i.promoType || null,
+            is_free_item: i.isFreeItem || false,
           })),
           {
             is_metadata: true,
@@ -174,13 +241,14 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
         change_amount: pay - subtotal,
         payment_method: isDebitQRISModalOpen ? paymentMethod : 'cash',
         payment_ref: isDebitQRISModalOpen ? nonCashRef : null,
-        created_at: new Date().toISOString()
       });
 
-      // 2. Update Stocks (Atomic)
+
+      // 2. Update Stocks (Atomic) — include free items for volume promos
       for (const item of cart) {
         await api.decrementStock(item.product.id, item.quantity, userProfile.company_id!);
       }
+
 
       setCompletedTransaction({
         ...sale,
@@ -306,7 +374,34 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                              <p className="text-[10px] font-bold text-rose-500 uppercase mt-0.5">PLU: {p.plu}</p>
                           </div>
                           <div className="text-right">
-                             <p className="text-lg font-black text-[#8b7365]">Rp {p.price.toLocaleString()}</p>
+                            {(() => {
+                              const promo = campaignPromoMap.get(p.id);
+                              if (promo?.promo_type === 'price_cut' && promo.promo_price) {
+                                return (
+                                  <div>
+                                    <p className="text-xs font-bold text-slate-400 line-through">Rp {p.price.toLocaleString()}</p>
+                                    <p className="text-lg font-black text-emerald-600">Rp {promo.promo_price.toLocaleString()}</p>
+                                    <span className="text-[9px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">
+                                      Disc {Math.round((1 - promo.promo_price / p.price) * 100)}%
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (promo && promo.promo_type !== 'price_cut') {
+                                const label = promo.promo_type === 'b1g1' ? 'Beli 1 Gratis 1'
+                                  : promo.promo_type === 'b2g1' ? 'Beli 2 Gratis 1'
+                                  : `B${promo.buy_qty}G${promo.get_qty}`;
+                                return (
+                                  <div>
+                                    <p className="text-lg font-black text-[#8b7365]">Rp {p.price.toLocaleString()}</p>
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                      <Gift className="w-2.5 h-2.5" />{label}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              return <p className="text-lg font-black text-[#8b7365]">Rp {p.price.toLocaleString()}</p>;
+                            })()}
                              <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", p.stock < 10 ? "text-amber-600 bg-amber-50 border-amber-200" : "text-emerald-600 bg-emerald-50 border-emerald-200")}>Stok: {p.stock}</span>
                           </div>
                         </button>
@@ -346,37 +441,55 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                 </div>
               ) : (
                 cart.map(item => (
-                  <div key={item.product.id} className="bg-slate-50/50 border border-slate-100 p-4 rounded-3xl flex items-center justify-between group transition-all hover:bg-white hover:shadow-lg hover:shadow-slate-200/40">
-                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="w-12 h-12 bg-white rounded-xl border border-slate-100 flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
-                           <img src={item.product.image_url} alt="" className="max-h-full max-w-full object-contain" />
-                        </div>
-                        <div className="min-w-0">
-                           <h4 className="text-xs font-black text-slate-800 leading-tight mb-1">{item.product.name}</h4>
-                           <p className="text-[10px] font-black text-[#8b7365]">Rp {item.product.price.toLocaleString()}</p>
-                        </div>
-                     </div>
+                   <div key={`${item.product.id}-${item.isFreeItem}`} className={cn(
+                     "border p-4 rounded-3xl flex items-center justify-between group transition-all hover:bg-white hover:shadow-lg hover:shadow-slate-200/40",
+                     item.isFreeItem ? "bg-amber-50/50 border-amber-100" : "bg-slate-50/50 border-slate-100"
+                   )}>
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                         <div className="w-12 h-12 bg-white rounded-xl border border-slate-100 flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
+                            <img src={item.product.image_url} alt="" className="max-h-full max-w-full object-contain" />
+                         </div>
+                         <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              {item.isFreeItem && <span className="text-[8px] font-black bg-amber-500 text-white px-1.5 py-0.5 rounded uppercase">GRATIS</span>}
+                              <h4 className="text-xs font-black text-slate-800 leading-tight">{item.product.name}</h4>
+                            </div>
+                            {item.isFreeItem 
+                              ? <p className="text-[10px] font-black text-amber-600">Rp 0 (Bonus Promo)</p>
+                              : item.promoPrice !== undefined && item.promoPrice !== item.product.price
+                              ? <div className="flex items-center gap-1.5">
+                                  <p className="text-[9px] font-bold text-slate-400 line-through">Rp {item.product.price.toLocaleString()}</p>
+                                  <p className="text-[10px] font-black text-emerald-600">Rp {(item.promoPrice || 0).toLocaleString()}</p>
+                                </div>
+                              : <p className="text-[10px] font-black text-[#8b7365]">Rp {item.product.price.toLocaleString()}</p>
+                            }
+                         </div>
+                      </div>
 
-                     <div className="flex items-center gap-2 bg-white px-2 py-1.5 rounded-2xl border border-slate-100 shadow-sm">
-                        <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-slate-50 rounded-lg text-slate-400 transition-colors">
-                           <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <input 
-                           type="number"
-                           value={item.quantity}
-                           onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 1)}
-                           className="text-sm font-black w-8 text-center bg-transparent border-none outline-none focus:ring-0 p-0"
-                        />
-                        <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-slate-50 rounded-lg text-[#8b7365] transition-colors">
-                           <Plus className="w-3.5 h-3.5" />
-                        </button>
-                     </div>
+                      {!item.isFreeItem && (
+                        <div className="flex items-center gap-2 bg-white px-2 py-1.5 rounded-2xl border border-slate-100 shadow-sm">
+                           <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 hover:bg-slate-50 rounded-lg text-slate-400 transition-colors">
+                              <Minus className="w-3.5 h-3.5" />
+                           </button>
+                           <input 
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 1)}
+                              className="text-sm font-black w-8 text-center bg-transparent border-none outline-none focus:ring-0 p-0"
+                           />
+                           <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-1 hover:bg-slate-50 rounded-lg text-[#8b7365] transition-colors">
+                              <Plus className="w-3.5 h-3.5" />
+                           </button>
+                        </div>
+                      )}
 
-                     <button onClick={() => removeFromCart(item.product.id)} className="ml-3 p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
-                        <Trash2 className="w-4 h-4" />
-                     </button>
-                  </div>
-                ))
+                      {!item.isFreeItem && (
+                        <button onClick={() => removeFromCart(item.product.id)} className="ml-3 p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                           <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                   </div>
+                 ))
               )}
            </div>
 
@@ -385,11 +498,14 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
               <div className="space-y-3">
                  <div className="flex items-center justify-between text-slate-500">
                     <span className="text-xs font-semibold text-slate-500">Subtotal</span>
-                    <span className="text-sm font-black">Rp {subtotal.toLocaleString()}</span>
+                    <span className="text-sm font-black">Rp {originalTotal.toLocaleString()}</span>
                  </div>
                  <div className="flex items-center justify-between text-slate-500 pb-2 border-b border-white">
-                    <span className="text-xs font-semibold text-slate-500">Diskon / Promo</span>
-                    <span className="text-sm font-black text-emerald-600">- Rp 0</span>
+                    <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                      <Gift className="w-3 h-3" />
+                      Diskon / Promo{activeCampaign ? ` (${activeCampaign.name})` : ''}
+                    </span>
+                    <span className="text-sm font-black text-emerald-600">- Rp {totalDiscount.toLocaleString()}</span>
                  </div>
                  <div className="flex items-center justify-between pt-2">
                     <span className="text-sm font-bold text-slate-800">Total Akhir</span>
@@ -653,18 +769,32 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                          {completedTransaction.items.map((item: any, idx: number) => (
                            <div key={idx} className="flex justify-between text-xs font-bold text-slate-700">
                               <div className="flex-1 pr-4">
-                                 <p className="leading-tight">{item.product.name}</p>
-                                 <p className="text-[9px] text-slate-400 uppercase">{item.quantity} x {item.product.price.toLocaleString()}</p>
+                                 {item.isFreeItem 
+                                   ? <p className="leading-tight text-amber-600">{item.product.name}</p>
+                                   : <p className="leading-tight">{item.product.name}</p>
+                                 }
+                                 {item.isFreeItem 
+                                   ? <p className="text-[9px] text-amber-500 uppercase">BONUS PROMO</p>
+                                   : <p className="text-[9px] text-slate-400 uppercase">{item.quantity} x {(item.promoPrice ?? item.product.price).toLocaleString()}</p>
+                                 }
                               </div>
-                              <span className="text-slate-800">{(item.product.price * item.quantity).toLocaleString()}</span>
+                              <span className={item.isFreeItem ? "text-amber-600" : "text-slate-800"}>
+                                {item.isFreeItem ? 'GRATIS' : ((item.promoPrice ?? item.product.price) * item.quantity).toLocaleString()}
+                              </span>
                            </div>
                          ))}
                       </div>
 
                       <div className="space-y-1 pt-2">
+                         {totalDiscount > 0 && (
+                           <div className="flex justify-between text-xs font-bold text-emerald-600">
+                              <span>DISKON PROMO</span>
+                              <span>- {totalDiscount.toLocaleString()}</span>
+                           </div>
+                         )}
                          <div className="flex justify-between text-xs font-bold text-slate-500">
                             <span>SUBTOTAL</span>
-                            <span>{completedTransaction.total_amount.toLocaleString()}</span>
+                            <span>{originalTotal.toLocaleString()}</span>
                          </div>
                          <div className="flex justify-between text-lg font-black text-slate-800">
                             <span>TOTAL</span>

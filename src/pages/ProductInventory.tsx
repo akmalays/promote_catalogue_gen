@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle, Check, DollarSign, Truck, ShoppingCart, ChevronDown, ChevronUp, Calendar, Layers, Barcode, Box } from 'lucide-react';
+import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle, Check, DollarSign, Truck, ShoppingCart, ChevronDown, ChevronUp, Calendar, Layers, Barcode, Box, Printer, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -26,6 +26,8 @@ const CATEGORIES = [
 const INITIAL_PRODUCTS: Product[] = [];
 
 import { UserProfile } from '../types';
+import PriceTagDrawer from '../components/PriceTagDrawer';
+
 
 export default function ProductDatabase({ onNavigate, userProfile }: { onNavigate: (page: any) => void, userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -45,10 +47,16 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<'supply' | 'sales' | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [productSalesHistory, setProductSalesHistory] = useState<any[]>([]);
+  const [isSalesHistoryLoading, setIsSalesHistoryLoading] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLowStockExpanded, setIsLowStockExpanded] = useState(false);
+  const [isPriceTagDrawerOpen, setIsPriceTagDrawerOpen] = useState(false);
+  const [productForPriceTag, setProductForPriceTag] = useState<Product | null>(null);
+  const [promoProductIds, setPromoProductIds] = useState<Map<string, any>>(new Map()); // productId -> campaign_product info
+
 
   // Form state
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -66,6 +74,7 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
 
   useEffect(() => {
     fetchProducts();
+    fetchActivePromo();
   }, []);
 
   // Reset page when filtering
@@ -86,7 +95,22 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
     }
   };
 
+  const fetchActivePromo = async () => {
+    try {
+      const campaign = await api.getActiveCampaign(userProfile.company_id!);
+      if (campaign) {
+        const campaignProds = await api.getCampaignProducts(campaign.id);
+        const map = new Map();
+        campaignProds.forEach((cp: any) => map.set(cp.product_id, cp));
+        setPromoProductIds(map);
+      }
+    } catch (e) {
+      // Silent - promo tags are non-critical
+    }
+  };
+
   const lowStockItems = products.filter(p => (p.stock || 0) < 10);
+
 
   const openDeleteModal = (p: Product, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -173,6 +197,7 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
 
   const fetchProductHistory = async (productId: string) => {
     setIsHistoryLoading(true);
+    setIsSalesHistoryLoading(true);
     try {
       const history = await api.getSupplyHistory(userProfile.company_id!);
       const productLogs = history.filter((h: any) => h.product_id === productId);
@@ -181,6 +206,14 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
       console.error('Gagal ambil riwayat:', e);
     } finally {
       setIsHistoryLoading(false);
+    }
+    try {
+      const salesLogs = await api.getSalesByProduct(userProfile.company_id!, productId);
+      setProductSalesHistory(salesLogs);
+    } catch (e) {
+      console.error('Gagal ambil riwayat penjualan:', e);
+    } finally {
+      setIsSalesHistoryLoading(false);
     }
   };
 
@@ -271,11 +304,22 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => setIsPriceTagDrawerOpen(true)}
+            className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-sm shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-all font-display"
+          >
+            <Printer className="w-4 h-4 text-[#8b7365]" /> Cetak label
+          </motion.button>
+
+
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={openAddForm}
             className="px-6 py-3 bg-[#8b7365] text-white rounded-2xl font-black text-sm shadow-xl shadow-[#8b7365]/20 flex items-center gap-2 hover:bg-[#7a6458] transition-colors"
           >
             <Plus className="w-4 h-4" /> Add New Product
           </motion.button>
+
         </div>
       </div>
 
@@ -399,14 +443,37 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                               {p.plu || 'N/A'}
                            </span>
                         </td>
-                        <td className="px-6 py-3">
-                          <button 
-                            onClick={() => openDetail(p)}
-                            className="font-black text-slate-800 hover:text-[#8b7365] transition-colors text-left text-sm"
-                          >
-                            {p.name}
-                          </button>
-                        </td>
+                         <td className="px-6 py-3">
+                           <div className="flex items-center gap-2">
+                             <button 
+                               onClick={() => openDetail(p)}
+                               className="font-black text-slate-800 hover:text-[#8b7365] transition-colors text-left text-sm"
+                             >
+                               {p.name}
+                             </button>
+                             {promoProductIds.has(p.id) && (() => {
+                               const cp = promoProductIds.get(p.id);
+                               const label = cp.promo_type === 'b1g1' ? 'B1G1'
+                                 : cp.promo_type === 'b2g1' ? 'B2G1'
+                                 : cp.promo_type === 'buy_x_get_y' ? `B${cp.buy_qty}G${cp.get_qty}`
+                                 : cp.promo_price && cp.price ? `Disc ${Math.round((1 - cp.promo_price / cp.price) * 100)}%`
+                                 : 'PROMO';
+                               const stockNote = cp.promo_type === 'b1g1' ? 'Stok keluar: 2x per transaksi'
+                                 : cp.promo_type === 'b2g1' ? 'Stok keluar: 3x per 2 pembelian'
+                                 : cp.promo_type === 'buy_x_get_y' ? `Stok keluar: ${(cp.buy_qty||1)+(cp.get_qty||1)}x per bundle`
+                                 : 'Promo harga aktif';
+                               return (
+                                 <span 
+                                   title={stockNote}
+                                   className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-md text-[9px] font-black uppercase tracking-wide cursor-help"
+                                 >
+                                   <Gift className="w-2.5 h-2.5" />
+                                   {label}
+                                 </span>
+                               );
+                             })()}
+                           </div>
+                         </td>
                         <td className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                           {p.brand}
                         </td>
@@ -435,13 +502,13 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                         </td>
                         <td className="px-6 py-3">
                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1">JUAL</span>
+                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1 text-xs">harga jual</span>
                               <span className="text-sm font-black text-emerald-600">Rp {p.price?.toLocaleString()}</span>
                            </div>
                         </td>
                         <td className="px-6 py-3">
                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1">BELI</span>
+                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1 text-xs">harga beli</span>
                               <span className="text-sm font-black text-slate-400">Rp {p.cost_price?.toLocaleString() || 0}</span>
                            </div>
                         </td>
@@ -455,12 +522,25 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                               <Edit2 className="w-3 h-3" />
                             </button>
                             <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProductForPriceTag(p);
+                                setIsPriceTagDrawerOpen(true);
+                              }}
+
+                              className="p-2 bg-white text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border border-slate-100 rounded-lg transition-all shadow-sm"
+                              title="Cetak label harga"
+                            >
+                              <Printer className="w-3 h-3" />
+                            </button>
+                            <button 
                               onClick={(e) => openDeleteModal(p, e)}
                               className="p-2 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-100 rounded-lg transition-all shadow-sm"
                               title="Hapus Produk"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
+
                           </div>
                         </td>
                       </motion.tr>
@@ -520,16 +600,17 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-[40px] p-8 max-w-2xl w-full shadow-2xl relative max-h-[95vh] overflow-y-auto mt-4"
+              className="bg-white rounded-[40px] max-w-2xl w-full shadow-2xl relative max-h-[95vh] mt-4 flex flex-col overflow-hidden"
             >
-              <button 
-                onClick={() => setIsFormOpen(false)}
-                className="absolute top-6 right-8 p-2 hover:bg-slate-100 rounded-2xl transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
+              <div className="p-8 pb-4 shrink-0 relative bg-white z-10">
+                <button 
+                  onClick={() => setIsFormOpen(false)}
+                  className="absolute top-6 right-8 p-2 hover:bg-slate-100 rounded-2xl transition-colors z-10"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
 
-              <div className="mb-10 flex flex-col items-start">
+                <div className="flex flex-col items-start mt-2">
                 <div className="w-16 h-16 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm">
                    {editingProduct ? <Edit2 className="w-8 h-8" /> : <Package className="w-8 h-8" />}
                 </div>
@@ -537,9 +618,11 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                   <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-3">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
                   <p className="text-slate-400 text-[10px] font-black tracking-widest leading-none">Lengkapi detail produk di bawah ini.</p>
                 </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="p-8 pt-2 overflow-y-auto custom-scrollbar flex-1 relative z-0">
+                <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 md:col-span-1 space-y-1.5">
                   <label className="text-[9px] font-black uppercase text-rose-500 tracking-widest ml-1">KODE PLU (AUTO)</label>
                   <input 
@@ -668,9 +751,10 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                     className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium resize-none text-xs"
                   />
                 </div>
+                </div>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="p-8 pt-4 shrink-0 flex gap-3 border-t border-slate-50 bg-white relative z-10">
                 <button 
                   onClick={() => setIsFormOpen(false)}
                   className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-[20px] font-black hover:bg-slate-200 transition-colors text-sm"
@@ -792,41 +876,88 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                    </AnimatePresence>
                 </div>
 
-                {/* Sales History Expandable (Mock for UI) */}
+                {/* Unified Stock Ledger */}
                 <div className="border border-slate-100 rounded-3xl overflow-hidden">
-                   <button 
+                   <button
                      onClick={() => setExpandedSection(expandedSection === 'sales' ? null : 'sales')}
                      className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
                    >
                       <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 border border-rose-100">
-                            <ShoppingCart className="w-4 h-4" />
+                         <div className="w-8 h-8 bg-violet-50 rounded-xl flex items-center justify-center text-violet-600 border border-violet-100">
+                            <Layers className="w-4 h-4" />
                          </div>
-                         <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">Riwayat Penjualan (Out)</span>
+                         <div className="text-left">
+                           <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">Buku Stok (Ledger)</span>
+                           <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Semua gerakan stok masuk &amp; keluar</p>
+                         </div>
                       </div>
-                      {expandedSection === 'sales' ? <ChevronUp className="w-4 h-4 text-slate-400"/> : <ChevronDown className="w-4 h-4 text-slate-400"/>}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[8px] font-black bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full">
+                          {productSupplyHistory.length + productSalesHistory.length} log
+                        </span>
+                        {expandedSection === 'sales' ? <ChevronUp className="w-4 h-4 text-slate-400"/> : <ChevronDown className="w-4 h-4 text-slate-400"/>}
+                      </div>
                    </button>
                    <AnimatePresence>
                       {expandedSection === 'sales' && (
                         <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-slate-50/30">
-                           <div className="p-4 pt-0 space-y-2">
-                              {/* Mock Sales Data */}
-                              {[
-                                { date: 'Senin, 30 Mar', qty: 12 },
-                                { date: 'Selasa, 31 Mar', qty: 8 },
-                                { date: 'Hari Ini', qty: 5 },
-                              ].map((s, i) => (
-                                <div key={i} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
-                                   <div className="flex items-center gap-2">
-                                      <Calendar className="w-3 h-3 text-slate-300" />
-                                      <span className="text-[10px] font-bold text-slate-600">{s.date}</span>
-                                   </div>
-                                   <span className="text-xs font-black text-rose-500">-{s.qty} {viewingProduct.unit}</span>
-                                </div>
-                              ))}
-                              <div className="py-4 text-center">
-                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Data Penjualan akan diupdate otomatis<br/>oleh sistem kasir nantinya.</p>
-                              </div>
+                           <div className="p-4 pt-0 space-y-2 max-h-[280px] overflow-y-auto custom-scrollbar">
+                             {(isHistoryLoading || isSalesHistoryLoading) ? (
+                               <div className="py-8 text-center text-[10px] font-bold text-slate-400">Memuat buku stok...</div>
+                             ) : (() => {
+                               const supplyEvents = productSupplyHistory.map((log: any) => ({
+                                 id: `sup-${log.id}`, date: log.created_at, type: 'in' as const,
+                                 qty: log.quantity || log.change_qty || 0,
+                                 source: log.supplier || log.reason || 'Stok Masuk',
+                                 sub: log.salesman || log.sender_name || '',
+                                 promo_type: null, is_free_item: false,
+                               }));
+                               const salesEvents = productSalesHistory.map((log: any) => ({
+                                 id: `sale-${log.id}`, date: log.date, type: 'out' as const,
+                                 qty: log.qty,
+                                 source: `Terjual (${log.cashier})`,
+                                 sub: log.payment_method ? log.payment_method.toUpperCase() : '',
+                                 promo_type: log.promo_type, is_free_item: log.is_free_item,
+                               }));
+                               const merged = [...supplyEvents, ...salesEvents]
+                                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                               if (merged.length === 0) return (
+                                 <div className="py-8 text-center text-[10px] font-bold text-slate-300">Belum ada gerakan stok.</div>
+                               );
+                               return merged.map(event => (
+                                 <div key={event.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100">
+                                    <div className={cn(
+                                      "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-black",
+                                      event.type === 'in' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-500"
+                                    )}>{event.type === 'in' ? '+' : '-'}</div>
+                                    <div className="flex-1 min-w-0">
+                                       <div className="flex items-center gap-1.5 flex-wrap">
+                                         <p className="text-[10px] font-black text-slate-800 truncate">{event.source}</p>
+                                         {event.promo_type && (
+                                           <span className="text-[7px] font-black bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded uppercase shrink-0">
+                                             {event.promo_type === 'b1g1' ? 'B1G1' : event.promo_type === 'b2g1' ? 'B2G1' : event.promo_type.toUpperCase()}
+                                           </span>
+                                         )}
+                                         {event.is_free_item && (
+                                           <span className="text-[7px] font-black bg-amber-500 text-white px-1.5 py-0.5 rounded uppercase shrink-0">GRATIS</span>
+                                         )}
+                                       </div>
+                                       <div className="flex items-center gap-2 mt-0.5">
+                                         <span className="text-[8px] font-bold text-slate-400">
+                                           {new Date(event.date).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                                         </span>
+                                         {event.sub && <><span className="text-[7px] text-slate-300">&#9679;</span><span className="text-[8px] font-bold text-slate-400 uppercase">{event.sub}</span></>}
+                                       </div>
+                                    </div>
+                                    <span className={cn(
+                                      "text-xs font-black shrink-0",
+                                      event.type === 'in' ? "text-emerald-600" : "text-rose-500"
+                                    )}>
+                                      {event.type === 'in' ? '+' : '-'}{event.qty} {viewingProduct.unit}
+                                    </span>
+                                 </div>
+                               ));
+                             })()}
                            </div>
                         </motion.div>
                       )}
@@ -898,6 +1029,19 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
           </div>
         )}
       </AnimatePresence>
+
+      <PriceTagDrawer 
+        isOpen={isPriceTagDrawerOpen}
+        onClose={() => {
+          setIsPriceTagDrawerOpen(false);
+          setProductForPriceTag(null);
+        }}
+        productsFromPage={currentItems}
+        allProducts={products}
+        companyName={userProfile.company?.name || 'MYSTORE STUDIO'}
+        initialProduct={productForPriceTag}
+      />
+
     </div>
   );
 }

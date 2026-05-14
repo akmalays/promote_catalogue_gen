@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, TrendingUp, ShoppingBag, CreditCard, 
   Banknote, Search, ArrowRight, Printer, Download,
-  Filter, ChevronRight, Package, Clock, DollarSign, X, Receipt, CheckCircle2, FileText
+  Filter, ChevronRight, Package, Clock, DollarSign, X, Receipt, CheckCircle2, FileText, Gift, Tag, Percent
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
@@ -59,6 +59,11 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
+  // Promo Campaign State
+  const [activeCampaign, setActiveCampaign] = useState<any>(null);
+  const [campaignProducts, setCampaignProducts] = useState<any[]>([]);
+
   const [posSettings, setPosSettings] = useState({
     storeName: 'LILY MART',
     slogan: 'Layanan Terbaik dari Kami',
@@ -72,7 +77,19 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
     fetchSales();
     fetchStoreSettings();
     fetchProducts();
+    fetchCampaignData();
   }, []);
+
+  const fetchCampaignData = async () => {
+    try {
+      const campaign = await api.getActiveCampaign(userProfile.company_id!);
+      if (campaign) {
+        setActiveCampaign(campaign);
+        const prods = await api.getCampaignProducts(campaign.id);
+        setCampaignProducts(prods);
+      }
+    } catch (e) { /* silent */ }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -638,6 +655,112 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
              </motion.div>
            ))}
         </div>
+
+        {/* Promo Campaign Impact Panel */}
+        {activeCampaign && (
+          <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-600">
+                <Gift className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">Kampanye Aktif: {activeCampaign.name}</h2>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dampak promo terhadap revenue & stok hari ini</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {campaignProducts.map((cp, i) => {
+                // Count how many times this product was sold today
+                const soldQty = filteredSales.reduce((acc, sale) => {
+                  sale.items?.forEach((item: any) => {
+                    if (!item.is_metadata && (item.product_id === cp.product_id || item.name === cp.name)) {
+                      acc += (item.qty || item.quantity || 0);
+                    }
+                  });
+                  return acc;
+                }, 0);
+
+                // Stock impact: how much stock was actually consumed
+                const payingQty = cp.promo_type === 'b1g1' ? 1 : cp.promo_type === 'b2g1' ? 2 : (cp.buy_qty || 1);
+                const freeQty = cp.promo_type === 'b1g1' ? 1 : cp.promo_type === 'b2g1' ? 1 : (cp.get_qty || 0);
+                const totalPerBundle = payingQty + freeQty;
+                const bundles = Math.floor(soldQty / payingQty);
+                const stockConsumed = cp.promo_type === 'price_cut' ? soldQty : bundles * totalPerBundle;
+
+                // Revenue impact
+                const normalRevenue = soldQty * (cp.price || 0);
+                const actualRevenue = cp.promo_type === 'price_cut' 
+                  ? soldQty * (cp.promo_price || cp.price || 0)
+                  : bundles * payingQty * (cp.price || 0); // Only paying items contribute revenue
+                const discountAmount = normalRevenue - actualRevenue;
+
+                // Margin
+                const totalCost = stockConsumed * (cp.cost_price || 0);
+                const margin = actualRevenue > 0 ? ((actualRevenue - totalCost) / actualRevenue * 100) : 0;
+
+                const promoLabel = cp.promo_type === 'b1g1' ? 'Beli 1 Gratis 1'
+                  : cp.promo_type === 'b2g1' ? 'Beli 2 Gratis 1'
+                  : cp.promo_type === 'buy_x_get_y' ? `Beli ${cp.buy_qty} Gratis ${cp.get_qty}`
+                  : `Diskon ${Math.round((1 - (cp.promo_price || 0) / (cp.price || 1)) * 100)}%`;
+
+                return (
+                  <motion.div
+                    key={cp.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-white p-6 rounded-[32px] border border-amber-100 shadow-sm overflow-hidden relative"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-wide mb-2">
+                          <Gift className="w-2.5 h-2.5" />
+                          {promoLabel}
+                        </span>
+                        <h4 className="text-sm font-black text-slate-800 leading-tight">{cp.name}</h4>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{cp.brand}</p>
+                      </div>
+                      <div className={cn(
+                        "text-right px-3 py-1.5 rounded-xl text-xs font-black",
+                        margin < 10 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
+                      )}>
+                        {margin.toFixed(1)}%
+                        <p className="text-[8px] font-bold opacity-70">MARGIN</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400 font-bold">Terjual (bayar)</span>
+                        <span className="font-black text-slate-700">{soldQty} unit</span>
+                      </div>
+                      {freeQty > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-amber-500 font-bold">Stok keluar (gratis)</span>
+                          <span className="font-black text-amber-600">{stockConsumed} unit</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400 font-bold">Revenue actual</span>
+                        <span className="font-black text-emerald-600">Rp {actualRevenue.toLocaleString()}</span>
+                      </div>
+                      {discountAmount > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-rose-400 font-bold">Potongan promo</span>
+                          <span className="font-black text-rose-500">-Rp {discountAmount.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+              {campaignProducts.length === 0 && (
+                <div className="col-span-3 py-10 text-center bg-amber-50/30 rounded-3xl border border-dashed border-amber-200">
+                  <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Belum ada produk di kampanye aktif ini</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Focus Item Targets */}
         <div className="mb-12">

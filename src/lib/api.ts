@@ -1,4 +1,6 @@
 import { supabase } from './supabase';
+import { PromoCampaign, CampaignProduct } from '../types';
+
 
 export const api = {
   login: async (credentials: any) => {
@@ -470,6 +472,33 @@ export const api = {
     if (error) throw error;
     return data || [];
   },
+  getSalesByProduct: async (companyId: string, productId: string) => {
+    const { data, error } = await supabase
+      .from('sales')
+      .select('id, created_at, items, payment_method, total_amount')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    const sales = (data || []).filter((sale: any) =>
+      Array.isArray(sale.items) &&
+      sale.items.some((item: any) => !item.is_metadata && item.product_id === productId)
+    );
+    return sales.map((sale: any) => {
+      const item = sale.items.find((i: any) => !i.is_metadata && i.product_id === productId);
+      const cashierMeta = sale.items.find((i: any) => i.is_metadata);
+      return {
+        id: sale.id,
+        date: sale.created_at,
+        qty: item?.qty || 0,
+        price: item?.price || 0,
+        is_free_item: item?.is_free_item || false,
+        promo_type: item?.promo_type || null,
+        cashier: cashierMeta?.cashier_name || 'Kasir',
+        payment_method: sale.payment_method,
+      };
+    });
+  },
 
   // ===== NOTIFICATIONS =====
   getNotifications: async (companyId: string) => {
@@ -680,5 +709,109 @@ export const api = {
     if (error) throw error;
     return data;
   },
+
+  async getPromoCampaigns(companyId: string) {
+    const { data, error } = await supabase
+      .from('promo_campaigns')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async createPromoCampaign(campaign: Partial<PromoCampaign>) {
+    const { data, error } = await supabase
+      .from('promo_campaigns')
+      .insert([campaign])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePromoCampaign(id: string, campaign: Partial<PromoCampaign>) {
+    const { data, error } = await supabase
+      .from('promo_campaigns')
+      .update(campaign)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deletePromoCampaign(id: string) {
+    const { error } = await supabase
+      .from('promo_campaigns')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  async getCampaignProducts(campaignId: string) {
+    const { data, error } = await supabase
+      .from('campaign_products')
+      .select(`
+        *,
+        products (
+          name,
+          brand,
+          price,
+          cost_price
+        )
+      `)
+      .eq('campaign_id', campaignId);
+    if (error) throw error;
+    
+    return data.map((item: any) => ({
+      ...item,
+      name: item.products.name,
+      brand: item.products.brand,
+      price: item.products.price,
+      cost_price: item.products.cost_price
+    }));
+  },
+
+  async addToCampaign(items: Partial<CampaignProduct>[]) {
+    const { data, error } = await supabase
+      .from('campaign_products')
+      .insert(items)
+      .select();
+    if (error) throw error;
+    return data;
+  },
+
+  async removeFromCampaign(id: string) {
+    const { error } = await supabase
+      .from('campaign_products')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  async updateCampaignProduct(id: string, product: Partial<CampaignProduct>) {
+    const { data, error } = await supabase
+      .from('campaign_products')
+      .update(product)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+
+  async getActiveCampaign(companyId: string) {
+    const { data, error } = await supabase
+      .from('promo_campaigns')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
 };
+
 

@@ -224,3 +224,29 @@ export const DEFAULT_CATALOG: CatalogData = {
   templateId: 'indomaret-style',
   patternId: 'none'
 };
+export interface PromoCampaign {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  company_id: string;
+  created_at?: string;
+}
+
+export interface CampaignProduct {
+  id: string;
+  campaign_id: string;
+  product_id: string;
+  promo_type: 'price_cut' | 'b1g1' | 'b2g1' | 'buy_x_get_y';
+  promo_price?: number;
+  buy_qty?: number;
+  get_qty?: number;
+  company_id: string;
+  created_at?: string;
+  // Join fields
+  name?: string;
+  brand?: string;
+  price?: number;
+  cost_price?: number;
+}
