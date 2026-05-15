@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Tag, Plus, Trash2, Calendar, Target, CheckCircle2, 
-  AlertCircle, ChevronRight, BarChart3, Package, 
-  ArrowRight, DollarSign, Percent, Gift, Search, X
+  Plus, Trash2, Calendar, Package, Search, X, AlertCircle, Inbox
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
@@ -24,11 +22,10 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
   const [activeCampaign, setActiveCampaign] = useState<PromoCampaign | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<PromoCampaign | null>(null);
   const [campaignProducts, setCampaignProducts] = useState<CampaignProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   
-  // Form State
   const [newCampaign, setNewCampaign] = useState({
     name: '',
     start_date: new Date().toISOString().split('T')[0],
@@ -41,7 +38,6 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
   useEffect(() => {
     loadData();
   }, [userProfile.company_id]);
-
 
   const loadData = async () => {
     setIsLoading(true);
@@ -66,7 +62,6 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
       setIsLoading(false);
     }
   };
-
 
   const loadCampaignDetail = async (campaign: PromoCampaign) => {
     setSelectedCampaign(campaign);
@@ -105,7 +100,6 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
     try {
       const newStatus = !campaign.is_active;
       
-      // If we are activating this one, we must deactivate others first
       if (newStatus && activeCampaign && activeCampaign.id !== campaign.id) {
         await api.updatePromoCampaign(activeCampaign.id, { is_active: false });
       }
@@ -115,13 +109,14 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
       setCampaigns(campaigns.map(c => 
         c.id === campaign.id ? updated : (newStatus ? { ...c, is_active: false } : c)
       ));
+      setSelectedCampaign(updated);
       
       if (newStatus) {
         setActiveCampaign(updated);
-        toast.success(`Kampanye "${campaign.name}" sekarang aktif!`);
+        toast.success(`Kampanye "${campaign.name}" diaktifkan`);
       } else {
         setActiveCampaign(null);
-        toast.success(`Kampanye "${campaign.name}" dimatikan.`);
+        toast.success(`Kampanye "${campaign.name}" dinonaktifkan`);
       }
     } catch (err) {
       console.error(err);
@@ -150,7 +145,7 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
         campaign_id: selectedCampaign.id,
         product_id: product.id,
         promo_type: 'price_cut',
-        promo_price: product.price * 0.9, // Default 10% off
+        promo_price: product.price * 0.9,
         company_id: userProfile.company_id!
       };
       const [added] = await api.addToCampaign([newItem]);
@@ -181,9 +176,6 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
       if (sell === 0) return 0;
       return ((sell - cost) / sell) * 100;
     } else {
-      // For Buy X Get Y
-      // Revenue is only from X items
-      // Cost is for (X + Y) items
       const x = item.promo_type === 'b1g1' ? 1 : 
                 item.promo_type === 'b2g1' ? 2 : 
                 (item.buy_qty || 1);
@@ -199,206 +191,205 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
     }
   };
 
-
   const filteredProducts = allProducts.filter(p => 
     !campaignProducts.some(cp => cp.product_id === p.id) &&
     ((p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
      (p.brand || '').toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const avgMargin = campaignProducts.length > 0 
+    ? (campaignProducts.reduce((acc, curr) => acc + calculateMargin(curr), 0) / campaignProducts.length)
+    : 0;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
-      {/* Header */}
-      <div className="px-8 pt-8 pb-6 bg-white border-b border-slate-100">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm">
-              <Tag className="w-8 h-8" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Kampanye Promo</h1>
-              <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none uppercase">Kelola diskon, B1G1, dan margin profit kampanye</p>
-            </div>
+    <div className="flex-1 flex flex-col overflow-hidden bg-stone-50 dark:bg-stone-950">
+      {/* Page Header */}
+      <div className="px-6 md:px-8 py-6 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Kampanye Promo</h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Kelola diskon, B1G1, dan margin profit kampanye toko Anda.</p>
           </div>
           <button 
             onClick={() => setShowAddModal(true)}
-            className="px-6 py-3 bg-[#8b7365] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#8b7365]/20 flex items-center gap-2 hover:bg-[#7a6458] transition-all"
+            className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-2 shrink-0"
           >
-            <Plus className="w-4 h-4" /> Buat Kampanye Baru
+            <Plus className="w-4 h-4" /> Buat kampanye
           </button>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar: Campaign List */}
-        <div className="w-80 border-r border-slate-100 bg-white flex flex-col shrink-0">
-          <div className="p-4 border-b border-slate-100">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daftar Kampanye</h3>
+        <div className="w-72 border-r border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 flex flex-col shrink-0">
+          <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-800">
+            <h3 className="text-xs font-medium text-stone-500 dark:text-stone-400">Daftar kampanye ({campaigns.length})</h3>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            {campaigns.map(camp => (
-              <motion.div
-                key={camp.id}
-                whileHover={{ x: 4 }}
-                onClick={() => loadCampaignDetail(camp)}
-                className={cn(
-                  "p-4 rounded-2xl border transition-all cursor-pointer group relative",
-                  selectedCampaign?.id === camp.id 
-                    ? "bg-[#8b7365]/5 border-[#8b7365]/20 shadow-sm" 
-                    : "bg-white border-slate-100 hover:border-[#8b7365]/20"
-                )}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className={cn(
-                    "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter",
-                    camp.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"
-                  )}>
-                    {camp.is_active ? 'Aktif' : 'Draft'}
+          <div className="flex-1 overflow-y-auto p-2">
+            {campaigns.length === 0 ? (
+              <div className="p-6 text-center">
+                <Inbox className="w-6 h-6 mx-auto mb-2 text-stone-300 dark:text-stone-600" />
+                <p className="text-sm text-stone-400 dark:text-stone-500">Belum ada kampanye</p>
+              </div>
+            ) : (
+              campaigns.map(camp => (
+                <button
+                  key={camp.id}
+                  onClick={() => loadCampaignDetail(camp)}
+                  className={cn(
+                    "w-full p-3 rounded-lg text-left transition-colors group relative mb-1",
+                    selectedCampaign?.id === camp.id 
+                      ? "bg-stone-100 dark:bg-stone-800" 
+                      : "hover:bg-stone-50 dark:hover:bg-stone-800/50"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                      camp.is_active 
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" 
+                        : "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400"
+                    )}>
+                      {camp.is_active ? 'Aktif' : 'Draft'}
+                    </span>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); deleteCampaign(camp.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-stone-400 hover:text-red-500 dark:hover:text-red-400 rounded transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); deleteCampaign(camp.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-rose-400 hover:bg-rose-50 rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <h4 className="font-bold text-slate-800 text-sm mb-1">{camp.name}</h4>
-                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(camp.start_date).toLocaleDateString()} - {new Date(camp.end_date).toLocaleDateString()}
-                </div>
-                {selectedCampaign?.id === camp.id && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#8b7365] rounded-r-full" />
-                )}
-              </motion.div>
-            ))}
+                  <h4 className="font-medium text-stone-900 dark:text-stone-100 text-sm truncate">{camp.name}</h4>
+                  <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 mt-1">
+                    <Calendar className="w-3 h-3" />
+                    <span>
+                      {new Date(camp.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} – {new Date(camp.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Main Content: Campaign Detail & Products */}
-        <div className="flex-1 flex flex-col bg-slate-50/50 overflow-hidden">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           {selectedCampaign ? (
             <>
-              <div className="p-8 pb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none">{selectedCampaign.name}</h2>
-                  <div className="flex items-center gap-4 mt-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                      <Target className="w-4 h-4" /> {campaignProducts.length} Produk Terdaftar
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                      <BarChart3 className="w-4 h-4" /> Avg Margin: {
-                        campaignProducts.length > 0 
-                          ? (campaignProducts.reduce((acc, curr) => acc + calculateMargin(curr), 0) / campaignProducts.length).toFixed(1)
-                          : 0
-                      }%
-                    </div>
+              {/* Detail Header */}
+              <div className="px-8 py-5 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100 truncate">{selectedCampaign.name}</h2>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-stone-500 dark:text-stone-400">
+                    <span>{campaignProducts.length} produk</span>
+                    <span className="text-stone-300 dark:text-stone-600">·</span>
+                    <span>Avg margin <span className={cn(
+                      "font-medium",
+                      avgMargin < 10 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                    )}>{avgMargin.toFixed(1)}%</span></span>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
+                  <button 
+                    onClick={() => setShowProductModal(true)}
+                    className="px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" /> Tambah produk
+                  </button>
                   <button 
                     onClick={() => handleToggleActive(selectedCampaign)}
                     className={cn(
-                      "px-6 py-2.5 rounded-xl font-black text-xs tracking-widest uppercase transition-all shadow-sm",
+                      "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                       selectedCampaign.is_active 
-                        ? "bg-rose-50 text-rose-600 hover:bg-rose-100" 
-                        : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20"
+                        ? "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60" 
+                        : "bg-emerald-600 text-white hover:bg-emerald-700"
                     )}
                   >
-                    {selectedCampaign.is_active ? 'Nonaktifkan Promo' : 'Aktifkan Sekarang'}
-                  </button>
-                  <button 
-                    onClick={() => setShowProductModal(true)}
-                    className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-black text-xs tracking-widest uppercase hover:bg-slate-50 transition-all flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" /> Tambah Produk
+                    {selectedCampaign.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                   </button>
                 </div>
               </div>
 
               {/* Products Table */}
-              <div className="flex-1 px-8 pb-8 overflow-hidden">
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
-                  <div className="overflow-x-auto">
+              <div className="flex-1 overflow-auto p-6 md:p-8">
+                <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+                  {campaignProducts.length === 0 ? (
+                    <div className="py-16 px-6 text-center">
+                      <Package className="w-8 h-8 mx-auto mb-3 text-stone-300 dark:text-stone-600" />
+                      <p className="text-sm text-stone-600 dark:text-stone-300 font-medium mb-1">Belum ada produk</p>
+                      <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Tambahkan produk untuk mulai mengatur promo.</p>
+                      <button 
+                        onClick={() => setShowProductModal(true)}
+                        className="text-sm text-stone-900 dark:text-stone-100 font-medium hover:underline underline-offset-2"
+                      >
+                        Tambah produk pertama
+                      </button>
+                    </div>
+                  ) : (
                     <table className="w-full text-left">
                       <thead>
-                        <tr className="bg-slate-50/50 border-b border-slate-100">
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Produk</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Promo</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Harga Normal</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Harga Promo</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Margin (%)</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
+                        <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800">
+                          <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Produk</th>
+                          <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Tipe promo</th>
+                          <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Harga normal</th>
+                          <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Harga promo</th>
+                          <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Margin</th>
+                          <th className="px-5 py-3 w-10"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-50">
+                      <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                         {campaignProducts.map(item => {
                           const margin = calculateMargin(item);
                           return (
-                            <tr key={item.id} className="group hover:bg-slate-50/30 transition-all">
-                              <td className="px-6 py-4">
-                                <div>
-                                  <p className="text-[10px] font-black text-[#8b7365] uppercase leading-none mb-1">{item.brand}</p>
-                                  <p className="text-sm font-bold text-slate-800">{item.name}</p>
+                            <tr key={item.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/30 transition-colors">
+                              <td className="px-5 py-3.5">
+                                <p className="text-xs text-stone-500 dark:text-stone-400 mb-0.5">{item.brand}</p>
+                                <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{item.name}</p>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <select 
+                                  value={item.promo_type}
+                                  onChange={async (e) => {
+                                    const type = e.target.value as any;
+                                    const updateData: any = { promo_type: type };
+                                    if (type === 'buy_x_get_y' && !item.buy_qty) {
+                                      updateData.buy_qty = 1;
+                                      updateData.get_qty = 1;
+                                    }
+                                    await api.updateCampaignProduct(item.id, updateData);
+                                    setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, ...updateData } : p));
+                                  }}
+                                  className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-none rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
+                                >
+                                  <option value="price_cut">Potong harga</option>
+                                  <option value="b1g1">Beli 1 gratis 1</option>
+                                  <option value="b2g1">Beli 2 gratis 1</option>
+                                  <option value="buy_x_get_y">Custom (X get Y)</option>
+                                </select>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs text-stone-400 dark:text-stone-500">Rp</span>
+                                  <input 
+                                    type="number"
+                                    defaultValue={item.price}
+                                    onBlur={async (e) => {
+                                      const val = Number(e.target.value);
+                                      if (val === item.price) return;
+                                      await api.updateProduct(item.product_id, { price: val, company_id: item.company_id });
+                                      setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, price: val } : p));
+                                      toast.success('Harga master diperbarui');
+                                    }}
+                                    className="w-24 bg-transparent text-sm text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 tabular-nums"
+                                  />
                                 </div>
                               </td>
-                              <td className="px-6 py-4">
-                                  <select 
-                                   value={item.promo_type}
-                                   onChange={async (e) => {
-                                     const type = e.target.value as any;
-                                     const updateData: any = { promo_type: type };
-                                     if (type === 'buy_x_get_y' && !item.buy_qty) {
-                                       updateData.buy_qty = 1;
-                                       updateData.get_qty = 1;
-                                     }
-                                     await api.updateCampaignProduct(item.id, updateData);
-                                     setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, ...updateData } : p));
-                                   }}
-                                   className="text-xs font-bold bg-slate-100 border-none rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#8b7365]/20 outline-none"
-                                 >
-                                   <option value="price_cut">Potong Harga (%)</option>
-                                   <option value="b1g1">Beli 1 Gratis 1</option>
-                                   <option value="b2g1">Beli 2 Gratis 1</option>
-                                   <option value="buy_x_get_y">Custom (Buy X Get Y)</option>
-                                 </select>
-
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="flex flex-col gap-1.5">
-                                  <div className="flex items-center gap-2 opacity-50">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DB:</span>
-                                    <span className="text-xs font-bold text-slate-400 line-through">Rp {item.price?.toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-bold text-[#8b7365]">SET:</span>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-[10px] font-bold text-slate-400">Rp</span>
-                                      <input 
-                                        type="number"
-                                        defaultValue={item.price}
-                                        onBlur={async (e) => {
-                                           const val = Number(e.target.value);
-                                           if (val === item.price) return;
-                                           await api.updateProduct(item.product_id, { price: val, company_id: item.company_id });
-                                           setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, price: val } : p));
-                                           toast.success('Harga master diperbarui');
-                                        }}
-                                        className="w-24 bg-white text-slate-700 font-bold text-xs border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-[#8b7365]/20"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-
-
-                              <td className="px-6 py-4">
+                              <td className="px-5 py-3.5">
                                 {item.promo_type === 'price_cut' ? (
-                                  <div className="flex flex-col gap-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-bold text-slate-400 w-8">Rp</span>
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs text-stone-400 dark:text-stone-500 w-6">Rp</span>
                                       <input 
                                         type="number"
                                         value={item.promo_price}
@@ -407,33 +398,32 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
                                           setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, promo_price: val } : p));
                                         }}
                                         onBlur={async (e) => {
-                                           await api.updateCampaignProduct(item.id, { promo_price: Number(e.target.value) } as any);
+                                          await api.updateCampaignProduct(item.id, { promo_price: Number(e.target.value) } as any);
                                         }}
-                                        className="w-24 bg-emerald-50 text-emerald-700 font-bold text-xs border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                        className="w-24 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-sm font-medium border-none rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 tabular-nums"
                                       />
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-bold text-slate-400 w-8">Disc</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs text-stone-400 dark:text-stone-500 w-6">%</span>
                                       <input 
                                         type="number"
-                                        value={Math.round(((item.price! - item.promo_price!) / item.price!) * 100)}
+                                        value={Math.round(((item.price! - item.promo_price!) / item.price!) * 100) || 0}
                                         onChange={(e) => {
                                           const pct = Number(e.target.value);
                                           const newPrice = Math.round(item.price! * (1 - pct / 100));
                                           setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, promo_price: newPrice } : p));
                                         }}
                                         onBlur={async (e) => {
-                                           const pct = Number(e.target.value);
-                                           const newPrice = Math.round(item.price! * (1 - pct / 100));
-                                           await api.updateCampaignProduct(item.id, { promo_price: newPrice } as any);
+                                          const pct = Number(e.target.value);
+                                          const newPrice = Math.round(item.price! * (1 - pct / 100));
+                                          await api.updateCampaignProduct(item.id, { promo_price: newPrice } as any);
                                         }}
-                                        className="w-12 bg-white text-slate-700 font-bold text-[10px] border border-slate-200 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-slate-200"
+                                        className="w-14 bg-transparent text-xs text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-md px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 tabular-nums"
                                       />
-                                      <span className="text-[10px] font-bold text-slate-400">%</span>
                                     </div>
                                   </div>
                                 ) : item.promo_type === 'buy_x_get_y' ? (
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1.5">
                                     <input 
                                       type="number"
                                       value={item.buy_qty}
@@ -442,11 +432,11 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
                                         setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, buy_qty: val } : p));
                                       }}
                                       onBlur={async (e) => {
-                                         await api.updateCampaignProduct(item.id, { buy_qty: Number(e.target.value) } as any);
+                                        await api.updateCampaignProduct(item.id, { buy_qty: Number(e.target.value) } as any);
                                       }}
-                                      className="w-8 bg-slate-50 text-center font-bold text-xs border-none rounded-md px-1 py-1"
+                                      className="w-12 bg-stone-100 dark:bg-stone-800 text-center text-xs font-medium text-stone-700 dark:text-stone-200 border-none rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                                     />
-                                    <span className="text-[10px] font-bold text-slate-400"> Get </span>
+                                    <span className="text-xs text-stone-400 dark:text-stone-500">get</span>
                                     <input 
                                       type="number"
                                       value={item.get_qty}
@@ -455,28 +445,30 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
                                         setCampaignProducts(campaignProducts.map(p => p.id === item.id ? { ...p, get_qty: val } : p));
                                       }}
                                       onBlur={async (e) => {
-                                         await api.updateCampaignProduct(item.id, { get_qty: Number(e.target.value) } as any);
+                                        await api.updateCampaignProduct(item.id, { get_qty: Number(e.target.value) } as any);
                                       }}
-                                      className="w-8 bg-slate-50 text-center font-bold text-xs border-none rounded-md px-1 py-1"
+                                      className="w-12 bg-stone-100 dark:bg-stone-800 text-center text-xs font-medium text-stone-700 dark:text-stone-200 border-none rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                                     />
                                   </div>
                                 ) : (
-                                  <span className="text-xs font-black text-emerald-600 uppercase">Auto Promo</span>
+                                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Auto promo</span>
                                 )}
                               </td>
-                              <td className="px-6 py-4">
+                              <td className="px-5 py-3.5">
                                 <div className={cn(
-                                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-sm",
-                                  margin < 10 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
+                                  "inline-flex items-center gap-1 text-sm font-medium tabular-nums",
+                                  margin < 10 
+                                    ? "text-red-600 dark:text-red-400" 
+                                    : "text-emerald-600 dark:text-emerald-400"
                                 )}>
-                                  {margin < 10 && <AlertCircle className="w-3 h-3" />}
+                                  {margin < 10 && <AlertCircle className="w-3.5 h-3.5" />}
                                   {margin.toFixed(1)}%
                                 </div>
                               </td>
-                              <td className="px-6 py-4 text-center">
+                              <td className="px-5 py-3.5">
                                 <button 
                                   onClick={() => removeProductFromCampaign(item.id)}
-                                  className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                                  className="p-1.5 text-stone-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -486,29 +478,17 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
                         })}
                       </tbody>
                     </table>
-                    {campaignProducts.length === 0 && (
-                      <div className="py-20 flex flex-col items-center justify-center text-slate-300">
-                        <Package className="w-16 h-16 mb-4 opacity-20" />
-                        <p className="text-lg font-bold">Belum ada produk di kampanye ini</p>
-                        <button 
-                          onClick={() => setShowProductModal(true)}
-                          className="mt-4 text-[#8b7365] font-black text-xs uppercase tracking-widest hover:underline"
-                        >
-                          Klik untuk tambah produk
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-300 p-8 text-center">
-              <div className="w-20 h-20 bg-slate-100 rounded-[32px] flex items-center justify-center mb-6">
-                <Target className="w-10 h-10 opacity-20" />
-              </div>
-              <h2 className="text-2xl font-black text-slate-400 tracking-tight mb-2">Pilih Kampanye</h2>
-              <p className="max-w-xs text-sm font-bold text-slate-400">Pilih salah satu kampanye di sidebar untuk mengelola detail promo dan margin.</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <Package className="w-10 h-10 mb-3 text-stone-300 dark:text-stone-600" />
+              <h2 className="text-base font-medium text-stone-700 dark:text-stone-300 mb-1">Pilih kampanye</h2>
+              <p className="max-w-xs text-sm text-stone-500 dark:text-stone-400">
+                Pilih kampanye di sidebar untuk mengelola detail promo dan margin.
+              </p>
             </div>
           )}
         </div>
@@ -517,61 +497,73 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
       {/* Add Campaign Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl border border-slate-100"
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white dark:bg-stone-900 rounded-xl max-w-md w-full shadow-xl border border-stone-200 dark:border-stone-800"
             >
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365]">
-                    <Plus className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">Kampanye Baru</h2>
-                    <p className="text-slate-400 text-[10px] font-black tracking-widest leading-none mt-2">Buat sesi promo toko Anda</p>
-                  </div>
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Kampanye baru</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Buat sesi promo untuk toko Anda.</p>
                 </div>
-                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
+                <button 
+                  onClick={() => setShowAddModal(false)} 
+                  className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 dark:text-stone-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="space-y-6">
+              <div className="p-5 space-y-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nama Kampanye</label>
+                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Nama kampanye</label>
                   <input 
                     value={newCampaign.name}
                     onChange={e => setNewCampaign({...newCampaign, name: e.target.value})}
                     placeholder="Contoh: Promo Ramadhan 2026"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365]"
+                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tgl Mulai</label>
+                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Mulai</label>
                     <input 
                       type="date"
                       value={newCampaign.start_date}
                       onChange={e => setNewCampaign({...newCampaign, start_date: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#8b7365]/20"
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tgl Selesai</label>
+                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Selesai</label>
                     <input 
                       type="date"
                       value={newCampaign.end_date}
                       onChange={e => setNewCampaign({...newCampaign, end_date: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#8b7365]/20"
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
                     />
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-4 flex gap-3">
-                  <button onClick={() => setShowAddModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">Batal</button>
-                  <button onClick={handleCreateCampaign} className="flex-2 py-4 bg-[#8b7365] text-white rounded-2xl font-black text-sm shadow-xl shadow-[#8b7365]/20 hover:bg-[#7a6458] transition-all">Simpan Kampanye</button>
-                </div>
+              <div className="p-5 border-t border-stone-200 dark:border-stone-800 flex gap-2 justify-end">
+                <button 
+                  onClick={() => setShowAddModal(false)} 
+                  className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={handleCreateCampaign}
+                  disabled={!newCampaign.name}
+                  className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Simpan
+                </button>
               </div>
             </motion.div>
           </div>
@@ -581,63 +573,70 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
       {/* Product Selection Modal */}
       <AnimatePresence>
         {showProductModal && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-[32px] w-full max-w-2xl h-[80vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden"
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white dark:bg-stone-900 rounded-xl w-full max-w-xl h-[75vh] flex flex-col shadow-xl border border-stone-200 dark:border-stone-800 overflow-hidden"
             >
-              <div className="p-8 pb-4 flex items-center justify-between border-b border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center icon-emerald-600">
-                    <Package className="w-6 h-6 text-emerald-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-800 leading-none">Pilih Produk</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{filteredProducts.length} Produk Tersedia</p>
-                  </div>
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Pilih produk</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{filteredProducts.length} produk tersedia</p>
                 </div>
-                <button onClick={() => setShowProductModal(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
+                <button 
+                  onClick={() => setShowProductModal(false)} 
+                  className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 dark:text-stone-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="px-5 py-3 border-b border-stone-200 dark:border-stone-800">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
                   <input 
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Cari nama produk atau brand..."
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#8b7365]/20 outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                {filteredProducts.map(p => (
-                  <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between hover:border-emerald-200 hover:bg-emerald-50/10 transition-all group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 font-black text-xs">IMG</div>
-                      <div>
-                        <p className="text-[9px] font-black text-[#8b7365] uppercase leading-none mb-1">{p.brand}</p>
-                        <h4 className="text-sm font-bold text-slate-800">{p.name}</h4>
-                        <p className="text-[10px] font-bold text-slate-400">Harga Normal: Rp {p.price?.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => addProductToCampaign(p)}
-                      className="px-4 py-2 bg-[#8b7365] text-white rounded-lg font-black text-[10px] uppercase tracking-widest shadow-sm hover:bg-[#7a6458] transition-all flex items-center gap-2"
-                    >
-                      <Plus className="w-3 h-3" /> Tambah
-                    </button>
+              <div className="flex-1 overflow-y-auto">
+                {filteredProducts.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Package className="w-8 h-8 mx-auto mb-2 text-stone-300 dark:text-stone-600" />
+                    <p className="text-sm text-stone-400 dark:text-stone-500">Produk tidak ditemukan</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {filteredProducts.map(p => (
+                      <div key={p.id} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-stone-500 dark:text-stone-400 mb-0.5">{p.brand}</p>
+                          <h4 className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">{p.name}</h4>
+                          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 tabular-nums">Rp {p.price?.toLocaleString()}</p>
+                        </div>
+                        <button 
+                          onClick={() => addProductToCampaign(p)}
+                          className="px-3 py-1.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-md text-xs font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-1.5 shrink-0"
+                        >
+                          <Plus className="w-3 h-3" /> Tambah
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
-              <div className="p-6 bg-slate-50 border-t border-slate-100">
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800">
                 <button 
                   onClick={() => setShowProductModal(false)}
-                  className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-50 transition-all"
+                  className="w-full py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
                 >
                   Selesai
                 </button>

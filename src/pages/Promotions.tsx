@@ -245,37 +245,30 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="px-8 pt-8 pb-4"
+        className="px-6 md:px-8 py-5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0"
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
-              <Megaphone className="w-8 h-8" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Promotions Blast</h1>
-              <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Kelola kontak pelanggan dan broadcast promo via WhatsApp</p>
-            </div>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Promotions Blast</h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Kelola kontak dan broadcast promo via WhatsApp.</p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={handleBlastSelected}
             disabled={selectedVisitors.length === 0}
             className={cn(
-              "flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm",
+              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
               selectedVisitors.length > 0
-                ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg translate-y-[-2px]"
-                : "bg-slate-100 text-slate-400 cursor-not-allowed grayscale"
+                ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200"
+                : "bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 cursor-not-allowed"
             )}
           >
-            <Send className="w-4 h-4" />
-            Blast WA ({selectedVisitors.length})
-          </motion.button>
+            <Send className="w-3.5 h-3.5" />
+            Blast ({selectedVisitors.length})
+          </button>
         </div>
       </motion.div>
 
-      <div className="flex-1 px-8 pb-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex-1 px-6 md:px-8 pb-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Visitor List */}
         <motion.div 
           initial={{ opacity: 0, x: -30 }}
@@ -283,7 +276,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
           transition={{ delay: 0.2 }}
           className="lg:col-span-5 flex flex-col gap-4"
         >
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg border border-slate-200  overflow-hidden">
             {/* Toolbar */}
             <div className="p-4 border-b border-slate-100 flex items-center gap-3">
               <div className="relative flex-1">
@@ -292,7 +285,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Cari nama atau nomor..."
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-transparent"
                 />
               </div>
               <button
@@ -320,7 +313,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                         value={newName}
                         onChange={e => setNewName(e.target.value)}
                         placeholder="Nama lengkap"
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                     </div>
                     <div className="relative flex-1">
@@ -329,7 +322,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                         value={newPhone}
                         onChange={e => setNewPhone(e.target.value)}
                         placeholder="08xx / 628xx"
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                     </div>
                     <button onClick={addVisitor} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1">
@@ -401,7 +394,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                         </div>
                       ) : (
                         <>
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-xs font-black flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
                             {(visitor.name || '?').charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -410,7 +403,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {blastSent.includes(visitor.id) && (
-                              <span className="text-[10px] text-emerald-600 font-bold mr-1">Terkirim</span>
+                              <span className="text-xs text-emerald-600 font-bold mr-1">Terkirim</span>
                             )}
                             <button
                               onClick={() => handleBlastOne(visitor)}
@@ -451,11 +444,11 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
           transition={{ delay: 0.4 }}
           className="lg:col-span-7 flex flex-col gap-4"
         >
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg border border-slate-200  overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-emerald-600" />
               <h2 className="font-bold text-slate-800 text-sm">Isi Pesan Promosi</h2>
-              <div className="ml-auto bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <div className="ml-auto bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
                 WhatsApp
               </div>
             </div>
@@ -468,18 +461,18 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                 value={message}
                 onChange={e => setMessage(e.target.value)}
                 rows={7}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none font-[inherit] leading-relaxed"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-transparent resize-none font-[inherit] leading-relaxed"
                 placeholder="Tulis pesan promosi di sini..."
               />
               
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Lampiran</span>
-                  <p className="text-[10px] text-slate-400">{message.length} karakter</p>
+                  <span className="text-xs font-medium  text-slate-400 ">Lampiran</span>
+                  <p className="text-xs text-slate-400">{message.length} karakter</p>
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                   <label className="flex items-center gap-2 px-3 py-2 bg-[#f4f4f2] hover:bg-slate-200 text-[#6d4d42] rounded-xl text-xs font-bold cursor-pointer transition-all border border-slate-200/50 shadow-sm active:scale-95">
+                   <label className="flex items-center gap-2 px-3 py-2 bg-stone-100 hover:bg-slate-200 text-stone-600 rounded-lg text-xs font-bold cursor-pointer transition-all border border-slate-200/50  ">
                       <ImageIcon className="w-4 h-4" />
                       {attachedImage ? 'Ganti Katalog' : 'Lampirkan Katalog'}
                       <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
@@ -490,7 +483,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                         <button 
                           onClick={copyImageToClipboard}
                           className={cn(
-                            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm active:scale-95",
+                            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border  ",
                             copySuccess 
                               ? "bg-emerald-600 text-white border-emerald-600" 
                               : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
@@ -504,7 +497,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                         <a 
                            href={attachedImage} 
                            download="Katalog-Promo.png"
-                           className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 border border-slate-200 shadow-sm active:scale-95 transition-all"
+                           className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100 border border-slate-200   transition-all"
                            title="Download gambar jika copy-paste tidak didukung browser"
                         >
                            <ArrowDown className="w-4 h-4" /> Download
@@ -512,7 +505,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
 
                         <button 
                             onClick={() => setAttachedImage(null)}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm active:scale-95 ml-auto"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100   ml-auto"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -525,20 +518,20 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 aspect-video group"
+                      className="relative rounded-lg overflow-hidden border border-slate-200 bg-slate-50 aspect-video group"
                     >
                       <img src={attachedImage} alt="Katalog" className="w-full h-full object-contain" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                         <p className="text-white text-[10px] font-bold px-3 py-1.5 bg-black/60 rounded-full">Pratinjau Katalog</p>
+                         <p className="text-white text-xs font-bold px-3 py-1.5 bg-black/60 rounded-full">Pratinjau Katalog</p>
                       </div>
                     </motion.div>
 
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex gap-2">
                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                          <span className="text-blue-600 font-bold text-xs">!</span>
                       </div>
-                      <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
-                        <span className="font-bold uppercase block mb-0.5">🚀 Workflow Super Cepat:</span> 
+                      <p className="text-xs text-blue-700 leading-relaxed font-medium">
+                        <span className="font-bold  block mb-0.5">🚀 Workflow Super Cepat:</span> 
                         Klik <span className="font-bold">"Salin Katalog"</span> di atas sekali saja, lalu untuk setiap jendela WhatsApp yang terbuka nanti, cukup tekan <span className="font-bold text-blue-900 underline">Ctrl+V (Paste)</span> lalu <span className="font-bold">Enter</span>. Jadi prosesnya jauh lebih cepat dan tidak ribet!
                       </p>
                     </div>
@@ -549,9 +542,9 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
 
             {/* Preview */}
             <div className="px-4 pb-4">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Preview Pesan</p>
-              <div className="bg-[#e5ddd5] rounded-xl p-4">
-                  <div className="bg-white rounded-xl rounded-tl-none p-3 shadow-sm max-w-xs ml-auto">
+              <p className="text-xs font-bold text-slate-500   mb-2">Preview Pesan</p>
+              <div className="bg-stone-200 dark:bg-stone-800 rounded-lg p-4">
+                  <div className="bg-white rounded-lg rounded-tl-none p-3  max-w-xs ml-auto">
                     {attachedImage && (
                       <div className="mb-2 rounded-lg overflow-hidden border border-slate-100">
                         <img src={attachedImage} alt="Katalog Attached" className="w-full h-24 object-cover" />
@@ -560,7 +553,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                     <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed">
                       {message.replace('{nama}', selectedVisitors[0]?.name || 'Pelanggan')}
                     </p>
-                  <p className="text-[10px] text-slate-400 text-right mt-1">
+                  <p className="text-xs text-slate-400 text-right mt-1">
                     {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -573,9 +566,9 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
             onClick={handleBlastSelected}
             disabled={selectedVisitors.length === 0}
             className={cn(
-              "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-base transition-all",
+              "w-full flex items-center justify-center gap-2 py-3.5 rounded-lg font-medium text-base transition-all",
               selectedVisitors.length > 0
-                ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-lg hover:-translate-y-0.5"
+                ? "bg-stone-900 text-white hover: "
                 : "bg-slate-100 text-slate-400 cursor-not-allowed"
             )}
           >
@@ -600,31 +593,31 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100"
+              className="bg-white rounded-lg p-8 max-w-md w-full  border border-slate-100"
             >
-              <h2 className="text-xl font-black text-slate-800 mb-2">Nama Kampanye Blast</h2>
+              <h2 className="text-xl font-medium text-slate-800 mb-2">Nama Kampanye Blast</h2>
               <p className="text-slate-500 text-sm mb-6">Berikan nama untuk sesi blast ini agar mudah dilacak di Log Aktivitas.</p>
               
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Kampanye</label>
+                  <label className="text-xs font-medium  text-slate-400  ml-1">Nama Kampanye</label>
                   <input
                     autoFocus
                     value={campaignName}
                     onChange={e => setCampaignName(e.target.value)}
                     placeholder="Contoh: Promo Ramadhan / Diskon Weekend"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                   />
                 </div>
 
                 {attachedImage && (
-                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-3">
+                  <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border border-emerald-200 shrink-0">
                       <img src={attachedImage} className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <p className="text-xs font-bold text-emerald-800">Katalog Terlampir</p>
-                      <p className="text-[10px] text-emerald-600">Akan disimpan sebagai pratinjau di log.</p>
+                      <p className="text-xs text-emerald-600">Akan disimpan sebagai pratinjau di log.</p>
                     </div>
                   </div>
                 )}
@@ -632,13 +625,13 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setIsNamingCampaign(false)}
-                    className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                    className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 transition-colors"
                   >
                     Batal
                   </button>
                   <button
                     onClick={startBlastQueue}
-                    className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all hover:-translate-y-0.5"
+                    className="flex-1 py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700  shadow-emerald-600/20 transition-all "
                   >
                     Mulai Blast
                   </button>
@@ -656,7 +649,7 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 40 }}
-              className="bg-white rounded-[32px] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden"
+              className="bg-white rounded-lg p-8 max-w-lg w-full  relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-2 bg-slate-100">
                 <motion.div 
@@ -668,8 +661,8 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
 
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-800">Blast Antrean</h2>
-                  <p className="text-slate-500 font-medium tracking-tight">Pelanggan {currentBlastIdx + 1} dari {selectedVisitors.length}</p>
+                  <h2 className="text-2xl font-medium text-slate-800">Blast Antrean</h2>
+                  <p className="text-slate-500 font-medium ">Pelanggan {currentBlastIdx + 1} dari {selectedVisitors.length}</p>
                 </div>
                 <button 
                   onClick={() => setIsBlasting(false)}
@@ -679,25 +672,25 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                 </button>
               </div>
 
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8">
+              <div className="bg-slate-50 rounded-lg p-6 border border-slate-100 mb-8">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-lg">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-medium text-lg">
                     {selectedVisitors[currentBlastIdx]?.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-black text-slate-800 text-lg truncate">{selectedVisitors[currentBlastIdx]?.name}</p>
+                    <p className="font-medium text-slate-800 text-lg truncate">{selectedVisitors[currentBlastIdx]?.name}</p>
                     <p className="text-slate-400 font-mono text-sm">{selectedVisitors[currentBlastIdx]?.phone}</p>
                   </div>
                 </div>
-                <div className="p-4 bg-white rounded-xl border border-slate-200">
+                <div className="p-4 bg-white rounded-lg border border-slate-200">
                   <p className="text-sm text-slate-600 italic">"{message.replace('{nama}', selectedVisitors[currentBlastIdx]?.name || 'Pelanggan').substring(0, 100)}..."</p>
                 </div>
               </div>
 
               {attachedImage && (
-                <div className="mb-8 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-3">
-                   <div className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shrink-0">PENTING</div>
-                   <p className="text-[11px] text-emerald-800 font-medium">Jangan lupa tekan <span className="font-bold underline">Ctrl+V (Paste)</span> lalu <span className="font-bold underline">Enter</span> di WA nanti!</p>
+                <div className="mb-8 p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center gap-3">
+                   <div className="px-3 py-1 bg-emerald-500 text-white text-xs font-medium   rounded-full shrink-0">PENTING</div>
+                   <p className="text-xs text-emerald-800 font-medium">Jangan lupa tekan <span className="font-bold underline">Ctrl+V (Paste)</span> lalu <span className="font-bold underline">Enter</span> di WA nanti!</p>
                 </div>
               )}
 
@@ -706,12 +699,12 @@ export default function Promotions({ userProfile }: { userProfile: UserProfile }
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={sendNextInQueue}
-                  className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all hover:bg-emerald-700 active:shadow-none"
+                  className="w-full py-4 bg-emerald-600 text-white rounded-lg font-medium text-lg  flex items-center justify-center gap-3 transition-all hover:bg-emerald-700 active:shadow-none"
                 >
                   <Send className="w-5 h-5" />
                   Kirim ke {selectedVisitors[currentBlastIdx]?.name}
                 </motion.button>
-                <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sistem akan otomatis lanjut ke pelanggan berikutnya</p>
+                <p className="text-center text-xs text-slate-400 font-bold   mt-1">Sistem akan otomatis lanjut ke pelanggan berikutnya</p>
               </div>
             </motion.div>
           </div>

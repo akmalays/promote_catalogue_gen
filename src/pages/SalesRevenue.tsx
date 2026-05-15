@@ -1,20 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Calendar, TrendingUp, ShoppingBag, CreditCard, 
-  Banknote, Search, ArrowRight, Printer, Download,
-  Filter, ChevronRight, Package, Clock, DollarSign, X, Receipt, CheckCircle2, FileText, Gift, Tag, Percent
+  TrendingUp, ShoppingBag, CreditCard, 
+  Banknote, Search, Download,
+  ChevronRight, Package, Clock, X, FileText, Gift, Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
-
-interface SaleItem {
-  product_id: string;
-  name: string;
-  qty: number;
-  price: number;
-}
 
 interface Sale {
   id: string | number;
@@ -29,17 +22,11 @@ interface Sale {
 
 import { UserProfile } from '../types';
 
-interface SalesRevenueProps {
-  userProfile: UserProfile;
-}
-
-export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
+export default function SalesRevenue({ userProfile }: { userProfile: UserProfile }) {
   const isAdmin = userProfile?.role === 'admin' || (userProfile?.role as string) === 'owner';
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingTargets, setIsSavingTargets] = useState(false);
-  
-  // Dynamic Targets State
   const [dailyTargetAmount, setDailyTargetAmount] = useState(5000000);
   const [focusItemsConfig, setFocusItemsConfig] = useState<any[]>([
     { name: 'Aqua 600ml (Isi 24)', target: 50 },
@@ -51,1069 +38,361 @@ export default function SalesRevenue({ userProfile }: SalesRevenueProps) {
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
   const [pickerSearchQuery, setPickerSearchQuery] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMethod, setFilterMethod] = useState<'all' | 'cash' | 'debit' | 'qris'>('all');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
-
-  // Promo Campaign State
+  const itemsPerPage = 10;
   const [activeCampaign, setActiveCampaign] = useState<any>(null);
   const [campaignProducts, setCampaignProducts] = useState<any[]>([]);
-
-  const [posSettings, setPosSettings] = useState({
-    storeName: 'LILY MART',
-    slogan: 'Layanan Terbaik dari Kami',
-    address: 'GROGOL, KEDIRI - JAWA TIMUR',
-    phone: '0812-3456-7890'
-  });
+  const [posSettings, setPosSettings] = useState({ storeName: 'LILY MART', slogan: 'Layanan Terbaik dari Kami', address: 'GROGOL, KEDIRI', phone: '0812-3456-7890' });
 
   useEffect(() => {
     const saved = localStorage.getItem('pos_branding_settings');
     if (saved) setPosSettings(JSON.parse(saved));
-    fetchSales();
-    fetchStoreSettings();
-    fetchProducts();
-    fetchCampaignData();
+    fetchSales(); fetchStoreSettings(); fetchProducts(); fetchCampaignData();
   }, []);
 
-  const fetchCampaignData = async () => {
-    try {
-      const campaign = await api.getActiveCampaign(userProfile.company_id!);
-      if (campaign) {
-        setActiveCampaign(campaign);
-        const prods = await api.getCampaignProducts(campaign.id);
-        setCampaignProducts(prods);
-      }
-    } catch (e) { /* silent */ }
-  };
+  const fetchCampaignData = async () => { try { const c = await api.getActiveCampaign(userProfile.company_id!); if (c) { setActiveCampaign(c); setCampaignProducts(await api.getCampaignProducts(c.id)); } } catch {} };
+  const fetchProducts = async () => { try { setAvailableProducts(await api.getProducts(userProfile.company_id!)); } catch {} };
+  const fetchStoreSettings = async () => { try { const s = await api.getStoreSettings(userProfile.company_id!); if (s.daily_sales_target) setDailyTargetAmount(s.daily_sales_target.amount || 5000000); if (s.focus_items) setFocusItemsConfig(s.focus_items); } catch {} };
+  const saveStoreSettings = async () => { setIsSavingTargets(true); try { await api.updateStoreSetting(userProfile.company_id!, 'daily_sales_target', { amount: dailyTargetAmount }); await api.updateStoreSetting(userProfile.company_id!, 'focus_items', focusItemsConfig); toast.success('Target diperbarui'); setIsTargetModalOpen(false); } catch { toast.error('Gagal menyimpan'); } finally { setIsSavingTargets(false); } };
 
-  const fetchProducts = async () => {
-    try {
-      const data = await api.getProducts(userProfile.company_id!);
-      setAvailableProducts(data);
-    } catch (e) {
-      console.error('Cant fetch products:', e);
-    }
-  };
+  useEffect(() => { setCurrentPage(1); }, [selectedDate, searchQuery, filterMethod]);
+  const fetchSales = async () => { setIsLoading(true); try { setSales(await api.getSales(userProfile.company_id!)); } catch { toast.error('Gagal memuat penjualan'); } finally { setIsLoading(false); } };
 
-  const fetchStoreSettings = async () => {
-    try {
-      const settings = await api.getStoreSettings(userProfile.company_id!);
-      if (settings.daily_sales_target) {
-        setDailyTargetAmount(settings.daily_sales_target.amount || 5000000);
-      }
-      if (settings.focus_items) {
-        setFocusItemsConfig(settings.focus_items);
-      }
-    } catch (e) {
-      console.error('Cant fetch targets:', e);
-    }
-  };
-
-  const saveStoreSettings = async () => {
-    setIsSavingTargets(true);
-    try {
-      await api.updateStoreSetting(userProfile.company_id!, 'daily_sales_target', { amount: dailyTargetAmount });
-      await api.updateStoreSetting(userProfile.company_id!, 'focus_items', focusItemsConfig);
-      toast.success('Target berhasil diperbarui!');
-      setIsTargetModalOpen(false);
-    } catch (e) {
-      toast.error('Gagal menyimpan target');
-    } finally {
-      setIsSavingTargets(false);
-    }
-  };
-
-  // Reset pagination when filter or search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedDate, searchQuery, filterMethod]);
-
-  const fetchSales = async () => {
-    setIsLoading(true);
-    try {
-      const data = await api.getSales(userProfile.company_id!);
-      setSales(data);
-    } catch (e) {
-      toast.error('Gagal memuat data penjualan');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filteredSales = useMemo(() => {
-    return sales.filter(s => {
-      const saleDate = new Date(s.created_at).toISOString().split('T')[0];
-      const matchesDate = saleDate === selectedDate;
-      const matchesSearch = s.id.toString().toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesMethod = filterMethod === 'all' || s.payment_method === filterMethod;
-      return matchesDate && matchesSearch && matchesMethod;
-    });
-  }, [sales, selectedDate, searchQuery, filterMethod]);
+  const filteredSales = useMemo(() => sales.filter(s => {
+    const d = new Date(s.created_at).toISOString().split('T')[0];
+    return d === selectedDate && s.id.toString().toLowerCase().includes(searchQuery.toLowerCase()) && (filterMethod === 'all' || s.payment_method === filterMethod);
+  }), [sales, selectedDate, searchQuery, filterMethod]);
 
   const stats = useMemo(() => {
-    const totalRevenue = filteredSales.reduce((acc, s) => acc + s.total_amount, 0);
-    const totalTransactions = filteredSales.length;
-    const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-    
-    const cashRevenue = filteredSales.filter(s => s.payment_method === 'cash').reduce((acc, s) => acc + s.total_amount, 0);
+    const totalRevenue = filteredSales.reduce((a, s) => a + s.total_amount, 0);
+    const cashRevenue = filteredSales.filter(s => s.payment_method === 'cash').reduce((a, s) => a + s.total_amount, 0);
     const digitalRevenue = totalRevenue - cashRevenue;
     const targetProgress = Math.min((totalRevenue / dailyTargetAmount) * 100, 100);
-
-    // Calculate Focus Item Progress
     const itemSales: Record<string, number> = {};
-    filteredSales.forEach(sale => {
-      sale.items?.forEach((item: any) => {
-        const name = item.name || 'Produk';
-        itemSales[name] = (itemSales[name] || 0) + (item.qty || item.quantity || 0);
-      });
-    });
-
-    const focusItems = focusItemsConfig.map(config => {
-      const sold = itemSales[config.name] || 0;
-      return {
-        name: config.name,
-        sold,
-        target: config.target,
-        progress: Math.min((sold / config.target) * 100, 100)
-      };
-    });
-
-    return { totalRevenue, totalTransactions, avgTransaction, cashRevenue, digitalRevenue, targetProgress, focusItems };
+    filteredSales.forEach(sale => { sale.items?.forEach((item: any) => { if (!item.is_metadata) { const n = item.name || 'Produk'; itemSales[n] = (itemSales[n] || 0) + (item.qty || item.quantity || 0); } }); });
+    const focusItems = focusItemsConfig.map(c => { const sold = itemSales[c.name] || 0; return { name: c.name, sold, target: c.target, progress: Math.min((sold / c.target) * 100, 100) }; });
+    return { totalRevenue, totalTransactions: filteredSales.length, cashRevenue, digitalRevenue, targetProgress, focusItems };
   }, [filteredSales, dailyTargetAmount, focusItemsConfig]);
 
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
-  const paginatedSales = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredSales.slice(start, start + itemsPerPage);
-  }, [filteredSales, currentPage]);
+  const paginatedSales = useMemo(() => filteredSales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [filteredSales, currentPage]);
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-slate-50 overflow-hidden relative">
-      {/* Daily Report Modal */}
-      <AnimatePresence>
-        {isReportModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               onClick={() => setIsReportModalOpen(false)}
-               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm no-print"
-            />
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-               animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-               className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10"
-            >
-               {/* Modal Header */}
-               <div className="p-8 border-b border-slate-50 flex flex-col items-start relative no-print">
-                  <button 
-                    onClick={() => setIsReportModalOpen(false)}
-                    className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
-                  >
-                     <X className="w-6 h-6" />
-                  </button>
-                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm shadow-[#8b7365]/10">
-                     <FileText className="w-8 h-8" />
-                  </div>
-                  <div>
-                     <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">Rekap Harian</h2>
-                     <p className="text-[10px] font-black text-slate-400 tracking-widest">{new Date(selectedDate).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
-                  </div>
-               </div>
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-stone-50 dark:bg-stone-950">
+      <style>{`@media print { body > * { visibility: hidden !important; } .ReportPrintArea, .ReportPrintArea * { visibility: visible !important; } .ReportPrintArea { position: fixed !important; left: 0; top: 0; width: 100%; padding: 40px !important; background: white !important; } .no-print { display: none !important; } }`}</style>
 
-               {/* Report Area for Printing */}
-               <div className="flex-1 overflow-y-auto p-12 custom-scrollbar bg-white ReportPrintArea">
-                  <div className="max-w-full mx-auto">
-                     {/* Print-only Branding */}
-                     <div className="hidden print-block text-center mb-10 pb-8 border-b-2 border-slate-900">
-                        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-1">{posSettings.storeName}</h1>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">LAPORAN PENJUALAN HARIAN - {new Date(selectedDate).toLocaleDateString('id-ID', { dateStyle: 'long' })}</p>
-                     </div>
-
-                     {/* Payment Breakdown */}
-                     <div className="grid grid-cols-3 gap-6 mb-12">
-                        {[
-                           { label: 'Total Tunai', value: stats.cashRevenue, color: 'text-slate-900', bg: 'bg-white border-2 border-slate-900/5' },
-                           { label: 'Total QRIS/Debit', value: stats.digitalRevenue, color: 'text-slate-900', bg: 'bg-white border-2 border-slate-900/5' },
-                           { label: 'TOTAL OMZET', value: stats.totalRevenue, color: 'text-white', bg: 'bg-[#8b7365]' }
-                        ].map((p, i) => (
-                           <div key={i} className={cn("p-6 rounded-[32px]", p.bg)}>
-                              <p className={cn("text-[10px] font-black uppercase tracking-widest mb-1", i === 2 ? "text-slate-300" : "text-slate-400")}>{p.label}</p>
-                              <p className={cn("text-xl font-black tracking-tight", i === 2 ? "text-white" : "text-slate-900")}>Rp {p.value.toLocaleString()}</p>
-                           </div>
-                        ))}
-                     </div>
-
-                     {/* Cashier Report */}
-                     <div className="mb-12">
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                           <div className="w-1.5 h-1.5 rounded-full bg-[#8b7365]" /> Laporan Kinerja Per Kasir
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                           {Object.entries(
-                              filteredSales.reduce((acc: any, sale: any) => {
-                                 const meta = sale.items?.find((i: any) => i.is_metadata);
-                                 const cashier = meta?.cashier_name || 'Kasir (Offline)';
-                                 if (!acc[cashier]) acc[cashier] = 0;
-                                 acc[cashier] += sale.total_amount || 0;
-                                 return acc;
-                              }, {})
-                           ).map(([cashier, total]: [string, any], i) => (
-                              <div key={i} className="p-5 border border-slate-100 rounded-3xl bg-slate-50/50">
-                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{cashier}</p>
-                                 <p className="text-lg font-black text-slate-800 tracking-tight">Rp {total.toLocaleString()}</p>
-                              </div>
-                           ))}
-                        </div>
-                     </div>
-
-                     {/* Itemized List */}
-                     <div className="mb-12">
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                           <div className="w-1.5 h-1.5 rounded-full bg-[#8b7365]" /> Rincian Item Terjual
-                        </h3>
-                        <table className="w-full border-collapse">
-                           <thead>
-                              <tr className="border-b-2 border-slate-100">
-                                 <th className="py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Nama Produk</th>
-                                 <th className="py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Qty</th>
-                                 <th className="py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Harga Avg</th>
-                                 <th className="py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Subtotal</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-slate-50">
-                              {/* Group sales by item name */}
-                              {Object.entries(
-                                 filteredSales.reduce((acc: any, sale: any) => {
-                                     sale.items?.forEach((item: any) => {
-                                        if (item.is_metadata) return;
-                                        const name = item.name || 'Produk';
-                                        if (!acc[name]) acc[name] = { qty: 0, price: item.price || 0 };
-                                        acc[name].qty += (item.qty || item.quantity || 0);
-                                     });
-                                    return acc;
-                                 }, {})
-                              ).map(([name, data]: [string, any], i) => (
-                                 <tr key={i}>
-                                    <td className="py-4 text-sm font-black text-slate-700">{name}</td>
-                                    <td className="py-4 text-sm font-bold text-slate-600 text-right">{data.qty}</td>
-                                    <td className="py-4 text-sm font-bold text-slate-400 text-right">Rp {data.price.toLocaleString()}</td>
-                                    <td className="py-4 text-sm font-black text-slate-900 text-right">Rp {(data.qty * data.price).toLocaleString()}</td>
-                                 </tr>
-                              ))}
-                           </tbody>
-                           <tfoot>
-                              <tr className="border-t-2 border-slate-900">
-                                 <td colSpan={3} className="py-6 text-sm font-black text-slate-900 uppercase">Total Keseluruhan</td>
-                                 <td className="py-6 text-xl font-black text-slate-900 text-right">Rp {stats.totalRevenue.toLocaleString()}</td>
-                              </tr>
-                           </tfoot>
-                        </table>
-                     </div>
-
-                     {/* Footer Disclaimer */}
-                     <div className="text-center pt-12 opacity-30 italic">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dicetak otomatis oleh {posSettings.storeName} POS System</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Waktu Cetak: {new Date().toLocaleString('id-ID')}</p>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Modal Footer */}
-                <div className="p-8 border-t border-slate-50 bg-slate-50/20 no-print">
-                  <button 
-                    onClick={() => {
-                       const originalTitle = document.title;
-                       document.title = `Laporan_Penjualan_${selectedDate}`;
-                       window.print();
-                       setTimeout(() => { document.title = originalTitle; }, 100);
-                    }}
-                    className="w-full py-4 bg-[#8b7365] text-white rounded-3xl text-sm font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 flex items-center justify-center gap-3"
-                  >
-                     <Printer className="w-5 h-5" /> Download PDF / Cetak
-                  </button>
-               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Target Settings Modal (Admin Only) */}
-      <AnimatePresence>
-        {isTargetModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               onClick={() => setIsTargetModalOpen(false)}
-               className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
-            />
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-               animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-               className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-               <div className="p-8 border-b border-slate-50 flex flex-col items-start relative">
-                  <button onClick={() => setIsTargetModalOpen(false)} className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400">
-                     <X className="w-6 h-6" />
-                  </button>
-                  <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm shadow-[#8b7365]/10">
-                     <TrendingUp className="w-8 h-8" />
-                  </div>
-                  <div>
-                     <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">Pengaturan Target</h2>
-                     <p className="text-[10px] font-black text-slate-400 tracking-widest">Atur goal & item prioritas</p>
-                  </div>
-               </div>
-
-               <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
-                  {/* Daily Target Amount */}
-                  <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block px-1">Target Omzet Harian (Rp)</label>
-                      <div className="relative">
-                         <input 
-                           type="number"
-                           value={dailyTargetAmount}
-                           onChange={e => setDailyTargetAmount(Number(e.target.value))}
-                           placeholder="Contoh: 5000000"
-                           className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black text-slate-800 focus:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] transition-all outline-none"
-                         />
-                      </div>
-                   </div>
-
-                  {/* Focus Items List */}
-                  <div>
-                      <div className="flex items-center justify-between mb-4 px-1">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Fokus Utama</label>
-                         <button 
-                           onClick={() => setFocusItemsConfig([...focusItemsConfig, { name: '', target: 50 }])}
-                           className="text-[9px] font-black text-[#8b7365] bg-[#8b7365]/5 px-3 py-1.5 rounded-lg hover:bg-[#8b7365]/10 transition-all uppercase tracking-widest border border-[#8b7365]/10"
-                         >
-                            + Tambah Item
-                         </button>
-                      </div>
-                     <div className="space-y-3">
-                        {focusItemsConfig.map((item, idx) => (
-                           <div key={idx} className="flex gap-3 items-center group">
-                              <div className="flex-1">
-                                  <button 
-                                    onClick={() => {
-                                       setEditingIndex(idx);
-                                       setIsProductPickerOpen(true);
-                                    }}
-                                    className={cn(
-                                      "w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-left transition-all hover:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] flex items-center justify-between outline-none group/btn",
-                                      item.name ? "text-slate-700" : "text-slate-300"
-                                    )}
-                                  >
-                                     <span className="truncate">{item.name || 'Pilih produk...'}</span>
-                                     <ChevronRight className="w-4 h-4 text-slate-300 group-hover/btn:translate-x-0.5 transition-transform" />
-                                  </button>
-                              </div>
-                              <div className="w-24">
-                                  <input 
-                                    type="number"
-                                    value={item.target}
-                                    onChange={e => {
-                                       const newConfig = [...focusItemsConfig];
-                                       newConfig[idx].target = Number(e.target.value);
-                                       setFocusItemsConfig(newConfig);
-                                    }}
-                                    placeholder="Goal"
-                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black text-center text-[#8b7365] focus:bg-white focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all"
-                                  />
-                              </div>
-                              <button 
-                                onClick={() => setFocusItemsConfig(focusItemsConfig.filter((_, i) => i !== idx))}
-                                className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                              >
-                                 <X className="w-4 h-4" />
-                              </button>
-                           </div>
-                        ))}
-                        {focusItemsConfig.length === 0 && (
-                           <div className="py-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
-                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Belum ada item fokus</p>
-                           </div>
-                        )}
-                     </div>
-                  </div>
-               </div>
-
-               <div className="p-8 border-t border-slate-50 flex gap-4 bg-slate-50/20">
-                  <button 
-                    onClick={() => setIsTargetModalOpen(false)}
-                    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
-                  >
-                     Batal
-                  </button>
-                  <button 
-                    onClick={saveStoreSettings}
-                    disabled={isSavingTargets}
-                    className="flex-1 py-4 bg-[#8b7365] text-white rounded-3xl text-[11px] font-black uppercase tracking-widest hover:bg-[#7a6458] transition-all shadow-xl shadow-[#8b7365]/20 flex items-center justify-center gap-3"
-                  >
-                     {isSavingTargets ? 'Menyimpan...' : 'Simpan Perubahan'}
-                  </button>
-               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Product Picker Modal (Sub-modal) */}
-      <AnimatePresence>
-        {isProductPickerOpen && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6">
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               onClick={() => setIsProductPickerOpen(false)}
-               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-               animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-               className="relative w-full max-w-md bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
-            >
-               <div className="p-6 border-b border-slate-50">
-                  <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-lg font-black text-slate-800 tracking-tight">Pilih Produk Target</h3>
-                     <button onClick={() => setIsProductPickerOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                        <X className="w-5 h-5 text-slate-400" />
-                     </button>
-                  </div>
-                  <div className="relative">
-                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                     <input 
-                       autoFocus
-                       value={pickerSearchQuery}
-                       onChange={e => setPickerSearchQuery(e.target.value)}
-                       placeholder="Cari nama produk atau stok..."
-                       className="w-full pl-11 pr-5 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700"
-                     />
-                  </div>
-               </div>
-
-               <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                  <div className="grid grid-cols-1 gap-1">
-                     {availableProducts
-                       .filter(p => p.name.toLowerCase().includes(pickerSearchQuery.toLowerCase()))
-                       .map(product => (
-                        <button 
-                          key={product.id}
-                          onClick={() => {
-                             if (editingIndex !== null) {
-                                const newConfig = [...focusItemsConfig];
-                                newConfig[editingIndex].name = product.name;
-                                setFocusItemsConfig(newConfig);
-                                setIsProductPickerOpen(false);
-                                setPickerSearchQuery('');
-                             }
-                          }}
-                          className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all text-left group"
-                        >
-                           <div className="flex-1">
-                              <p className="text-sm font-black text-slate-800 leading-tight group-hover:text-emerald-600 transition-colors">{product.name}</p>
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Rp {product.price?.toLocaleString()}</p>
-                           </div>
-                           <div className={cn(
-                             "px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase text-center min-w-[70px]",
-                             product.stock <= 5 ? "bg-red-50 text-red-500 border-red-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
-                           )}>
-                              {product.stock} Stok
-                           </div>
-                        </button>
-                     ))}
-                  </div>
-               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <style>{`
-         @media print {
-            body > * { visibility: hidden !important; }
-            #receipt-root-portal, #receipt-root-portal *, 
-            .ReportPrintArea, .ReportPrintArea * { visibility: visible !important; }
-            
-            .ReportPrintArea { 
-               position: fixed !important; 
-               left: 0 !important; 
-               top: 0 !important; 
-               width: 100% !important; 
-               height: auto !important;
-               padding: 40px !important;
-               background: white !important;
-               z-index: 10000 !important;
-            }
-            .no-print { display: none !important; }
-            .print-block { display: block !important; }
-            .shadow-sm, .shadow-2xl, .shadow-xl { box-shadow: none !important; }
-            .rounded-[40px], .rounded-[32px], .rounded-3xl { border-radius: 0 !important; }
-         }
-      `}</style>
-
-      <div className="px-8 py-6 bg-transparent flex items-center justify-between z-10 no-print">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
-            <TrendingUp className="w-8 h-8" />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Sales Report</h1>
-            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Pantau Performa Bisnis Real-time</p>
-          </div>
+      {/* Header */}
+      <div className="px-6 md:px-8 py-5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-4 no-print shrink-0">
+        <div>
+          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Sales Report</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Pantau performa penjualan harian.</p>
         </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-             <input 
-               type="date" 
-               value={selectedDate}
-               onChange={(e) => setSelectedDate(e.target.value)}
-               className="bg-transparent border-none text-xs font-black text-slate-600 px-3 py-1.5 focus:ring-0 outline-none"
-             />
-          </div>
+        <div className="flex items-center gap-2">
+          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="px-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
           {isAdmin && (
-            <button 
-              onClick={() => setIsTargetModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs  hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
-            >
-               <TrendingUp className="w-4 h-4" /> Atur Target
+            <button onClick={() => setIsTargetModalOpen(true)} className="px-3 py-2 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" /> Target
             </button>
           )}
-          <button 
-            onClick={() => setIsReportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#8b7365] text-white rounded-xl font-bold text-xs  transition-all shadow-lg shadow-[#8b7365]/20 hover:bg-[#7a6458]"
-          >
-             <FileText className="w-4 h-4" /> Rekap Harian
+          <button onClick={() => setIsReportModalOpen(true)} className="px-3 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" /> Rekap
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar no-print">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-           {[
-             { label: 'Total Omzet', value: `Rp ${stats.totalRevenue.toLocaleString()}`, sub: 'Hari Ini', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', isTarget: true },
-             { label: 'Transaksi', value: stats.totalTransactions, sub: 'Pembelian Berhasil', icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
-             { label: 'Tunai / Cash', value: `Rp ${stats.cashRevenue.toLocaleString()}`, sub: 'Uang Fisik', icon: Banknote, color: 'text-amber-600', bg: 'bg-amber-50' },
-             { label: 'QRIS / Debit', value: `Rp ${stats.digitalRevenue.toLocaleString()}`, sub: 'Uang Digital', icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50' }
-           ].map((stat, i) => (
-             <motion.div 
-               key={i}
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: i * 0.1 }}
-               className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 relative overflow-hidden group"
-             >
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", stat.bg)}>
-                   <stat.icon className={cn("w-6 h-6", stat.color)} />
-                </div>
-                <div className="flex justify-between items-start mb-1">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                   {stat.isTarget && (
-                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                         {stats.targetProgress.toFixed(1)}% Target
-                      </span>
-                   )}
-                </div>
-                <h3 className="text-xl font-black text-slate-800 tracking-tight">{stat.value}</h3>
-                
-                {stat.isTarget ? (
-                   <div className="mt-3">
-                      <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                         <motion.div 
-                           initial={{ width: 0 }}
-                           animate={{ width: `${stats.targetProgress}%` }}
-                           transition={{ duration: 1, ease: "easeOut" }}
-                           className="h-full bg-emerald-500 rounded-full"
-                         />
-                      </div>
-                        <p className="text-[9px] font-bold text-slate-300 mt-1.5 uppercase tracking-tighter">
-                          Goal: Rp {dailyTargetAmount.toLocaleString()}
-                        </p>
-                   </div>
-                ) : (
-                   <p className="text-[10px] font-bold text-slate-400 mt-1">{stat.sub}</p>
-                )}
-
-                <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-                   <stat.icon className="w-24 h-24 -mr-8 -mt-8" />
-                </div>
-             </motion.div>
-           ))}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 no-print">
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total Omzet', value: `Rp ${stats.totalRevenue.toLocaleString()}`, icon: TrendingUp, extra: `${stats.targetProgress.toFixed(0)}% target` },
+            { label: 'Transaksi', value: String(stats.totalTransactions), icon: ShoppingBag, extra: 'hari ini' },
+            { label: 'Tunai', value: `Rp ${stats.cashRevenue.toLocaleString()}`, icon: Banknote, extra: 'cash' },
+            { label: 'Digital', value: `Rp ${stats.digitalRevenue.toLocaleString()}`, icon: CreditCard, extra: 'QRIS/debit' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-5">
+              <div className="flex items-center justify-between mb-3">
+                <stat.icon className="w-4 h-4 text-stone-400 dark:text-stone-500" />
+                <span className="text-xs text-stone-400 dark:text-stone-500">{stat.extra}</span>
+              </div>
+              <p className="text-xl font-semibold text-stone-900 dark:text-stone-100 tabular-nums">{stat.value}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{stat.label}</p>
+            </div>
+          ))}
         </div>
 
-        {/* Promo Campaign Impact Panel */}
-        {activeCampaign && (
-          <div className="mb-12">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-600">
-                <Gift className="w-4 h-4" />
+        {/* Target progress */}
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-5 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Progress target harian</span>
+            <span className="text-sm text-stone-500 dark:text-stone-400 tabular-nums">{stats.targetProgress.toFixed(1)}%</span>
+          </div>
+          <div className="h-2 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${stats.targetProgress}%` }} />
+          </div>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mt-2 tabular-nums">Rp {stats.totalRevenue.toLocaleString()} / Rp {dailyTargetAmount.toLocaleString()}</p>
+        </div>
+
+        {/* Focus Items */}
+        {stats.focusItems.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {stats.focusItems.map((item, i) => (
+              <div key={i} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-stone-700 dark:text-stone-200 truncate pr-2">{item.name}</p>
+                  <span className="text-xs text-stone-500 dark:text-stone-400 tabular-nums shrink-0">{item.sold}/{item.target}</span>
+                </div>
+                <div className="h-1.5 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-stone-700 dark:bg-stone-300 rounded-full transition-all duration-500" style={{ width: `${item.progress}%` }} />
+                </div>
               </div>
-              <div>
-                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">Kampanye Aktif: {activeCampaign.name}</h2>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dampak promo terhadap revenue & stok hari ini</p>
-              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Campaign Impact */}
+        {activeCampaign && campaignProducts.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Gift className="w-4 h-4 text-stone-400 dark:text-stone-500" />
+              <h2 className="text-sm font-medium text-stone-700 dark:text-stone-200">Kampanye aktif: {activeCampaign.name}</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {campaignProducts.map((cp, i) => {
-                // Count how many times this product was sold today
-                const soldQty = filteredSales.reduce((acc, sale) => {
-                  sale.items?.forEach((item: any) => {
-                    if (!item.is_metadata && (item.product_id === cp.product_id || item.name === cp.name)) {
-                      acc += (item.qty || item.quantity || 0);
-                    }
-                  });
-                  return acc;
-                }, 0);
-
-                // Stock impact: how much stock was actually consumed
-                const payingQty = cp.promo_type === 'b1g1' ? 1 : cp.promo_type === 'b2g1' ? 2 : (cp.buy_qty || 1);
-                const freeQty = cp.promo_type === 'b1g1' ? 1 : cp.promo_type === 'b2g1' ? 1 : (cp.get_qty || 0);
-                const totalPerBundle = payingQty + freeQty;
-                const bundles = Math.floor(soldQty / payingQty);
-                const stockConsumed = cp.promo_type === 'price_cut' ? soldQty : bundles * totalPerBundle;
-
-                // Revenue impact
-                const normalRevenue = soldQty * (cp.price || 0);
-                const actualRevenue = cp.promo_type === 'price_cut' 
-                  ? soldQty * (cp.promo_price || cp.price || 0)
-                  : bundles * payingQty * (cp.price || 0); // Only paying items contribute revenue
-                const discountAmount = normalRevenue - actualRevenue;
-
-                // Margin
-                const totalCost = stockConsumed * (cp.cost_price || 0);
-                const margin = actualRevenue > 0 ? ((actualRevenue - totalCost) / actualRevenue * 100) : 0;
-
-                const promoLabel = cp.promo_type === 'b1g1' ? 'Beli 1 Gratis 1'
-                  : cp.promo_type === 'b2g1' ? 'Beli 2 Gratis 1'
-                  : cp.promo_type === 'buy_x_get_y' ? `Beli ${cp.buy_qty} Gratis ${cp.get_qty}`
-                  : `Diskon ${Math.round((1 - (cp.promo_price || 0) / (cp.price || 1)) * 100)}%`;
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {campaignProducts.slice(0, 6).map((cp: any) => {
+                const soldQty = filteredSales.reduce((acc, sale) => { sale.items?.forEach((item: any) => { if (!item.is_metadata && (item.product_id === cp.product_id || item.name === cp.name)) acc += (item.qty || item.quantity || 0); }); return acc; }, 0);
+                const promoLabel = cp.promo_type === 'b1g1' ? 'B1G1' : cp.promo_type === 'b2g1' ? 'B2G1' : cp.promo_type === 'buy_x_get_y' ? `B${cp.buy_qty}G${cp.get_qty}` : `${Math.round((1 - (cp.promo_price || 0) / (cp.price || 1)) * 100)}% off`;
                 return (
-                  <motion.div
-                    key={cp.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="bg-white p-6 rounded-[32px] border border-amber-100 shadow-sm overflow-hidden relative"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-wide mb-2">
-                          <Gift className="w-2.5 h-2.5" />
-                          {promoLabel}
-                        </span>
-                        <h4 className="text-sm font-black text-slate-800 leading-tight">{cp.name}</h4>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{cp.brand}</p>
-                      </div>
-                      <div className={cn(
-                        "text-right px-3 py-1.5 rounded-xl text-xs font-black",
-                        margin < 10 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
-                      )}>
-                        {margin.toFixed(1)}%
-                        <p className="text-[8px] font-bold opacity-70">MARGIN</p>
-                      </div>
+                  <div key={cp.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">{promoLabel}</span>
+                      <span className="text-xs text-stone-500 dark:text-stone-400 tabular-nums">{soldQty} terjual</span>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-400 font-bold">Terjual (bayar)</span>
-                        <span className="font-black text-slate-700">{soldQty} unit</span>
-                      </div>
-                      {freeQty > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-amber-500 font-bold">Stok keluar (gratis)</span>
-                          <span className="font-black text-amber-600">{stockConsumed} unit</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-400 font-bold">Revenue actual</span>
-                        <span className="font-black text-emerald-600">Rp {actualRevenue.toLocaleString()}</span>
-                      </div>
-                      {discountAmount > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-rose-400 font-bold">Potongan promo</span>
-                          <span className="font-black text-rose-500">-Rp {discountAmount.toLocaleString()}</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200 truncate">{cp.name}</p>
+                    <p className="text-xs text-stone-400 dark:text-stone-500">{cp.brand}</p>
+                  </div>
                 );
               })}
-              {campaignProducts.length === 0 && (
-                <div className="col-span-3 py-10 text-center bg-amber-50/30 rounded-3xl border border-dashed border-amber-200">
-                  <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Belum ada produk di kampanye aktif ini</p>
-                </div>
-              )}
             </div>
           </div>
         )}
 
-        {/* Focus Item Targets */}
-        <div className="mb-12">
-           <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-[#8b7365]/10 rounded-xl flex items-center justify-center text-[#8b7365]">
-                 <Package className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Target Penjualan Item Fokus</h2>
-           </div>
-           
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {stats.focusItems.map((item, i) => (
-                 <motion.div 
-                   key={i}
-                   initial={{ opacity: 0, x: -20 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   transition={{ delay: 0.4 + (i * 0.1) }}
-                   className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm overflow-hidden relative"
-                 >
-                    <div className="flex justify-between items-start mb-4">
-                       <div className="flex-1">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Item Fokus</p>
-                          <h4 className="text-sm font-black text-slate-800 leading-tight">{item.name}</h4>
-                       </div>
-                        <div className="text-right">
-                          <p className="text-xs font-black text-[#8b7365]">{item.sold} <span className="text-[10px] text-slate-400">/ {item.target}</span></p>
-                          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter mt-0.5">TERJUAL</p>
-                        </div>
-                    </div>
-
-                    <div className="relative pt-4">
-                       <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-                          <motion.div 
-                             initial={{ width: 0 }}
-                             animate={{ width: `${item.progress}%` }}
-                             transition={{ duration: 1.5, ease: "circOut" }}
-                             className="h-full bg-[#8b7365] rounded-full"
-                          />
-                       </div>
-                       <div className="flex justify-between items-center mt-3">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Progress</span>
-                          <span className="text-[10px] font-black text-[#8b7365]">{item.progress.toFixed(0)}%</span>
-                       </div>
-                    </div>
-                 </motion.div>
+        {/* Transactions Table */}
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
+              <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Cari ID transaksi..." className="w-full pl-9 pr-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
+            </div>
+            <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg">
+              {(['all', 'cash', 'debit', 'qris'] as const).map((m) => (
+                <button key={m} onClick={() => setFilterMethod(m)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors", filterMethod === m ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm" : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200")}>
+                  {m === 'all' ? 'Semua' : m.toUpperCase()}
+                </button>
               ))}
-           </div>
-        </div>
+            </div>
+          </div>
 
-        {/* Filters & Table Section */}
-        <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
-           <div className="p-8 border-b border-slate-50 flex flex-wrap items-center justify-between gap-6">
-              <div className="relative w-full max-w-md">
-                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                 <input 
-                   type="text" 
-                   value={searchQuery}
-                   onChange={e => setSearchQuery(e.target.value)}
-                   placeholder="Cari ID Transaksi..."
-                   className="w-full pl-11 pr-6 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 placeholder-slate-300 focus:ring-2 focus:ring-[#8b7365]/10 transition-all"
-                 />
-              </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800">
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">ID</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Waktu</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Metode</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Item</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                {isLoading ? [...Array(5)].map((_, i) => (<tr key={i}><td colSpan={5} className="px-5 py-4"><div className="h-4 bg-stone-100 dark:bg-stone-800 rounded animate-pulse" /></td></tr>)) : paginatedSales.length === 0 ? (
+                  <tr><td colSpan={5} className="px-5 py-12 text-center"><ShoppingBag className="w-6 h-6 mx-auto mb-2 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-400 dark:text-stone-500">Tidak ada transaksi</p></td></tr>
+                ) : paginatedSales.map((sale) => (
+                  <tr key={sale.id} onClick={() => setSelectedSale(sale)} className="hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors cursor-pointer">
+                    <td className="px-5 py-3.5"><span className="font-mono text-xs text-stone-700 dark:text-stone-300">#{sale.id.toString().slice(-6).toUpperCase()}</span></td>
+                    <td className="px-5 py-3.5"><div className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400"><Clock className="w-3 h-3" />{new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></td>
+                    <td className="px-5 py-3.5"><span className={cn("text-xs font-medium px-2 py-0.5 rounded", sale.payment_method === 'cash' ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" : "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400")}>{sale.payment_method === 'cash' ? 'Tunai' : sale.payment_method.toUpperCase()}</span></td>
+                    <td className="px-5 py-3.5 text-right"><span className="text-xs text-stone-600 dark:text-stone-400 tabular-nums">{sale.items?.reduce((a: number, i: any) => i.is_metadata ? a : a + (i.qty || i.quantity || 0), 0) || 0}</span></td>
+                    <td className="px-5 py-3.5 text-right"><span className="text-sm font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {sale.total_amount.toLocaleString()}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-              <div className="flex items-center gap-3">
-                 <div className="flex bg-slate-100 p-1 rounded-xl">
-                   {['all', 'cash', 'debit', 'qris'].map((m) => (
-                     <button
-                       key={m}
-                       onClick={() => setFilterMethod(m as any)}
-                       className={cn(
-                         "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                         filterMethod === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                       )}
-                     >
-                       {m === 'all' ? 'Semua' : m}
-                     </button>
-                   ))}
-                 </div>
-                 <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-100 transition-all border border-slate-100">
-                    <Filter className="w-4 h-4" />
-                 </button>
+          {totalPages > 1 && (
+            <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <p className="text-xs text-stone-500 dark:text-stone-400">{filteredSales.length} transaksi · Hal {currentPage}/{totalPages}</p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 transition-colors"><ChevronRight className="w-4 h-4 rotate-180" /></button>
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 transition-colors"><ChevronRight className="w-4 h-4" /></button>
               </div>
-           </div>
+            </div>
+          )}
 
-           <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                 <thead>
-                    <tr className="bg-slate-50/50">
-                       <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">ID Transaksi</th>
-                       <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">Waktu</th>
-                       <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">Metode</th>
-                       <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 px-8 text-right">Total Item</th>
-                       <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 text-right">Total Transaksi</th>
-                       <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50"></th>
-                    </tr>
-                 </thead>
-                 <tbody className="divide-y divide-slate-50">
-                    {isLoading ? (
-                      [...Array(5)].map((_, i) => (
-                        <tr key={i} className="animate-pulse">
-                          {[...Array(6)].map((_, j) => (
-                            <td key={j} className="px-8 py-6"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
-                          ))}
-                        </tr>
-                      ))
-                    ) : filteredSales.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-8 py-20 text-center">
-                           <div className="flex flex-col items-center justify-center opacity-20">
-                              <ShoppingBag className="w-16 h-16 mb-4" />
-                              <p className="text-sm font-black uppercase tracking-widest">Tidak ada penjualan di tanggal ini</p>
-                           </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedSales.map((sale) => (
-                        <tr 
-                          key={sale.id} 
-                          onClick={() => setSelectedSale(sale)}
-                          className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                        >
-                           <td className="px-8 py-6">
-                              <span className="font-mono text-xs font-black text-slate-800">#{sale.id.toString().slice(-8).toUpperCase()}</span>
-                           </td>
-                           <td className="px-8 py-6">
-                              <div className="flex items-center gap-2">
-                                 <Clock className="w-3 h-3 text-slate-300" />
-                                 <span className="text-xs font-bold text-slate-600">{new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              </div>
-                           </td>
-                           <td className="px-8 py-6">
-                              <div className="flex items-center gap-2">
-                                 {sale.payment_method === 'cash' ? (
-                                   <div className="w-6 h-6 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600 border border-amber-100"><Banknote className="w-3.5 h-3.5" /></div>
-                                 ) : (
-                                   <div className="w-6 h-6 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 border border-blue-100">{sale.payment_method === 'qris' ? <QrCode className="w-3.5 h-3.5" /> : <CreditCard className="w-3.5 h-3.5" />}</div>
-                                 )}
-                                 <span className="text-[10px] font-black uppercase text-slate-700">{sale.payment_method === 'cash' ? 'Tunai' : sale.payment_method === 'qris' ? 'QRIS' : 'Debit'}</span>
-                                 {sale.payment_ref && <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Ref: {sale.payment_ref}</span>}
-                              </div>
-                           </td>
-                           <td className="px-8 py-6 text-right">
-                               <span className="text-xs font-black text-slate-600">{sale.items?.reduce((acc: number, item: any) => item.is_metadata ? acc : acc + (item.qty || item.quantity || 0), 0) || 0} unit</span>
-                           </td>
-                           <td className="px-8 py-6 text-right">
-                              <span className="text-sm font-black text-[#8b7365]">Rp {sale.total_amount.toLocaleString()}</span>
-                           </td>
-                           <td className="px-8 py-6 text-right">
-                              <button className="p-2 text-slate-400 hover:text-[#8b7365] hover:bg-white rounded-xl transition-all opacity-0 group-hover:opacity-100">
-                                 <ChevronRight className="w-5 h-5" />
-                              </button>
-                           </td>
-                        </tr>
-                      ))
-                    )}
-                 </tbody>
-              </table>
-           </div>
-
-           <div className="p-8 bg-slate-50/50 border-t border-slate-50 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Menampilkan {Math.min(filteredSales.length, itemsPerPage)} dari {filteredSales.length} Transaksi
-                 </p>
-                 {totalPages > 1 && (
-                    <div className="flex items-center gap-2">
-                       <button 
-                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                         disabled={currentPage === 1}
-                         className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-30 hover:bg-slate-50 transition-all"
-                       >
-                          <ChevronRight className="w-4 h-4 rotate-180" />
-                       </button>
-                       <div className="flex items-center gap-1">
-                          {[...Array(totalPages)].map((_, i) => (
-                             <button
-                               key={i}
-                               onClick={() => setCurrentPage(i + 1)}
-                               className={cn(
-                                  "w-8 h-8 rounded-lg text-[10px] font-black transition-all",
-                                  currentPage === i + 1 ? "bg-[#8b7365] text-white" : "bg-white border border-slate-200 text-slate-400 hover:bg-slate-50"
-                               )}
-                             >
-                                {i + 1}
-                             </button>
-                          ))}
-                       </div>
-                       <button 
-                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                         disabled={currentPage === totalPages}
-                         className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 disabled:opacity-30 hover:bg-slate-50 transition-all"
-                       >
-                          <ChevronRight className="w-4 h-4" />
-                       </button>
-                    </div>
-                 )}
-              </div>
-              <div className="flex items-center gap-2">
-                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-500 hover:bg-slate-50 transition-all">
-                    <Download className="w-3.5 h-3.5" /> Export CSV
-                 </button>
-              </div>
-           </div>
+          <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex justify-end">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"><Download className="w-3.5 h-3.5" /> Export CSV</button>
+          </div>
         </div>
       </div>
 
-      {/* Sale Detail Modal */}
+      {/* Report Modal */}
+      <AnimatePresence>
+        {isReportModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsReportModalOpen(false)} className="absolute inset-0 bg-black/40 no-print" />
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-2xl bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[90vh] z-10">
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between no-print">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Rekap Harian</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{new Date(selectedDate).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
+                </div>
+                <button onClick={() => setIsReportModalOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 ReportPrintArea">
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg"><p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Tunai</p><p className="text-sm font-semibold text-stone-900 dark:text-stone-100 tabular-nums">Rp {stats.cashRevenue.toLocaleString()}</p></div>
+                  <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg"><p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Digital</p><p className="text-sm font-semibold text-stone-900 dark:text-stone-100 tabular-nums">Rp {stats.digitalRevenue.toLocaleString()}</p></div>
+                  <div className="p-4 bg-stone-900 dark:bg-stone-100 rounded-lg"><p className="text-xs text-stone-400 dark:text-stone-500 mb-1">Total</p><p className="text-sm font-semibold text-white dark:text-stone-900 tabular-nums">Rp {stats.totalRevenue.toLocaleString()}</p></div>
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-3">Per Kasir</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(filteredSales.reduce((acc: any, sale: any) => { const meta = sale.items?.find((i: any) => i.is_metadata); const c = meta?.cashier_name || 'Kasir'; acc[c] = (acc[c] || 0) + (sale.total_amount || 0); return acc; }, {})).map(([cashier, total]: [string, any], i) => (
+                      <div key={i} className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg"><p className="text-xs text-stone-500 dark:text-stone-400 mb-0.5">{cashier}</p><p className="text-sm font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {total.toLocaleString()}</p></div>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-3">Rincian Item</h3>
+                  <table className="w-full text-left">
+                    <thead><tr className="border-b border-stone-200 dark:border-stone-700"><th className="py-2 text-xs font-medium text-stone-500 dark:text-stone-400">Produk</th><th className="py-2 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Qty</th><th className="py-2 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Subtotal</th></tr></thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                      {Object.entries(filteredSales.reduce((acc: any, sale: any) => { sale.items?.forEach((item: any) => { if (item.is_metadata) return; const n = item.name || 'Produk'; if (!acc[n]) acc[n] = { qty: 0, price: item.price || 0 }; acc[n].qty += (item.qty || item.quantity || 0); }); return acc; }, {})).map(([name, data]: [string, any], i) => (
+                        <tr key={i}><td className="py-2 text-sm text-stone-700 dark:text-stone-300">{name}</td><td className="py-2 text-sm text-stone-500 dark:text-stone-400 text-right tabular-nums">{data.qty}</td><td className="py-2 text-sm font-medium text-stone-900 dark:text-stone-100 text-right tabular-nums">Rp {(data.qty * data.price).toLocaleString()}</td></tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="border-t-2 border-stone-900 dark:border-stone-100"><td colSpan={2} className="py-3 text-sm font-semibold text-stone-900 dark:text-stone-100">Total</td><td className="py-3 text-base font-semibold text-stone-900 dark:text-stone-100 text-right tabular-nums">Rp {stats.totalRevenue.toLocaleString()}</td></tr></tfoot>
+                  </table>
+                </div>
+              </div>
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 no-print">
+                <button onClick={() => { document.title = `Laporan_${selectedDate}`; window.print(); setTimeout(() => { document.title = 'myStore Studio'; }, 100); }} className="w-full py-2.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center justify-center gap-2"><Printer className="w-4 h-4" /> Cetak / Download PDF</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Target Modal */}
+      <AnimatePresence>
+        {isTargetModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsTargetModalOpen(false)} className="absolute inset-0 bg-black/40" />
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10">
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+                <div><h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Pengaturan Target</h2><p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Atur target omzet dan item fokus.</p></div>
+                <button onClick={() => setIsTargetModalOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="p-5 space-y-5 overflow-y-auto flex-1">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Target omzet harian (Rp)</label>
+                  <input type="number" value={dailyTargetAmount} onChange={e => setDailyTargetAmount(Number(e.target.value))} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent tabular-nums" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-stone-700 dark:text-stone-300">Item fokus</label>
+                    <button onClick={() => setFocusItemsConfig([...focusItemsConfig, { name: '', target: 50 }])} className="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 font-medium">+ Tambah</button>
+                  </div>
+                  <div className="space-y-2">
+                    {focusItemsConfig.map((item, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <button onClick={() => { setEditingIndex(idx); setIsProductPickerOpen(true); }} className="flex-1 px-3 py-2 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm text-left text-stone-700 dark:text-stone-200 truncate hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">{item.name || 'Pilih produk...'}</button>
+                        <input type="number" value={item.target} onChange={e => { const c = [...focusItemsConfig]; c[idx].target = Number(e.target.value); setFocusItemsConfig(c); }} className="w-16 px-2 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-center text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 tabular-nums" />
+                        <button onClick={() => setFocusItemsConfig(focusItemsConfig.filter((_, i) => i !== idx))} className="p-1.5 text-stone-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"><X className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 border-t border-stone-200 dark:border-stone-800 flex gap-2 justify-end">
+                <button onClick={() => setIsTargetModalOpen(false)} className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors">Batal</button>
+                <button onClick={saveStoreSettings} disabled={isSavingTargets} className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50">{isSavingTargets ? 'Menyimpan...' : 'Simpan'}</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Product Picker */}
+      <AnimatePresence>
+        {isProductPickerOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsProductPickerOpen(false)} className="absolute inset-0 bg-black/40" />
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[70vh] z-10">
+              <div className="p-4 border-b border-stone-200 dark:border-stone-800">
+                <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" /><input autoFocus value={pickerSearchQuery} onChange={e => setPickerSearchQuery(e.target.value)} placeholder="Cari produk..." className="w-full pl-9 pr-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" /></div>
+              </div>
+              <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800">
+                {availableProducts.filter(p => p.name.toLowerCase().includes(pickerSearchQuery.toLowerCase())).map(product => (
+                  <button key={product.id} onClick={() => { if (editingIndex !== null) { const c = [...focusItemsConfig]; c[editingIndex].name = product.name; setFocusItemsConfig(c); setIsProductPickerOpen(false); setPickerSearchQuery(''); } }} className="w-full px-4 py-3 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{product.name}</p>
+                    <p className="text-xs text-stone-400 dark:text-stone-500">Rp {product.price?.toLocaleString()} · Stok: {product.stock}</p>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Receipt Modal */}
       <AnimatePresence>
         {selectedSale && (
-          <div id="receipt-root-portal" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               onClick={() => setSelectedSale(null)}
-               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm no-print"
-            />
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-               animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-               className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10"
-            >
-               {/* Modal Header (Floating Close) */}
-               <div className="absolute top-4 right-4 z-20 no-print">
-                  <button 
-                    onClick={() => setSelectedSale(null)}
-                    className="p-2 bg-white/80 backdrop-blur-md hover:bg-white rounded-xl transition-all shadow-lg shadow-black/5 text-slate-300 hover:text-slate-600 border border-slate-50"
-                  >
-                     <X className="w-5 h-5" />
-                  </button>
-               </div>
-
-               {/* Modal Content - Compact Receipt Style */}
-               <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-white ReceiptArea">
-                  <div className="max-w-full">
-                     {/* Header */}
-                     <div className="flex flex-col items-center text-center mb-6">
-                        <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-4 border-2 border-white shadow-lg shadow-emerald-500/5 no-print-visible">
-                           <CheckCircle2 className="w-8 h-8" />
-                        </div>
-                        <h2 className="text-xl font-black text-slate-900 mb-1 tracking-tighter uppercase">{posSettings.storeName}</h2>
-                        <p className="text-[9px] font-bold text-slate-400 leading-tight uppercase tracking-widest">{posSettings.address}</p>
-                        <p className="text-[9px] font-bold text-slate-400 leading-tight uppercase tracking-widest">TELP: {posSettings.phone}</p>
-                     </div>
-
-                     <div className="border-t border-slate-50 border-dashed my-5" />
-
-                     {/* Transaction Info Area */}
-                     <div className="space-y-1">
-                        <div className="flex justify-between items-center text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                           <span>No. Transaksi</span>
-                           <span className="text-slate-400">#{selectedSale.id.toString().toUpperCase()}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                           <span>Waktu</span>
-                           <span className="text-slate-400">{new Date(selectedSale.created_at).toLocaleString('id-ID', { day: 'numeric', month: 'numeric', year: 'numeric' })}, {new Date(selectedSale.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':')}</span>
-                        </div>
-                     </div>
-
-                     <div className="border-t border-slate-50 border-dashed my-5" />
-
-                     {/* Items List */}
-                     <div className="space-y-4 mb-6">
-                        {selectedSale.items?.filter((i: any) => !i.is_metadata).map((item: any, idx: number) => (
-                           <div key={idx} className="flex justify-between items-start group">
-                              <div className="flex-1 pr-4">
-                                 <p className="text-xs font-black text-slate-800 leading-tight mb-0.5">{item.name || 'Produk'}</p>
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.qty || item.quantity} X {(item.price || 0).toLocaleString()}</p>
-                              </div>
-                              <span className="text-xs font-black text-slate-800">{( (item.qty || item.quantity || 0) * (item.price || 0) ).toLocaleString()}</span>
-                           </div>
-                        ))}
-                        <div className="border-t border-slate-50 border-dashed my-2 pt-2">
-                           <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                              <span>KASIR</span>
-                              <span>{selectedSale.items?.find((i: any) => i.is_metadata)?.cashier_name || 'ADMIN'}</span>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div className="border-t border-slate-50 border-dashed my-6" />
-
-                     {/* Totals Section */}
-                     <div className="space-y-2 mb-6">
-                        <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                           <span>SUBTOTAL</span>
-                           <span className="text-slate-500">{selectedSale.total_amount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                           <span className="text-lg font-black text-slate-900 tracking-tighter uppercase">TOTAL</span>
-                           <span className="text-2xl font-black text-slate-900 tracking-tighter">{selectedSale.total_amount.toLocaleString()}</span>
-                        </div>
-                     </div>
-
-                     {/* Payment Footer */}
-                     <div className="space-y-2 pt-5 border-t border-slate-50 mb-8">
-                        <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                           <span>{selectedSale.payment_method === 'cash' ? 'TUNAI' : (selectedSale.payment_method || 'LAINNYA').toUpperCase()}</span>
-                           <span className="text-slate-700">RP {(selectedSale.payment_amount || selectedSale.total_amount || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                           <span>KEMBALI</span>
-                           <span className="text-slate-700">RP {(selectedSale.change_amount || 0).toLocaleString()}</span>
-                        </div>
-                     </div>
-
-                     {/* Footer Note */}
-                     <div className="text-center pt-6 border-t border-dashed border-slate-50 opacity-50">
-                        <p className="text-[9px] font-black text-slate-800 tracking-[0.15em] uppercase mb-1">{posSettings.slogan}</p>
-                        <p className="text-[8px] font-bold text-slate-400 italic">Terima kasih atas kunjungan Anda</p>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Modal Action Buttons */}
-               <div className="p-6 border-t border-slate-50 flex gap-3 bg-slate-50/50 no-print">
-                  <button 
-                    onClick={() => window.print()}
-                    className="flex-1 py-3 bg-white border-2 border-slate-100 rounded-2xl text-[11px] font-black uppercase text-slate-500 hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-sm"
-                  >
-                     <Printer className="w-4 h-4" /> Cetak
-                  </button>
-                  <button 
-                    onClick={() => setSelectedSale(null)}
-                    className="flex-1 py-3 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
-                  >
-                     Tutup
-                  </button>
-               </div>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedSale(null)} className="absolute inset-0 bg-black/40 no-print" />
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10">
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between no-print">
+                <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Detail Transaksi</h3>
+                <button onClick={() => setSelectedSale(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5">
+                <div className="text-center mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700">
+                  <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 uppercase">{posSettings.storeName}</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">{posSettings.address}</p>
+                </div>
+                <div className="space-y-1 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700 text-xs text-stone-600 dark:text-stone-400">
+                  <div className="flex justify-between"><span>No.</span><span className="font-mono">#{selectedSale.id.toString().toUpperCase()}</span></div>
+                  <div className="flex justify-between"><span>Waktu</span><span>{new Date(selectedSale.created_at).toLocaleString('id-ID')}</span></div>
+                  <div className="flex justify-between"><span>Kasir</span><span>{selectedSale.items?.find((i: any) => i.is_metadata)?.cashier_name || 'Admin'}</span></div>
+                </div>
+                <div className="space-y-2 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700">
+                  {selectedSale.items?.filter((i: any) => !i.is_metadata).map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <div><p className="text-stone-800 dark:text-stone-200">{item.name || 'Produk'}</p><p className="text-xs text-stone-400 dark:text-stone-500">{item.qty || item.quantity} × Rp {(item.price || 0).toLocaleString()}</p></div>
+                      <span className="font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {((item.qty || item.quantity || 0) * (item.price || 0)).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-1 text-sm mb-4">
+                  <div className="flex justify-between font-semibold text-stone-900 dark:text-stone-100"><span>Total</span><span className="tabular-nums">Rp {selectedSale.total_amount.toLocaleString()}</span></div>
+                  <div className="flex justify-between text-stone-600 dark:text-stone-400"><span>{selectedSale.payment_method === 'cash' ? 'Tunai' : selectedSale.payment_method.toUpperCase()}</span><span className="tabular-nums">Rp {(selectedSale.payment_amount || selectedSale.total_amount).toLocaleString()}</span></div>
+                  {selectedSale.change_amount > 0 && <div className="flex justify-between text-stone-600 dark:text-stone-400"><span>Kembali</span><span className="tabular-nums">Rp {selectedSale.change_amount.toLocaleString()}</span></div>}
+                </div>
+                <div className="text-center pt-4 border-t border-dashed border-stone-200 dark:border-stone-700"><p className="text-xs text-stone-400 dark:text-stone-500">{posSettings.slogan}</p></div>
+              </div>
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 no-print">
+                <button onClick={() => window.print()} className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-1.5"><Printer className="w-3.5 h-3.5" /> Cetak</button>
+                <button onClick={() => setSelectedSale(null)} className="flex-1 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors">Tutup</button>
+              </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function QrCode({ className }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-      <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-      <line x1="7" y1="7" x2="7" y2="7" /><line x1="17" y1="7" x2="17" y2="7" />
-      <line x1="7" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="17" y2="17" />
-    </svg>
   );
 }
