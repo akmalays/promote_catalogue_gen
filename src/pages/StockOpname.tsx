@@ -600,7 +600,7 @@ export default function StockOpname({ userProfile }: { userProfile: UserProfile 
       </AnimatePresence>
 
       {/* Header Section */}
-      <div className="px-6 md:px-8 py-5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10 no-print shrink-0">
+      <div className="px-6 md:px-8 pt-6 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10 no-print shrink-0">
         <div>
           <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Stock Opname</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Rekonsiliasi inventaris toko.</p>

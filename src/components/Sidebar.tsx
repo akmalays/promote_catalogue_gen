@@ -63,59 +63,58 @@ export default function Sidebar({ currentPage, isSidebarExpanded, userProfile, o
     >
       {/* Logo area */}
       <div className={cn(
-        "flex items-center border-b border-stone-200 dark:border-stone-800 shrink-0",
-        isSidebarExpanded ? "px-5 py-4 gap-3" : "px-0 py-4 justify-center"
+        "flex items-center border-b border-stone-200 dark:border-stone-800 shrink-0 h-[60px]",
+        isSidebarExpanded ? "px-5 gap-3" : "px-0 justify-center"
       )}>
-        <img src={logoAsset} alt="Logo" className="w-8 h-8 object-contain shrink-0" />
+        <img src={logoAsset} alt="Logo" className="w-10 h-10 object-contain shrink-0" />
         {isSidebarExpanded && (
           <div className="flex flex-col leading-none">
-            <span className="text-sm font-bold text-stone-900 dark:text-stone-100">myStore</span>
-            <span className="text-[10px] text-stone-400 dark:text-stone-500">Studio</span>
+            <span className="text-md font-bold text-stone-900 dark:text-stone-100">myStore</span>
+            <span className="text-[12px] text-stone-400 dark:text-stone-500">Studio</span>
           </div>
         )}
       </div>
 
       {/* Navigation */}
       <nav className={cn(
-        "flex-1 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden",
+        "flex-1 py-3 space-y-0.5 overflow-x-visible overflow-y-auto",
         isSidebarExpanded ? "px-3" : "px-2"
       )}>
         {navItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => {
-              if (item.id === 'catalogue') onResetEditing();
-              onNavigate(item.id);
-            }}
-            title={item.label}
-            className={cn(
-              "flex items-center relative rounded-lg transition-colors duration-150 w-full",
-              isSidebarExpanded ? "px-3 py-2.5 gap-3" : "p-2.5 justify-center",
-              currentPage === item.id
-                ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
-                : "text-stone-500 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-800"
-            )}
-          >
-            {item.icon}
-            {isSidebarExpanded && (
-              <span className="text-[13px] font-medium whitespace-nowrap truncate">
-                {item.label}
-              </span>
-            )}
-
-            {/* Tooltip for collapsed state */}
+          <div key={item.id} className="relative group/nav">
+            <button
+              onClick={() => {
+                if (item.id === 'catalogue') onResetEditing();
+                onNavigate(item.id);
+              }}
+              className={cn(
+                "flex items-center rounded-lg transition-colors duration-150 w-full",
+                isSidebarExpanded ? "px-3 py-2.5 gap-3" : "p-2.5 justify-center",
+                currentPage === item.id
+                  ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
+                  : "text-stone-500 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-800"
+              )}
+            >
+              {item.icon}
+              {isSidebarExpanded && (
+                <span className="text-[13px] font-medium whitespace-nowrap truncate">
+                  {item.label}
+                </span>
+              )}
+            </button>
+            {/* Tooltip */}
             {!isSidebarExpanded && (
-              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[120] shadow-lg hidden group-hover:block">
+              <div className="fixed left-[72px] top-auto ml-0 px-2.5 py-1.5 bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 text-xs font-medium rounded-md opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible pointer-events-none transition-all duration-150 whitespace-nowrap z-[9999] shadow-md -translate-y-1/2" style={{ marginTop: '-12px' }}>
                 {item.label}
               </div>
             )}
-          </button>
+          </div>
         ))}
       </nav>
 
       {/* Logout */}
       <div className={cn(
-        "border-t border-stone-200 dark:border-stone-800 shrink-0",
+        "border-t border-stone-200 dark:border-stone-800 shrink-0 relative group/logout",
         isSidebarExpanded ? "px-3 py-3" : "px-2 py-3"
       )}>
         <button 
@@ -128,6 +127,11 @@ export default function Sidebar({ currentPage, isSidebarExpanded, userProfile, o
           <LogOut className="w-[18px] h-[18px] shrink-0" />
           {isSidebarExpanded && <span className="text-[13px] font-medium">Keluar</span>}
         </button>
+        {!isSidebarExpanded && (
+          <div className="fixed left-[72px] px-2.5 py-1.5 bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 text-xs font-medium rounded-md opacity-0 invisible group-hover/logout:opacity-100 group-hover/logout:visible pointer-events-none transition-all duration-150 whitespace-nowrap z-[9999] shadow-md" style={{ marginTop: '-28px' }}>
+            Keluar
+          </div>
+        )}
       </div>
     </aside>
   );

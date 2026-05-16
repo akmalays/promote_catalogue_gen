@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface SaveDraftModalProps {
@@ -15,45 +14,41 @@ export default function SaveDraftModal({ isOpen, onCancel, onConfirm, initialNam
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/50">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100"
+        transition={{ duration: 0.15 }}
+        className="bg-white dark:bg-stone-900 rounded-xl max-w-sm w-full shadow-xl border border-stone-200 dark:border-stone-800"
       >
-        <div className="mb-6">
-          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
-            <Plus className="w-6 h-6 text-emerald-600" />
-          </div>
-          <h2 className="text-2xl font-display font-black text-slate-800 tracking-tight">Simpan Draft</h2>
-          <p className="text-slate-500 text-sm mt-1">Beri nama atau tema untuk draf katalog ini.</p>
+        <div className="p-5 border-b border-stone-100 dark:border-stone-800">
+          <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Simpan Draft</h2>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Beri nama untuk katalog ini.</p>
         </div>
 
-        <div className="space-y-4 mb-8">
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tema / Nama Draft</label>
-            <input 
-              autoFocus
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Contoh: Promo Lebaran 2026"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-bold text-slate-800"
-            />
-          </div>
+        <div className="p-5">
+          <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">Nama draft</label>
+          <input 
+            autoFocus
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Contoh: Promo Lebaran 2026"
+            className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
+          />
         </div>
 
-        <div className="flex gap-3">
+        <div className="p-5 pt-0 flex gap-2 justify-end">
           <button 
             onClick={onCancel}
-            className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
           >
             Batal
           </button>
           <button 
             onClick={() => onConfirm(name)}
-            className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/20"
+            className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
           >
-            Simpan Sekarang
+            Simpan
           </button>
         </div>
       </motion.div>

@@ -18,7 +18,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ currentPage, isSidebarExpanded, userProfile, isDarkMode, onToggleSidebar, onNavigate, onToggleDarkMode }: AppHeaderProps) {
   return (
-    <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-40 no-print">
+    <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800 px-4 md:px-6 h-[60px] flex items-center justify-between sticky top-0 z-40 no-print">
       <div className="flex items-center gap-3 flex-1">
         {/* Sidebar toggle */}
         <button 
@@ -42,13 +42,17 @@ export default function AppHeader({ currentPage, isSidebarExpanded, userProfile,
 
       <div className="flex items-center gap-1.5 md:gap-2">
         {/* Dark mode toggle */}
-        <button 
-          onClick={onToggleDarkMode}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-800 transition-colors"
-          title={isDarkMode ? "Mode terang" : "Mode gelap"}
-        >
-          {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+        <div className="relative group/dark">
+          <button 
+            onClick={onToggleDarkMode}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-800 transition-colors"
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 text-xs font-medium rounded-md opacity-0 invisible group-hover/dark:opacity-100 group-hover/dark:visible pointer-events-none transition-all duration-150 whitespace-nowrap z-[9999] shadow-md">
+            {isDarkMode ? 'Mode terang' : 'Mode gelap'}
+          </div>
+        </div>
 
         {/* Notifications */}
         <NotificationPopup onBellClick={() => onNavigate('notifications')} userProfile={userProfile} />               

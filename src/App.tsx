@@ -32,7 +32,9 @@ type AuthView = 'login' | 'signup' | 'reset-password';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return !!localStorage.getItem('user_profile');
+  });
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
   const [authView, setAuthView] = useState<AuthView>('login');

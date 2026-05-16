@@ -280,67 +280,64 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
   return (
     <div className="flex-1 flex flex-col">
       {/* Catalogue Header */}
-      <div className="px-8 pt-8 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
-            <BookOpen className="w-8 h-8" />
+      <div className="px-6 md:px-8 pt-6 pb-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5">
+          <div>
+            <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Catalogue Generator</h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Buat katalog promosi untuk dicetak atau dikirim.</p>
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Catalogue Generator</h1>
-            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Buat katalog promosi profesional dengan mudah</p>
+          <div className="flex gap-2 flex-wrap">
+            {editingCatalogue ? (
+              <button 
+                onClick={handleUpdateExisting} 
+                disabled={isSaving || isExporting}
+                className="px-3 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> {isSaving ? 'Saving...' : 'Update Draft'}
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsModalOpen(true)} 
+                disabled={isSaving || isExporting}
+                className="px-3 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50"
+              >
+                <Plus className="w-3.5 h-3.5" /> Simpan Draft
+              </button>
+            )}
+            
+            <SaveDraftModal 
+              isOpen={isModalOpen}
+              initialName={catalog.promoTitle || ''}
+              onCancel={() => setIsModalOpen(false)}
+              onConfirm={handleSaveToDraft}
+            />
+            <button 
+              disabled={isExporting || isSaving}
+              onClick={() => handleExport('jpg')} 
+              className="px-3 py-2 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors disabled:opacity-50"
+            >
+              {isExporting ? 'Processing...' : <><Download className="w-3.5 h-3.5" /> JPG</>}
+            </button>
+            <button 
+              disabled={isExporting || isSaving}
+              onClick={() => handleExport('png')} 
+              className="px-3 py-2 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors disabled:opacity-50"
+            >
+              <Download className="w-3.5 h-3.5" /> PNG
+            </button>
           </div>
-        </div>
-        <div className="flex gap-3">
-          {editingCatalogue ? (
-            <button 
-              onClick={handleUpdateExisting} 
-              disabled={isSaving || isExporting}
-              className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Update Draft'}
-            </button>
-          ) : (
-            <button 
-              onClick={() => setIsModalOpen(true)} 
-              disabled={isSaving || isExporting}
-              className="px-5 py-2.5 bg-[#8b7365] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#725e52] transition-colors shadow-md text-sm cursor-pointer disabled:opacity-50"
-            >
-              <Plus className="w-4 h-4" /> Add to Draft
-            </button>
-          )}
-          
-          <SaveDraftModal 
-            isOpen={isModalOpen}
-            initialName={catalog.promoTitle || ''}
-            onCancel={() => setIsModalOpen(false)}
-            onConfirm={handleSaveToDraft}
-          />
-          <button 
-            disabled={isExporting || isSaving}
-            onClick={() => handleExport('jpg')} 
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
-          >
-            {isExporting ? 'Processing...' : <><Download className="w-4 h-4" /> Ekspor JPG</>}
-          </button>
-          <button 
-            disabled={isExporting || isSaving}
-            onClick={() => handleExport('png')} 
-            className="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" /> Ekspor PNG
-          </button>
         </div>
       </div>
 
-      <div className="flex-1 px-8 pb-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex-1 px-6 md:px-8 pb-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Editor */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-3">
           {/* Tab Switcher */}
-          <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
+          <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg">
             {(['items', 'campaign', 'template'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
-                className={cn("flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 transition-all",
-                  activeTab === tab ? "bg-white shadow-sm text-slate-800 ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-700"
+                className={cn("flex-1 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-colors",
+                  activeTab === tab ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm" : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
                 )}>
                 {tab === 'items' && <><Package className="w-3.5 h-3.5" /> Produk</>}
                 {tab === 'campaign' && <><FileText className="w-3.5 h-3.5" /> Kampanye</>}
@@ -350,95 +347,92 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
           </div>
 
           {/* Editor Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 min-h-[500px] flex flex-col overflow-hidden">
-            <div className="p-5 flex-1 overflow-y-auto">
+          <div className="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 min-h-[500px] flex flex-col overflow-hidden">
+            <div className="p-4 flex-1 overflow-y-auto">
               <AnimatePresence mode="wait">
                 {activeTab === 'items' && (
-                  <motion.div key="items" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-                    <h2 className="text-base font-bold">Daftar Produk per Baris</h2>
+                  <motion.div key="items" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
                     {(catalog.showHeadBanner ? catalog.rows.slice(0, 3) : catalog.rows.slice(0, 4)).map((row, rowIndex) => (
-                      <div key={row.id} className="space-y-3 border border-slate-200 rounded-xl p-4 bg-white relative group/row">
-                        <div className="flex items-center gap-3 border-b border-slate-100 pb-3 pr-8">
-                          <div className="bg-blue-100 text-blue-700 font-bold text-xs px-2 py-0.5 rounded">Baris {rowIndex + 1}</div>
+                      <div key={row.id} className="group/row">
+                        {/* Row Header */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500 w-5 shrink-0">{rowIndex + 1}.</span>
                           <input value={row.title} onChange={e => updateRowTitle(row.id, e.target.value)}
-                            className="flex-1 font-bold text-sm focus:outline-none border-b border-transparent focus:border-blue-500 bg-transparent" placeholder="Judul Baris" />
+                            className="flex-1 text-sm font-medium text-stone-800 dark:text-stone-200 bg-transparent focus:outline-none border-b border-transparent focus:border-stone-400 dark:focus:border-stone-500 placeholder:text-stone-300" placeholder="Judul baris" />
+                          <button onClick={() => removeRow(row.id)} disabled={catalog.rows.length <= 1}
+                            className="p-1 text-stone-300 dark:text-stone-600 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-20 transition-colors opacity-0 group-hover/row:opacity-100">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        <button onClick={() => removeRow(row.id)} disabled={catalog.rows.length <= 1}
-                          className="absolute top-4 right-4 p-1 text-slate-400 hover:text-red-500 disabled:opacity-30 transition-colors opacity-0 group-hover/row:opacity-100">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <div className="space-y-3">
+
+                        {/* Items */}
+                        <div className="space-y-1.5 ml-5">
                           {row.items.map(item => (
-                            <div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 group relative">
-                              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button 
-                                  onClick={() => openDbLookup(row.id, item.id)}
-                                  className="p-1.5 bg-white text-[#8b7365] hover:bg-[#8b7365] hover:text-white border border-slate-200 rounded-lg transition-all shadow-sm"
-                                  title="Ambil dari Database Master"
-                                >
-                                  <Package className="w-3.5 h-3.5" />
-                                </button>
-                                <button onClick={() => removeItemFromRow(row.id, item.id)} disabled={row.items.length <= 2}
-                                  className="p-1.5 bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition-all shadow-sm disabled:opacity-30">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                              <div className="flex gap-3">
-                                <div className="relative w-14 h-14 bg-white rounded-lg border border-slate-200 overflow-hidden flex-shrink-0">
+                            <div key={item.id} className="bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700 p-2.5 group relative hover:border-stone-300 dark:hover:border-stone-600 transition-colors">
+                              {/* Top row: image + name + actions */}
+                              <div className="flex items-center gap-2.5 mb-2">
+                                <div className="relative w-9 h-9 bg-white dark:bg-stone-800 rounded-md border border-stone-200 dark:border-stone-700 overflow-hidden shrink-0">
                                   <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
                                   <label className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                                    <Upload className="w-3.5 h-3.5 text-white" />
+                                    <Upload className="w-3 h-3 text-white" />
                                     <input type="file" className="hidden" accept="image/*" onChange={e => handleImageUpload(row.id, item.id, e)} />
                                   </label>
                                 </div>
-                                <div className="flex-1 space-y-1">
-                                  <input value={item.brand} onChange={e => updateItem(row.id, item.id, { brand: e.target.value })}
-                                    className="w-full bg-transparent font-black text-blue-600 text-xs uppercase focus:outline-none border-b border-transparent focus:border-blue-500" placeholder="Brand" />
-                                  <input value={item.name} onChange={e => updateItem(row.id, item.id, { name: e.target.value })}
-                                    className="w-full bg-transparent font-bold text-sm focus:outline-none border-b border-transparent focus:border-blue-500" placeholder="Nama Produk" />
-                                  <input value={item.description} onChange={e => updateItem(row.id, item.id, { description: e.target.value })}
-                                    className="w-full bg-transparent text-xs text-slate-500 focus:outline-none border-b border-transparent focus:border-blue-500" placeholder="Deskripsi" />
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-4 gap-2">
-                                {[
-                                  { label: 'Asli', key: 'originalPrice', type: 'number', disabled: item.isBuyXGetY },
-                                  { label: 'Promo', key: 'discountedPrice', type: 'number', disabled: item.isBuyXGetY },
-                                  { label: 'Unit', key: 'unit', type: 'text', disabled: false },
-                                ].map(f => (
-                                  <div key={f.key} className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-400">{f.label}</label>
-                                    <input type={f.type} value={(item as any)[f.key]} disabled={f.disabled}
-                                      onChange={e => updateItem(row.id, item.id, { [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value })}
-                                      className="w-full p-1.5 bg-white border border-slate-200 rounded text-xs font-mono disabled:opacity-50 disabled:bg-slate-100" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <input value={item.brand} onChange={e => updateItem(row.id, item.id, { brand: e.target.value })}
+                                      className="w-16 bg-transparent text-[10px] font-medium text-blue-600 dark:text-blue-400 focus:outline-none placeholder:text-stone-300" placeholder="Brand" />
+                                    <input value={item.name} onChange={e => updateItem(row.id, item.id, { name: e.target.value })}
+                                      className="flex-1 bg-transparent text-sm font-medium text-stone-800 dark:text-stone-200 focus:outline-none placeholder:text-stone-300" placeholder="Nama" />
                                   </div>
-                                ))}
-                                <div className="space-y-1">
-                                  <label className="text-[10px] uppercase font-bold text-slate-400">Disc</label>
-                                  <div className="w-full p-1.5 bg-slate-100 border border-slate-200 rounded text-xs font-bold text-center">{item.discountPercentage || 0}%</div>
+                                  <input value={item.description} onChange={e => updateItem(row.id, item.id, { description: e.target.value })}
+                                    className="w-full bg-transparent text-[11px] text-stone-500 dark:text-stone-400 focus:outline-none placeholder:text-stone-300 mt-0.5" placeholder="Deskripsi singkat" />
+                                </div>
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                  <button onClick={() => openDbLookup(row.id, item.id)} className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded transition-colors" title="Dari database">
+                                    <Package className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button onClick={() => removeItemFromRow(row.id, item.id)} disabled={row.items.length <= 2}
+                                    className="p-1 text-stone-400 hover:text-red-500 dark:hover:text-red-400 rounded transition-colors disabled:opacity-20">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
-                              <div className="pt-2 border-t border-slate-200">
-                                <label className="flex items-center gap-2 cursor-pointer">
+
+                              {/* Price row */}
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 flex-1">
+                                  <input type="number" value={item.originalPrice} disabled={item.isBuyXGetY}
+                                    onChange={e => updateItem(row.id, item.id, { originalPrice: Number(e.target.value) })}
+                                    className="w-full px-2 py-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded text-xs tabular-nums text-stone-700 dark:text-stone-200 disabled:opacity-40 focus:outline-none focus:ring-1 focus:ring-stone-400" placeholder="Asli" />
+                                  <span className="text-stone-300 dark:text-stone-600">→</span>
+                                  <input type="number" value={item.discountedPrice} disabled={item.isBuyXGetY}
+                                    onChange={e => updateItem(row.id, item.id, { discountedPrice: Number(e.target.value) })}
+                                    className="w-full px-2 py-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded text-xs tabular-nums text-emerald-700 dark:text-emerald-400 disabled:opacity-40 focus:outline-none focus:ring-1 focus:ring-stone-400" placeholder="Promo" />
+                                </div>
+                                <input value={item.unit} onChange={e => updateItem(row.id, item.id, { unit: e.target.value })}
+                                  className="w-12 px-2 py-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded text-xs text-stone-600 dark:text-stone-300 text-center focus:outline-none focus:ring-1 focus:ring-stone-400" placeholder="pcs" />
+                                <span className="text-xs text-stone-400 dark:text-stone-500 tabular-nums w-10 text-right">{item.discountPercentage || 0}%</span>
+                              </div>
+
+                              {/* Promo toggle */}
+                              <div className="mt-2 flex items-center gap-2">
+                                <label className="flex items-center gap-1.5 cursor-pointer">
                                   <input type="checkbox" checked={item.isBuyXGetY || false}
                                     onChange={e => updateItem(row.id, item.id, { isBuyXGetY: e.target.checked })}
-                                    className="rounded border-slate-300 text-blue-600" />
-                                  <span className="text-xs font-bold text-slate-700">Promo Beli X Gratis Y</span>
+                                    className="rounded border-stone-300 dark:border-stone-600 text-stone-900 dark:text-stone-100 w-3.5 h-3.5 focus:ring-stone-900/10" />
+                                  <span className="text-[11px] text-stone-600 dark:text-stone-400">Beli X Gratis Y</span>
                                 </label>
                                 {item.isBuyXGetY && (
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <div className="flex-1 flex items-center gap-2 bg-yellow-50 p-2 rounded border border-yellow-200">
-                                      <span className="text-xs font-bold text-yellow-800">Beli</span>
-                                      <input type="number" min="1" value={item.buyQuantity || 2}
-                                        onChange={e => updateItem(row.id, item.id, { buyQuantity: Number(e.target.value) })}
-                                        className="w-10 p-1 text-center border border-yellow-300 rounded text-xs font-bold" />
-                                    </div>
-                                    <div className="flex-1 flex items-center gap-2 bg-red-50 p-2 rounded border border-red-200">
-                                      <span className="text-xs font-bold text-red-800">Gratis</span>
-                                      <input type="number" min="1" value={item.getQuantity || 1}
-                                        onChange={e => updateItem(row.id, item.id, { getQuantity: Number(e.target.value) })}
-                                        className="w-10 p-1 text-center border border-red-300 rounded text-xs font-bold" />
-                                    </div>
+                                  <div className="flex items-center gap-1 ml-auto">
+                                    <span className="text-[10px] text-stone-400">Beli</span>
+                                    <input type="number" min="1" value={item.buyQuantity || 2}
+                                      onChange={e => updateItem(row.id, item.id, { buyQuantity: Number(e.target.value) })}
+                                      className="w-8 px-1 py-0.5 text-center border border-stone-200 dark:border-stone-700 rounded text-xs bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none" />
+                                    <span className="text-[10px] text-stone-400">Gratis</span>
+                                    <input type="number" min="1" value={item.getQuantity || 1}
+                                      onChange={e => updateItem(row.id, item.id, { getQuantity: Number(e.target.value) })}
+                                      className="w-8 px-1 py-0.5 text-center border border-stone-200 dark:border-stone-700 rounded text-xs bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none" />
                                   </div>
                                 )}
                               </div>
@@ -446,8 +440,8 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                           ))}
                           {row.items.length < 4 && (
                             <button onClick={() => addItemToRow(row.id)}
-                              className="w-full py-2 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:text-blue-500 hover:border-blue-500 transition-all flex items-center justify-center gap-2 font-medium text-sm">
-                              <Plus className="w-4 h-4" /> Tambah Produk ke Baris {rowIndex + 1}
+                              className="w-full py-1.5 text-xs text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors flex items-center justify-center gap-1">
+                              <Plus className="w-3 h-3" /> Tambah item
                             </button>
                           )}
                         </div>
@@ -455,62 +449,59 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                     ))}
                     {catalog.rows.length < (catalog.showHeadBanner ? 3 : 4) && (
                       <button onClick={addRow}
-                        className="w-full py-3 border-2 border-dashed border-blue-200 rounded-xl text-blue-500 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-bold">
-                        <Plus className="w-5 h-5" /> Tambah Baris Baru
+                        className="w-full py-2 border border-dashed border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:border-stone-400 dark:hover:border-stone-500 transition-colors flex items-center justify-center gap-1.5">
+                        <Plus className="w-4 h-4" /> Tambah baris
                       </button>
                     )}
                     {catalog.rows.length >= (catalog.showHeadBanner ? 3 : 4) && (
-                      <div className="text-center text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                        Maksimal {catalog.showHeadBanner ? 3 : 4} baris produk telah tercapai.
-                      </div>
+                      <p className="text-xs text-stone-400 dark:text-stone-500 text-center py-2">Maks {catalog.showHeadBanner ? 3 : 4} baris tercapai.</p>
                     )}
                   </motion.div>
                 )}
 
                 {activeTab === 'campaign' && (
-                  <motion.div key="campaign" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5 h-full overflow-y-auto pr-2 pb-10">
-                    <h2 className="text-base font-bold">Informasi Header Kampanye</h2>
+                  <motion.div key="campaign" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4 pb-6">
                     
                     <div className="space-y-1.5">
-                      <label className="text-sm font-bold text-slate-700">Periode Promo</label>
+                      <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Periode Promo</label>
                       <input value={catalog.period} onChange={e => setCatalog(p => ({ ...p, period: e.target.value }))}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                        className="w-full p-2.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-4">
+                    <div className="grid grid-cols-2 gap-4 border-t border-stone-200 dark:border-stone-800 pt-4">
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Logo Header (Upload)</label>
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Logo Header (Upload)</label>
                           <input type="file" accept="image/*" onChange={e => {
                             const f = e.target.files?.[0];
                             if (f) { const r = new FileReader(); r.onloadend = () => setCatalog(p => ({ ...p, headerLogoImage: r.result as string })); r.readAsDataURL(f); }
-                          }} className="w-full bg-white border border-slate-200 rounded-lg text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 placeholder-slate-400" />
+                          }} className="w-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 placeholder-slate-400" />
                        </div>
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Slogan Logo (Italic)</label>
-                          <input value={catalog.headerLogoSlogan} onChange={e => setCatalog(p => ({ ...p, headerLogoSlogan: e.target.value }))} placeholder="Slogan di bawah logo" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Slogan Logo (Italic)</label>
+                          <input value={catalog.headerLogoSlogan} onChange={e => setCatalog(p => ({ ...p, headerLogoSlogan: e.target.value }))} placeholder="Slogan di bawah logo" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs" />
                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 pt-2">
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Nama Toko (Footer)</label>
-                          <input value={catalog.footerShopName} onChange={e => setCatalog(p => ({ ...p, footerShopName: e.target.value }))} placeholder="Nama Toko Lily Mart" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Nama Toko (Footer)</label>
+                          <input value={catalog.footerShopName} onChange={e => setCatalog(p => ({ ...p, footerShopName: e.target.value }))} placeholder="Nama Toko Lily Mart" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs" />
                        </div>
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Follow Handle (Footer)</label>
-                          <input value={catalog.footerFollowUsHandle} onChange={e => setCatalog(p => ({ ...p, footerFollowUsHandle: e.target.value }))} placeholder="@lilymart" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Follow Handle (Footer)</label>
+                          <input value={catalog.footerFollowUsHandle} onChange={e => setCatalog(p => ({ ...p, footerFollowUsHandle: e.target.value }))} placeholder="@lilymart" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs" />
                        </div>
                     </div>
                 
                     <div className="grid grid-cols-2 gap-4 pt-2">
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Teks S&K Header</label>
-                          <input value={catalog.headerSKText} onChange={e => setCatalog(p => ({ ...p, headerSKText: e.target.value }))} placeholder="*s&k berlaku  | hanya untuk di toko tertentu" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" />
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Teks S&K Header</label>
+                          <input value={catalog.headerSKText} onChange={e => setCatalog(p => ({ ...p, headerSKText: e.target.value }))} placeholder="*s&k berlaku  | hanya untuk di toko tertentu" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs" />
                        </div>
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Gaya Teks (Font Style)</label>
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Gaya Teks (Font Style)</label>
                           <select value={catalog.headerFontFamily} onChange={e => setCatalog(p => ({ ...p, headerFontFamily: e.target.value }))}
-                            className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                            className="w-full p-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10">
                              <option value="font-display font-black">Jakarta Black (Modern)</option>
                              <option value="font-sans font-bold">Jakarta Bold (Clean)</option>
                              <option value="font-serif font-black">Playfair Black (Klasik)</option>
@@ -521,42 +512,42 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
 
                     <div className="grid grid-cols-2 gap-4 pt-2">
                         <div className="space-y-2">
-                           <div className="flex items-center justify-between bg-slate-100 px-2 py-1.5 rounded">
-                              <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Teks Tengah</h3>
-                              <input type="checkbox" checked={catalog.showHeaderMainText} onChange={e => setCatalog(p => ({ ...p, showHeaderMainText: e.target.checked }))} className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                           <div className="flex items-center justify-between bg-stone-100 dark:bg-stone-800 px-2 py-1.5 rounded-md">
+                              <h3 className="text-xs font-medium text-stone-700 dark:text-stone-200">Teks Tengah</h3>
+                              <input type="checkbox" checked={catalog.showHeaderMainText} onChange={e => setCatalog(p => ({ ...p, showHeaderMainText: e.target.checked }))} className="rounded border-stone-300 dark:border-stone-600 text-stone-900 dark:text-stone-100 w-3.5 h-3.5" />
                            </div>
-                           <input value={catalog.headerMainText1} onChange={e => setCatalog(p => ({ ...p, headerMainText1: e.target.value }))} disabled={!catalog.showHeaderMainText} placeholder="PRODUK" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
-                           <input value={catalog.headerMainText2} onChange={e => setCatalog(p => ({ ...p, headerMainText2: e.target.value }))} disabled={!catalog.showHeaderMainText} placeholder="DISKON" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
+                           <input value={catalog.headerMainText1} onChange={e => setCatalog(p => ({ ...p, headerMainText1: e.target.value }))} disabled={!catalog.showHeaderMainText} placeholder="PRODUK" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm disabled:opacity-50" />
+                           <input value={catalog.headerMainText2} onChange={e => setCatalog(p => ({ ...p, headerMainText2: e.target.value }))} disabled={!catalog.showHeaderMainText} placeholder="DISKON" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm disabled:opacity-50" />
                         </div>
                         <div className="space-y-2">
-                           <div className="flex items-center justify-between bg-slate-100 px-2 py-1.5 rounded">
-                              <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Angka Promo</h3>
-                              <input type="checkbox" checked={catalog.showHeaderNumber} onChange={e => setCatalog(p => ({ ...p, showHeaderNumber: e.target.checked }))} className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                           <div className="flex items-center justify-between bg-stone-100 dark:bg-stone-800 px-2 py-1.5 rounded-md">
+                              <h3 className="text-xs font-medium text-stone-700 dark:text-stone-200">Angka Promo</h3>
+                              <input type="checkbox" checked={catalog.showHeaderNumber} onChange={e => setCatalog(p => ({ ...p, showHeaderNumber: e.target.checked }))} className="rounded border-stone-300 dark:border-stone-600 text-stone-900 dark:text-stone-100 w-3.5 h-3.5" />
                            </div>
                            <div className={cn("flex gap-2", !catalog.showHeaderNumber && "opacity-50 pointer-events-none")}>
-                              <input value={catalog.headerBadgeText} onChange={e => setCatalog(p => ({ ...p, headerBadgeText: e.target.value }))} placeholder="s/d" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs" title="Teks Kecil Atas" />
-                              <input value={catalog.headerNumber} onChange={e => setCatalog(p => ({ ...p, headerNumber: e.target.value }))} placeholder="70" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Angka Besar" />
-                              <input value={catalog.headerNumberUnit} onChange={e => setCatalog(p => ({ ...p, headerNumberUnit: e.target.value }))} placeholder="%" className="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-xs text-center font-bold" title="Unit Angka" />
+                              <input value={catalog.headerBadgeText} onChange={e => setCatalog(p => ({ ...p, headerBadgeText: e.target.value }))} placeholder="s/d" className="w-1/3 p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs" title="Teks Kecil Atas" />
+                              <input value={catalog.headerNumber} onChange={e => setCatalog(p => ({ ...p, headerNumber: e.target.value }))} placeholder="70" className="w-1/3 p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs text-center font-bold" title="Angka Besar" />
+                              <input value={catalog.headerNumberUnit} onChange={e => setCatalog(p => ({ ...p, headerNumberUnit: e.target.value }))} placeholder="%" className="w-1/3 p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs text-center font-bold" title="Unit Angka" />
                            </div>
                         </div>
                     </div>
 
                     <div className="space-y-2 pt-2">
-                       <div className="flex items-center justify-between bg-slate-100 px-2 py-1.5 rounded">
-                          <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Teks Sisi Kanan (Panggilan Aksi)</h3>
-                          <input type="checkbox" checked={catalog.showHeaderRightText} onChange={e => setCatalog(p => ({ ...p, showHeaderRightText: e.target.checked }))} className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                       <div className="flex items-center justify-between bg-stone-100 dark:bg-stone-800 px-2 py-1.5 rounded-md">
+                          <h3 className="text-xs font-medium text-stone-700 dark:text-stone-200">Teks Sisi Kanan (Panggilan Aksi)</h3>
+                          <input type="checkbox" checked={catalog.showHeaderRightText} onChange={e => setCatalog(p => ({ ...p, showHeaderRightText: e.target.checked }))} className="rounded border-stone-300 dark:border-stone-600 text-stone-900 dark:text-stone-100 w-3.5 h-3.5" />
                        </div>
                        <div className="grid grid-cols-2 gap-4">
-                          <input value={catalog.headerRightText1} onChange={e => setCatalog(p => ({ ...p, headerRightText1: e.target.value }))} disabled={!catalog.showHeaderRightText} placeholder="Borong" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
-                          <input value={catalog.headerRightText2} onChange={e => setCatalog(p => ({ ...p, headerRightText2: e.target.value }))} disabled={!catalog.showHeaderRightText} placeholder="Sekarang!" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50" />
+                          <input value={catalog.headerRightText1} onChange={e => setCatalog(p => ({ ...p, headerRightText1: e.target.value }))} disabled={!catalog.showHeaderRightText} placeholder="Borong" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm disabled:opacity-50" />
+                          <input value={catalog.headerRightText2} onChange={e => setCatalog(p => ({ ...p, headerRightText2: e.target.value }))} disabled={!catalog.showHeaderRightText} placeholder="Sekarang!" className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm disabled:opacity-50" />
                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-stone-200 dark:border-stone-800">
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Warna Background (Degradasi)</label>
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Warna Background (Degradasi)</label>
                           <select value={catalog.headerBgColor} onChange={e => setCatalog(p => ({ ...p, headerBgColor: e.target.value }))}
-                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                            className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="from-[#ed1c24] to-[#f45c62]">Merah Klasik</option>
                             <option value="from-[#ffc312] to-[#ff9f43]">Emas Promo</option>
                             <option value="from-blue-500 to-blue-400">Biru Retail</option>
@@ -565,9 +556,9 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                           </select>
                        </div>
                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500">Motif Pattern (Background)</label>
+                          <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Motif Pattern (Background)</label>
                           <select value={catalog.headerPatternId} onChange={e => setCatalog(p => ({ ...p, headerPatternId: e.target.value }))}
-                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                            className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
                             {HEADER_PATTERNS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                           </select>
                        </div>
@@ -577,7 +568,7 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
 
                 {activeTab === 'template' && (
                   <motion.div key="template" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
-                    <h2 className="text-base font-bold">Pilih Tema Warna Box File</h2>
+                    <h2 className="text-xs font-medium text-stone-600 dark:text-stone-400">Pilih Tema Warna Box File</h2>
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         { id: 'indomaret-style', name: 'Biru Retail', desc: 'Modern', colors: ['bg-blue-600', 'bg-yellow-400', 'bg-red-500'] },
@@ -588,26 +579,26 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                         { id: 'floral-vintage', name: 'Vintage Amber', desc: 'Elegant', colors: ['bg-amber-200', 'bg-orange-800'] }
                       ].map(t => (
                         <button key={t.id} onClick={() => setCatalog(p => ({ ...p, templateId: t.id }))}
-                          className={cn("p-3 rounded-xl border-2 transition-all text-left relative",
-                            catalog.templateId === t.id ? "border-blue-500 bg-blue-50/30" : "border-slate-100 hover:border-slate-200 bg-white")}>
-                          {catalog.templateId === t.id && <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-blue-500" />}
+                          className={cn("p-3 rounded-lg border transition-all text-left relative",
+                            catalog.templateId === t.id ? "border-stone-900 dark:border-stone-100 bg-stone-50 dark:bg-stone-800" : "border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600")}>
+                          {catalog.templateId === t.id && <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-stone-900 dark:text-stone-100" />}
                           <div className="flex gap-1.5 mb-2">{t.colors.map((c, i) => <div key={i} className={cn("w-5 h-5 rounded-md", c)} />)}</div>
-                          <p className="text-xs font-bold text-slate-800">{t.name}</p>
-                          <p className="text-[10px] text-slate-500">{t.desc}</p>
+                          <p className="text-xs font-medium text-stone-800 dark:text-stone-200">{t.name}</p>
+                          <p className="text-[10px] text-stone-500 dark:text-stone-400">{t.desc}</p>
                         </button>
                       ))}
                     </div>
-                    <div className="pt-4 border-t border-slate-200">
-                      <h2 className="text-base font-bold mb-3">Pola Latar (Pattern)</h2>
+                    <div className="pt-4 border-t border-stone-200 dark:border-stone-800">
+                      <h2 className="text-xs font-medium text-stone-600 dark:text-stone-400 mb-3">Pola Latar (Pattern)</h2>
                       <div className="grid grid-cols-4 gap-2">
                         {BODY_PATTERNS.map(p => (
                           <button key={p.id} onClick={() => setCatalog(prev => ({ ...prev, patternId: p.id }))}
-                            className={cn("p-2 rounded-xl border-2 transition-all text-center relative h-20 flex flex-col items-center justify-center gap-1",
-                              catalog.patternId === p.id ? "border-blue-500 bg-blue-50/30" : "border-slate-100 hover:border-slate-200 bg-white")}>
-                            {catalog.patternId === p.id && <CheckCircle2 className="absolute top-1 right-1 w-3.5 h-3.5 text-blue-500" />}
+                            className={cn("p-2 rounded-lg border transition-all text-center relative h-20 flex flex-col items-center justify-center gap-1",
+                              catalog.patternId === p.id ? "border-stone-900 dark:border-stone-100 bg-stone-50 dark:bg-stone-800" : "border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600")}>
+                            {catalog.patternId === p.id && <CheckCircle2 className="absolute top-1 right-1 w-3.5 h-3.5 text-stone-900 dark:text-stone-100" />}
                             <div className="w-full h-8 rounded bg-slate-100 border border-slate-200"
                               style={{ backgroundImage: p.url ? `url("${p.url}")` : 'none', backgroundSize: 'cover' }} />
-                            <p className="text-[9px] font-bold text-slate-800 leading-tight">{p.name}</p>
+                            <p className="text-[10px] text-stone-600 dark:text-stone-300 leading-tight">{p.name}</p>
                           </button>
                         ))}
                       </div>
@@ -620,10 +611,10 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
         </div>
 
         {/* Right: Preview */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="sticky top-4 space-y-4">
-            <h2 className="text-base font-bold text-slate-800">Preview Katalog</h2>
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-start justify-center min-h-[600px] overflow-auto max-h-[80vh]">
+        <div className="lg:col-span-7 space-y-3">
+          <div className="sticky top-4 space-y-3">
+            <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300">Preview</h2>
+            <div className="bg-white dark:bg-stone-900 p-4 rounded-lg border border-stone-200 dark:border-stone-800 flex items-start justify-center min-h-[600px] overflow-auto max-h-[80vh]">
               {catalog.rows.some(row => row.items.length > 0) ? (
                 <div ref={previewRef} id="catalog-preview"
                   className={cn("catalog-container relative flex flex-col bg-white",
@@ -903,110 +894,85 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
       {/* Database Lookup Modal */}
       <AnimatePresence>
         {isDbLookupOpen && (
-          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-black/50">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-[40px] p-8 max-w-2xl w-full shadow-2xl relative max-h-[85vh] flex flex-col"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white dark:bg-stone-900 rounded-xl max-w-xl w-full shadow-xl border border-stone-200 dark:border-stone-800 max-h-[80vh] flex flex-col overflow-hidden"
             >
-              <button 
-                onClick={() => setIsDbLookupOpen(false)}
-                className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors"
-              >
-                <X className="w-6 h-6 text-slate-400" />
-              </button>
-
-              <div className="mb-6">
-                <h2 className="text-2xl font-display font-black text-slate-800 tracking-tight">Cari di Database Master</h2>
-                <p className="text-slate-500 text-sm font-medium">Pilih produk untuk mengisi baris katalog secara otomatis.</p>
+              {/* Header */}
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Database Produk</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Pilih produk untuk mengisi katalog.</p>
+                </div>
+                <button onClick={() => setIsDbLookupOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap gap-3 mb-6">
+              {/* Search & Filter */}
+              <div className="px-5 py-3 border-b border-stone-200 dark:border-stone-800 flex gap-2 shrink-0">
                 <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
                   <input 
                     type="text" 
-                    placeholder="Ketik nama produk, merek atau plu..." 
+                    placeholder="Cari produk, merek, PLU..." 
                     value={dbSearchQuery}
                     onChange={e => setDbSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-[#8b7365]/10 outline-none font-bold transition-all"
+                    className="w-full pl-9 pr-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                   />
                 </div>
                 <select 
                   value={dbFilterCategory}
                   onChange={e => setDbFilterCategory(e.target.value)}
-                  className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black text-slate-700 outline-none focus:ring-4 focus:ring-[#8b7365]/10 transition-all appearance-none cursor-pointer min-w-[150px]"
+                  className="px-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                 >
                   {['All', 'Makanan', 'Minuman', 'Kebutuhan Rumah', 'Perawatan Diri', 'Peralatan', 'Lainnya'].map(cat => (
-                    <option key={cat} value={cat}>{cat === 'All' ? 'Semua Kategori' : cat}</option>
+                    <option key={cat} value={cat}>{cat === 'All' ? 'Semua' : cat}</option>
                   ))}
                 </select>
               </div>
 
               {/* Product List */}
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+              <div className="flex-1 overflow-y-auto">
                 {isDbLoading ? (
-                  <div className="py-20 flex flex-col items-center justify-center gap-4">
-                     <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#8b7365] border-t-transparent"></div>
-                     <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Memuat Master Data...</p>
+                  <div className="py-12 flex flex-col items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-900 dark:border-stone-100 border-t-transparent"></div>
+                    <p className="text-xs text-stone-400 dark:text-stone-500 mt-3">Memuat data...</p>
                   </div>
-                ) : dbProducts.filter(p => {
-                  const s = dbSearchQuery.toLowerCase();
-                  const matchesSearch = p.name.toLowerCase().includes(s) || 
-                                       p.brand.toLowerCase().includes(s) ||
-                                       (p.plu && p.plu.toLowerCase().includes(s));
-                  const matchesCat = dbFilterCategory === 'All' || p.category === dbFilterCategory;
-                  return matchesSearch && matchesCat;
-                }).length === 0 ? (
-                  <div className="py-20 text-center text-slate-400">
-                    <Search className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                    <p className="font-bold">Produk tidak ditemukan di database master.</p>
-                  </div>
-                ) : (
-                  dbProducts.filter(p => {
+                ) : (() => {
+                  const results = dbProducts.filter(p => {
                     const s = dbSearchQuery.toLowerCase();
-                    const matchesSearch = p.name.toLowerCase().includes(s) || 
-                                         p.brand.toLowerCase().includes(s) ||
-                                         (p.plu && p.plu.toLowerCase().includes(s));
-                    const matchesCat = dbFilterCategory === 'All' || p.category === dbFilterCategory;
-                    return matchesSearch && matchesCat;
-                  }).map(p => (
-                    <button 
-                      key={p.id}
-                      onClick={() => handlePickFromDb(p)}
-                      className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-3xl transition-all group text-left"
-                    >
-                      <div className="w-14 h-14 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shrink-0">
-                        <img src={p.image_url || 'https://via.placeholder.com/100'} alt={p.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-black text-[#8b7365] uppercase tracking-widest leading-none mb-1">{p.brand}</p>
-                        <h4 className="font-bold text-slate-800 truncate">{p.name}</h4>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight inline-flex items-center gap-2">
-                          {p.category}
-                          <span className="text-[#8b7365]/30">●</span>
-                          <span className="text-rose-500">PLU: {p.plu}</span>
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-black text-emerald-600">Rp {p.price.toLocaleString()}</p>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pilih Item</span>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-              
-              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Database Cloud Connected</p>
-                <button 
-                  onClick={() => setIsDbLookupOpen(false)}
-                  className="px-6 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors text-sm"
-                >
-                  Tutup
-                </button>
+                    const matchesSearch = p.name.toLowerCase().includes(s) || p.brand.toLowerCase().includes(s) || (p.plu && p.plu.toLowerCase().includes(s));
+                    return matchesSearch && (dbFilterCategory === 'All' || p.category === dbFilterCategory);
+                  });
+                  if (results.length === 0) return (
+                    <div className="py-12 text-center"><Search className="w-6 h-6 mx-auto mb-2 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-400 dark:text-stone-500">Produk tidak ditemukan</p></div>
+                  );
+                  return (
+                    <div className="divide-y divide-stone-100 dark:divide-stone-800">
+                      {results.map(p => (
+                        <button 
+                          key={p.id}
+                          onClick={() => handlePickFromDb(p)}
+                          className="w-full flex items-center gap-3 px-5 py-3 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-700 shrink-0">
+                            <img src={p.image_url || 'https://via.placeholder.com/40'} alt={p.name} className="w-full h-full object-contain" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">{p.name}</p>
+                            <p className="text-xs text-stone-500 dark:text-stone-400">{p.brand} · {p.category} · PLU: {p.plu}</p>
+                          </div>
+                          <span className="text-sm font-medium text-stone-700 dark:text-stone-200 tabular-nums shrink-0">Rp {p.price.toLocaleString()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </motion.div>
           </div>

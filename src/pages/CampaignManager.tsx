@@ -204,7 +204,7 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-stone-50 dark:bg-stone-950">
       {/* Page Header */}
-      <div className="px-6 md:px-8 py-6 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+      <div className="px-6 md:px-8 pt-6 pb-4">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Kampanye Promo</h1>
