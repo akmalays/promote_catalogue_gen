@@ -5,6 +5,12 @@ import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
+import Select from '../components/ui/Select';
+
+const ROLE_OPTIONS = [
+  { value: 'manager', label: 'Manager' },
+  { value: 'kasir', label: 'Kasir' },
+];
 
 interface SettingsProps {
   userProfile: UserProfile;
@@ -198,10 +204,13 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
               </div>
               <div>
                 <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Role</label>
-                <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent">
-                  <option value="manager">Manager</option>
-                  <option value="kasir">Kasir</option>
-                </select>
+                <Select
+                  value={newUser.role}
+                  onChange={v => setNewUser({ ...newUser, role: v })}
+                  options={ROLE_OPTIONS}
+                  className="w-full"
+                  buttonClassName="w-full"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Password</label>
@@ -253,7 +262,16 @@ export default function Settings({ userProfile, onUpdateProfile }: SettingsProps
                   <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Nickname</label><input type="text" value={editFormData.nickname} onChange={e => setEditFormData({...editFormData, nickname: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent" /></div>
                   <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Username</label><input type="text" value={editFormData.username} onChange={e => setEditFormData({...editFormData, username: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent" /></div>
                 </div>
-                <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Role</label><select value={editFormData.role} onChange={e => setEditFormData({...editFormData, role: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"><option value="manager">Manager</option><option value="kasir">Kasir</option></select></div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Role</label>
+                  <Select
+                    value={editFormData.role || 'kasir'}
+                    onChange={v => setEditFormData({ ...editFormData, role: v })}
+                    options={ROLE_OPTIONS}
+                    className="w-full"
+                    buttonClassName="w-full"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Password baru</label>
                   <div className="relative">

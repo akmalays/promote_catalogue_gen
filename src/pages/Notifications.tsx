@@ -5,6 +5,14 @@ import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
 import { UserProfile } from '../types';
+import Select from '../components/ui/Select';
+
+const TARGET_OPTIONS = [
+  { value: 'all', label: 'Semua' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'kasir', label: 'Kasir' },
+];
 
 interface Notification {
   id: any; title: string; message: string; type: 'info' | 'promo' | 'warning' | 'success';
@@ -167,7 +175,16 @@ export default function Notifications({ userProfile }: { userProfile: UserProfil
                 {/* Message */}
                 <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">Pesan</label><textarea value={composeMessage} onChange={e => setComposeMessage(e.target.value)} placeholder="Isi pesan..." rows={3} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent resize-none" /></div>
                 {/* Target */}
-                <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">Target</label><select value={composeTargetRole} onChange={e => setComposeTargetRole(e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"><option value="all">Semua</option><option value="admin">Admin</option><option value="manager">Manager</option><option value="kasir">Kasir</option></select></div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">Target</label>
+                  <Select
+                    value={composeTargetRole}
+                    onChange={setComposeTargetRole}
+                    options={TARGET_OPTIONS}
+                    className="w-full"
+                    buttonClassName="w-full"
+                  />
+                </div>
                 {/* Schedule */}
                 <div className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700">
                   <label className="flex items-center justify-between cursor-pointer">

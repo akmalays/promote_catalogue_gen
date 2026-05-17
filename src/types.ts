@@ -232,6 +232,11 @@ export interface PromoCampaign {
   is_active: boolean;
   company_id: string;
   created_at?: string;
+  // v2 fields
+  priority?: number;
+  stackable?: boolean;
+  color?: string | null;
+  description?: string | null;
 }
 
 export interface CampaignProduct {
@@ -244,9 +249,27 @@ export interface CampaignProduct {
   get_qty?: number;
   company_id: string;
   created_at?: string;
+  // v2 guardrails
+  min_margin_pct?: number | null;
+  max_qty_per_trx?: number | null;
+  stock_cap?: number | null;
   // Join fields
   name?: string;
   brand?: string;
   price?: number;
   cost_price?: number;
+}
+
+export interface CampaignMetric {
+  campaign_id: string;
+  company_id: string;
+  name: string;
+  is_active: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  trx_count: number;
+  units_moved: number;
+  total_discount: number;
+  gross_revenue: number;
+  total_cogs: number;
 }

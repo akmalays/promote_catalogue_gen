@@ -11,6 +11,24 @@ import { cn } from '../lib/utils';
 import { CatalogData, CatalogItem, CatalogRow, DEFAULT_CATALOG, DEFAULT_ITEMS, SavedCatalogue, UserProfile } from '../types';
 import { api } from '../lib/api';
 import SaveDraftModal from './SaveDraftModal';
+import Select from './ui/Select';
+
+const HEADER_FONT_OPTIONS = [
+  { value: 'font-display font-black', label: 'Jakarta Black (Modern)' },
+  { value: 'font-sans font-bold', label: 'Jakarta Bold (Clean)' },
+  { value: 'font-serif font-black', label: 'Playfair Black (Klasik)' },
+  { value: 'font-mono font-bold', label: 'Grotesk Mono (Modern+)' },
+];
+
+const HEADER_BG_OPTIONS = [
+  { value: 'from-[#ed1c24] to-[#f45c62]', label: 'Merah Klasik' },
+  { value: 'from-[#ffc312] to-[#ff9f43]', label: 'Emas Promo' },
+  { value: 'from-blue-500 to-blue-400', label: 'Biru Retail' },
+  { value: 'from-[#05c46b] to-[#0be881]', label: 'Hijau Segar' },
+  { value: 'from-slate-700 to-slate-800 border-b-4 border-yellow-500', label: 'Hitam Premium' },
+];
+
+const DB_CATEGORY_OPTIONS = ['All', 'Makanan', 'Minuman', 'Kebutuhan Rumah', 'Perawatan Diri', 'Peralatan', 'Lainnya'].map(c => ({ value: c, label: c === 'All' ? 'Semua' : c }));
 
 export const HEADER_PATTERNS = [
   { id: 'none', name: 'Polos', url: '' },
@@ -500,13 +518,14 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                        </div>
                        <div className="space-y-1.5">
                           <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Gaya Teks (Font Style)</label>
-                          <select value={catalog.headerFontFamily} onChange={e => setCatalog(p => ({ ...p, headerFontFamily: e.target.value }))}
-                            className="w-full p-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10">
-                             <option value="font-display font-black">Jakarta Black (Modern)</option>
-                             <option value="font-sans font-bold">Jakarta Bold (Clean)</option>
-                             <option value="font-serif font-black">Playfair Black (Klasik)</option>
-                             <option value="font-mono font-bold">Grotesk Mono (Modern+)</option>
-                          </select>
+                          <Select
+                            value={catalog.headerFontFamily}
+                            onChange={v => setCatalog(p => ({ ...p, headerFontFamily: v }))}
+                            options={HEADER_FONT_OPTIONS}
+                            size="sm"
+                            className="w-full"
+                            buttonClassName="w-full"
+                          />
                        </div>
                     </div>
 
@@ -546,21 +565,25 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-stone-200 dark:border-stone-800">
                        <div className="space-y-1.5">
                           <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Warna Background (Degradasi)</label>
-                          <select value={catalog.headerBgColor} onChange={e => setCatalog(p => ({ ...p, headerBgColor: e.target.value }))}
-                            className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="from-[#ed1c24] to-[#f45c62]">Merah Klasik</option>
-                            <option value="from-[#ffc312] to-[#ff9f43]">Emas Promo</option>
-                            <option value="from-blue-500 to-blue-400">Biru Retail</option>
-                            <option value="from-[#05c46b] to-[#0be881]">Hijau Segar</option>
-                            <option value="from-slate-700 to-slate-800 border-b-4 border-yellow-500">Hitam Premium</option>
-                          </select>
+                          <Select
+                            value={catalog.headerBgColor}
+                            onChange={v => setCatalog(p => ({ ...p, headerBgColor: v }))}
+                            options={HEADER_BG_OPTIONS}
+                            size="sm"
+                            className="w-full"
+                            buttonClassName="w-full"
+                          />
                        </div>
                        <div className="space-y-1.5">
                           <label className="text-xs font-medium text-stone-600 dark:text-stone-400">Motif Pattern (Background)</label>
-                          <select value={catalog.headerPatternId} onChange={e => setCatalog(p => ({ ...p, headerPatternId: e.target.value }))}
-                            className="w-full p-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
-                            {HEADER_PATTERNS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                          </select>
+                          <Select
+                            value={catalog.headerPatternId}
+                            onChange={v => setCatalog(p => ({ ...p, headerPatternId: v }))}
+                            options={HEADER_PATTERNS.map(p => ({ value: p.id, label: p.name }))}
+                            size="sm"
+                            className="w-full"
+                            buttonClassName="w-full"
+                          />
                        </div>
                     </div>
                   </motion.div>
@@ -925,15 +948,13 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                     className="w-full pl-9 pr-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                   />
                 </div>
-                <select 
+                <Select
                   value={dbFilterCategory}
-                  onChange={e => setDbFilterCategory(e.target.value)}
-                  className="px-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
-                >
-                  {['All', 'Makanan', 'Minuman', 'Kebutuhan Rumah', 'Perawatan Diri', 'Peralatan', 'Lainnya'].map(cat => (
-                    <option key={cat} value={cat}>{cat === 'All' ? 'Semua' : cat}</option>
-                  ))}
-                </select>
+                  onChange={setDbFilterCategory}
+                  options={DB_CATEGORY_OPTIONS}
+                  className="min-w-[140px]"
+                  buttonClassName="bg-stone-100 dark:bg-stone-800 border-transparent dark:border-transparent hover:bg-stone-200/60 dark:hover:bg-stone-700/60"
+                />
               </div>
 
               {/* Product List */}

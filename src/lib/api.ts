@@ -803,14 +803,95 @@ export const api = {
 
 
   async getActiveCampaign(companyId: string) {
+    // Multi-active is now allowed. Return the top priority one for legacy callers.
     const { data, error } = await supabase
       .from('promo_campaigns')
       .select('*')
       .eq('company_id', companyId)
       .eq('is_active', true)
-      .maybeSingle();
+      .order('priority', { ascending: true })
+      .limit(1);
     if (error) throw error;
-    return data;
+    return (data && data[0]) || null;
+  },
+
+  /**
+   * Returns ALL active campaigns ordered by priority asc.
+   * Use this everywhere new code is written; getActiveCampaign() stays
+   * for backward compatibility with single-campaign callers.
+   */
+  async getActiveCampaigns(companyId: string) {
+    const { data, error } = await supabase
+      .from('promo_campaigns')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .order('priority', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
+   * Fetch campaign_products for a list of campaigns in a single round-trip.
+   * Used by POS / Inventory to build the promo resolver map.
+   */
+  async getCampaignProductsBulk(campaignIds: string[]) {
+    if (campaignIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from('campaign_products')
+      .select(`*, products ( name, brand, price, cost_price )`)
+      .in('campaign_id', campaignIds);
+    if (error) throw error;
+    return (data || []).map((item: any) => ({
+      ...item,
+      name: item.products?.name,
+      brand: item.products?.brand,
+      price: item.products?.price,
+      cost_price: item.products?.cost_price,
+    }));
+  },
+
+  /** Aggregate metrics from the campaign_metrics view. */
+  async getCampaignMetrics(companyId: string) {
+    const { data, error } = await supabase
+      .from('campaign_metrics')
+      .select('*')
+      .eq('company_id', companyId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
+   * Persist promo applications attached to a sale.
+   * Call this AFTER api.addSale so we have a sale id.
+   * Each item should have: campaign_id, campaign_product_id, product_id,
+   * promo_type, qty_paid, qty_free, unit_price_normal, unit_price_after,
+   * cost_price_snapshot, discount_amount.
+   */
+  async logPromoApplications(
+    saleId: number | string,
+    companyId: string,
+    items: Array<{
+      campaign_id: string | null;
+      campaign_product_id: string | null;
+      product_id: string;
+      promo_type: string;
+      qty_paid: number;
+      qty_free: number;
+      unit_price_normal: number;
+      unit_price_after: number;
+      cost_price_snapshot: number;
+      discount_amount: number;
+    }>,
+  ) {
+    if (items.length === 0) return [];
+    const rows = items.map(i => ({ ...i, sale_id: saleId, company_id: companyId }));
+    const { data, error } = await supabase
+      .from('sale_promo_applications')
+      .insert(rows)
+      .select();
+    if (error) throw error;
+    return data || [];
   }
 };
 

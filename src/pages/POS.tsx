@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
+import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../lib/promo';
+import { PromoCampaign } from '../types';
 
 interface Product {
   id: string;
@@ -32,6 +34,9 @@ interface CartItem {
   isFreeItem?: boolean;         // true = this row is the gratisan
   buyQty?: number;
   getQty?: number;
+  campaignId?: string | null;
+  campaignProductId?: string | null;
+  campaignName?: string | null;
 }
 
 import { UserProfile } from '../types';
@@ -60,9 +65,10 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Active Campaign
-  const [activeCampaign, setActiveCampaign] = useState<any>(null);
-  const [campaignPromoMap, setCampaignPromoMap] = useState<Map<string, any>>(new Map());
+  // Active Campaigns (multi)
+  const [activeCampaigns, setActiveCampaigns] = useState<PromoCampaign[]>([]);
+  const [productOffers, setProductOffers] = useState<Map<string, PromoOffer[]>>(new Map());
+  const [pendingPickProduct, setPendingPickProduct] = useState<Product | null>(null);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,15 +85,20 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
 
   const fetchActiveCampaign = async () => {
     try {
-      const campaign = await api.getActiveCampaign(userProfile.company_id!);
-      if (campaign) {
-        setActiveCampaign(campaign);
-        const prods = await api.getCampaignProducts(campaign.id);
-        const map = new Map();
-        prods.forEach((cp: any) => map.set(cp.product_id, cp));
-        setCampaignPromoMap(map);
-      }
-    } catch (e) { /* silent */ }
+      const all = await api.getActiveCampaigns(userProfile.company_id!);
+      const live = filterLiveCampaigns(all);
+      setActiveCampaigns(live);
+      if (live.length === 0) { setProductOffers(new Map()); return; }
+      const cps = await api.getCampaignProductsBulk(live.map(c => c.id));
+      const byProduct = new Map<string, PromoOffer[]>();
+      const seen = new Set<string>();
+      cps.forEach(cp => seen.add(cp.product_id));
+      seen.forEach(pid => byProduct.set(pid, buildOffersForProduct(pid, live, cps)));
+      setProductOffers(byProduct);
+    } catch (e) {
+      setActiveCampaigns([]);
+      setProductOffers(new Map());
+    }
   };
 
   const fetchProducts = async () => {
@@ -118,12 +129,19 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
       return;
     }
 
-    const promo = campaignPromoMap.get(p.id);
+    const offers = productOffers.get(p.id) || [];
+    if (offers.length > 1) {
+      // Let cashier pick which campaign to apply
+      setPendingPickProduct(p);
+      return;
+    }
+    addWithOffer(p, offers[0] || null);
+  };
 
-    if (promo && (promo.promo_type === 'b1g1' || promo.promo_type === 'b2g1' || promo.promo_type === 'buy_x_get_y')) {
-      // Volume promo: add paying item + free item as separate row
-      const buyQty = promo.promo_type === 'b1g1' ? 1 : promo.promo_type === 'b2g1' ? 2 : (promo.buy_qty || 1);
-      const getQty = promo.promo_type === 'b1g1' ? 1 : promo.promo_type === 'b2g1' ? 1 : (promo.get_qty || 1);
+  const addWithOffer = (p: Product, offer: PromoOffer | null) => {
+    if (offer && (offer.promoType === 'b1g1' || offer.promoType === 'b2g1' || offer.promoType === 'buy_x_get_y')) {
+      const buyQty = offer.buyQty;
+      const getQty = offer.getQty;
       const totalNeeded = buyQty + getQty;
 
       if (p.stock < totalNeeded) {
@@ -133,7 +151,6 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
 
       const existingPay = cart.find(i => i.product.id === p.id && !i.isFreeItem);
       if (existingPay) {
-        // Already in cart, just increment bundle by buyQty
         if ((existingPay.quantity + buyQty) > p.stock) {
           toast.error('Stok tidak mencukupi');
           return;
@@ -144,15 +161,23 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
           return i;
         }));
       } else {
-        const promoLabel = promo.promo_type === 'b1g1' ? 'B1G1' : promo.promo_type === 'b2g1' ? 'B2G1' : `B${buyQty}G${getQty}`;
+        const promoLabel = offerLabel(offer, p.price);
         setCart(prev => [
           ...prev,
-          { product: p, quantity: buyQty, promoType: promo.promo_type, promoPrice: p.price, isFreeItem: false, buyQty, getQty },
-          { product: { ...p, name: `${p.name} (GRATIS ${promoLabel})` }, quantity: getQty, promoType: promo.promo_type, promoPrice: 0, isFreeItem: true }
+          {
+            product: p, quantity: buyQty, promoType: offer.promoType, promoPrice: p.price,
+            isFreeItem: false, buyQty, getQty,
+            campaignId: offer.campaignId, campaignProductId: offer.campaignProductId, campaignName: offer.campaignName,
+          },
+          {
+            product: { ...p, name: `${p.name} (GRATIS ${promoLabel})` }, quantity: getQty, promoType: offer.promoType, promoPrice: 0,
+            isFreeItem: true,
+            campaignId: offer.campaignId, campaignProductId: offer.campaignProductId, campaignName: offer.campaignName,
+          },
         ]);
       }
     } else {
-      const effectivePrice = promo?.promo_type === 'price_cut' && promo.promo_price ? promo.promo_price : p.price;
+      const effectivePrice = offer?.promoType === 'price_cut' && offer.promoPrice ? offer.promoPrice : p.price;
       const existing = cart.find(item => item.product.id === p.id && !item.isFreeItem);
       if (existing) {
         if (existing.quantity >= p.stock) {
@@ -161,7 +186,11 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
         }
         setCart(cart.map(item => item.product.id === p.id && !item.isFreeItem ? { ...item, quantity: item.quantity + 1 } : item));
       } else {
-        setCart([...cart, { product: p, quantity: 1, promoType: promo?.promo_type || null, promoPrice: effectivePrice }]);
+        setCart([...cart, {
+          product: p, quantity: 1,
+          promoType: offer?.promoType || null, promoPrice: effectivePrice,
+          campaignId: offer?.campaignId ?? null, campaignProductId: offer?.campaignProductId ?? null, campaignName: offer?.campaignName ?? null,
+        }]);
       }
     }
 
@@ -249,6 +278,44 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
         await api.decrementStock(item.product.id, item.quantity, userProfile.company_id!);
       }
 
+      // 3. Log promo applications for audit / metrics
+      const promoApplications: any[] = [];
+      const seenPay = new Set<string>();
+      for (const item of cart) {
+        if (!item.campaignId || item.isFreeItem) continue;
+        // Aggregate paid + free item per (product, campaign)
+        const key = `${item.product.id}-${item.campaignId}`;
+        if (seenPay.has(key)) continue;
+        seenPay.add(key);
+        const payRow = item;
+        const freeRow = cart.find(i => i.product.id === item.product.id && i.isFreeItem && i.campaignId === item.campaignId);
+        const unitNormal = item.product.price;
+        const unitAfter = (item.promoPrice ?? unitNormal);
+        const qtyPaid = payRow.quantity;
+        const qtyFree = freeRow?.quantity ?? 0;
+        const discount = Math.max(0, (unitNormal - unitAfter) * qtyPaid) + (unitNormal * qtyFree);
+        promoApplications.push({
+          campaign_id: item.campaignId,
+          campaign_product_id: item.campaignProductId ?? null,
+          product_id: item.product.id,
+          promo_type: item.promoType || 'price_cut',
+          qty_paid: qtyPaid,
+          qty_free: qtyFree,
+          unit_price_normal: unitNormal,
+          unit_price_after: unitAfter,
+          cost_price_snapshot: item.product.cost_price || 0,
+          discount_amount: discount,
+        });
+      }
+      if (promoApplications.length > 0) {
+        try {
+          await api.logPromoApplications(sale.id, userProfile.company_id!, promoApplications);
+        } catch (logErr) {
+          // Non-fatal: keep transaction success even if audit fails.
+          console.warn('Failed to log promo applications', logErr);
+        }
+      }
+
 
       setCompletedTransaction({
         ...sale,
@@ -312,6 +379,18 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
       <div className="flex-1 flex overflow-hidden">
         {/* Main Area: Product Search & Grid */}
         <div className="flex-1 p-6 overflow-y-auto flex flex-col">
+           {/* Active campaigns banner */}
+           {activeCampaigns.length > 0 && (
+             <div className="mb-4 flex items-center gap-2 flex-wrap">
+               <span className="text-xs text-stone-500 dark:text-stone-400 inline-flex items-center gap-1.5"><Gift className="w-3.5 h-3.5 text-amber-500" />Kampanye aktif:</span>
+               {activeCampaigns.map(c => (
+                 <span key={c.id} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60">
+                   {c.name}
+                 </span>
+               ))}
+             </div>
+           )}
+
            {/* Search Box */}
            <div className="relative mb-5">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" />
@@ -355,28 +434,28 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                           </div>
                           <div className="text-right">
                             {(() => {
-                              const promo = campaignPromoMap.get(p.id);
-                              if (promo?.promo_type === 'price_cut' && promo.promo_price) {
+                              const offers = productOffers.get(p.id) || [];
+                              const primary = offers[0];
+                              if (primary?.promoType === 'price_cut' && primary.promoPrice) {
                                 return (
                                   <div>
                                     <p className="text-xs font-bold text-slate-400 line-through">Rp {p.price.toLocaleString()}</p>
-                                    <p className="text-lg font-medium text-emerald-600">Rp {promo.promo_price.toLocaleString()}</p>
+                                    <p className="text-lg font-medium text-emerald-600">Rp {primary.promoPrice.toLocaleString()}</p>
                                     <span className="text-[10px] font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 px-2 py-0.5 rounded-full">
-                                      Disc {Math.round((1 - promo.promo_price / p.price) * 100)}%
+                                      {offerLabel(primary, p.price)}
                                     </span>
+                                    {offers.length > 1 && <span className="ml-1 text-[10px] font-medium text-stone-500">+{offers.length - 1}</span>}
                                   </div>
                                 );
                               }
-                              if (promo && promo.promo_type !== 'price_cut') {
-                                const label = promo.promo_type === 'b1g1' ? 'Beli 1 Gratis 1'
-                                  : promo.promo_type === 'b2g1' ? 'Beli 2 Gratis 1'
-                                  : `B${promo.buy_qty}G${promo.get_qty}`;
+                              if (primary && primary.promoType !== 'price_cut') {
                                 return (
                                   <div>
                                     <p className="text-lg font-medium text-stone-700">Rp {p.price.toLocaleString()}</p>
                                     <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                                      <Gift className="w-2.5 h-2.5" />{label}
+                                      <Gift className="w-2.5 h-2.5" />{offerLabel(primary, p.price)}
                                     </span>
+                                    {offers.length > 1 && <span className="ml-1 text-[10px] font-medium text-stone-500">+{offers.length - 1}</span>}
                                   </div>
                                 );
                               }
@@ -478,7 +557,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                  <div className="flex items-center justify-between text-slate-500 pb-2 border-b border-white">
                     <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                       <Gift className="w-3 h-3" />
-                      Diskon / Promo{activeCampaign ? ` (${activeCampaign.name})` : ''}
+                      Diskon / Promo{activeCampaigns.length === 1 ? ` (${activeCampaigns[0].name})` : activeCampaigns.length > 1 ? ` (${activeCampaigns.length} kampanye)` : ''}
                     </span>
                     <span className="text-sm font-medium text-emerald-600">- Rp {totalDiscount.toLocaleString()}</span>
                  </div>
@@ -930,6 +1009,62 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
              </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
+      {/* --- MULTI-PROMO PICKER --- */}
+      <AnimatePresence>
+        {pendingPickProduct && (() => {
+          const offers = productOffers.get(pendingPickProduct.id) || [];
+          return (
+            <div className="fixed inset-0 z-[5500] flex items-center justify-center p-4 bg-black/50" onClick={() => setPendingPickProduct(null)}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white dark:bg-stone-900 rounded-xl max-w-md w-full shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh]"
+              >
+                <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                  <div className="min-w-0">
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Pilih promo</p>
+                    <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate">{pendingPickProduct.name}</h2>
+                  </div>
+                  <button onClick={() => setPendingPickProduct(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="p-5 overflow-y-auto flex-1 space-y-2">
+                  <button
+                    onClick={() => { addWithOffer(pendingPickProduct, null); setPendingPickProduct(null); }}
+                    className="w-full p-3 rounded-lg border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/60 text-left transition-colors"
+                  >
+                    <p className="text-sm font-medium text-stone-900 dark:text-stone-100">Tanpa promo</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 tabular-nums">Rp {pendingPickProduct.price.toLocaleString()}</p>
+                  </button>
+                  {offers.map((offer, idx) => (
+                    <button
+                      key={offer.campaignProductId}
+                      onClick={() => { addWithOffer(pendingPickProduct, offer); setPendingPickProduct(null); }}
+                      className="w-full p-3 rounded-lg border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/60 text-left transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <p className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">{offer.campaignName}</p>
+                        {idx === 0 && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 shrink-0">Direkomendasikan</span>}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
+                          <Gift className="w-3 h-3" />{offerLabel(offer, pendingPickProduct.price)}
+                        </span>
+                        {offer.promoType === 'price_cut' && offer.promoPrice != null && (
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 tabular-nums">Rp {offer.promoPrice.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );

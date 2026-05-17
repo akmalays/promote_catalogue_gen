@@ -7,6 +7,8 @@ import LoadingScreen from '../components/LoadingScreen';
 import toast from 'react-hot-toast';
 import { UserProfile } from '../types';
 import PriceTagDrawer from '../components/PriceTagDrawer';
+import Select from '../components/ui/Select';
+import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../lib/promo';
 
 interface Product {
   id: string; name: string; brand: string; description: string; price: number; category: string; image_url: string; unit: string; plu: string; cost_price: number; stock?: number;
@@ -36,14 +38,30 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPriceTagDrawerOpen, setIsPriceTagDrawerOpen] = useState(false);
   const [productForPriceTag, setProductForPriceTag] = useState<Product | null>(null);
-  const [promoProductIds, setPromoProductIds] = useState<Map<string, any>>(new Map());
+  const [productOffers, setProductOffers] = useState<Map<string, PromoOffer[]>>(new Map());
+  const [onlyPromo, setOnlyPromo] = useState(false);
+  const [promoDrawerProductId, setPromoDrawerProductId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({ name: '', brand: '', description: '', price: 0, category: 'Makanan', image_url: '', stock: 0, unit: 'pcs', plu: '', cost_price: 0 });
 
   useEffect(() => { fetchProducts(); fetchActivePromo(); }, []);
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterCategory]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterCategory, onlyPromo]);
 
   const fetchProducts = async () => { setIsLoading(true); try { setProducts(await api.getProducts(userProfile.company_id!)); } catch { setProducts([]); } finally { setIsLoading(false); } };
-  const fetchActivePromo = async () => { try { const c = await api.getActiveCampaign(userProfile.company_id!); if (c) { const cp = await api.getCampaignProducts(c.id); const m = new Map(); cp.forEach((p: any) => m.set(p.product_id, p)); setPromoProductIds(m); } } catch {} };
+  const fetchActivePromo = async () => {
+    try {
+      const all = await api.getActiveCampaigns(userProfile.company_id!);
+      const live = filterLiveCampaigns(all);
+      if (live.length === 0) { setProductOffers(new Map()); return; }
+      const cps = await api.getCampaignProductsBulk(live.map(c => c.id));
+      const byProduct = new Map<string, PromoOffer[]>();
+      const seen = new Set<string>();
+      cps.forEach(cp => seen.add(cp.product_id));
+      seen.forEach(pid => byProduct.set(pid, buildOffersForProduct(pid, live, cps)));
+      setProductOffers(byProduct);
+    } catch {
+      setProductOffers(new Map());
+    }
+  };
 
   const lowStockItems = products.filter(p => (p.stock || 0) < 10);
 
@@ -73,7 +91,8 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
   const filteredProducts = products.filter(p => {
     const s = searchTerm.toLowerCase();
     const matchesSearch = p.name.toLowerCase().includes(s) || p.brand.toLowerCase().includes(s) || (p.plu && p.plu.toLowerCase().includes(s));
-    return matchesSearch && (filterCategory === 'All' || p.category === filterCategory);
+    const matchesPromo = !onlyPromo || (productOffers.get(p.id)?.length ?? 0) > 0;
+    return matchesSearch && matchesPromo && (filterCategory === 'All' || p.category === filterCategory);
   });
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -92,9 +111,24 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
             <input type="text" placeholder="Cari produk, merek, PLU..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 pr-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg w-[240px] text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
           </div>
-          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10">
-            {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat === 'All' ? 'Semua' : cat}</option>)}
-          </select>
+          <Select
+            value={filterCategory}
+            onChange={setFilterCategory}
+            options={CATEGORIES.map(cat => ({ value: cat, label: cat === 'All' ? 'Semua' : cat }))}
+            ariaLabel="Filter kategori"
+            className="min-w-[140px]"
+          />
+          <button
+            onClick={() => setOnlyPromo(v => !v)}
+            className={cn(
+              "px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 border",
+              onlyPromo
+                ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900"
+                : "bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700",
+            )}
+          >
+            <Gift className="w-3.5 h-3.5" /> Hanya promo
+          </button>
           <button onClick={() => setIsPriceTagDrawerOpen(true)} className="px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-1.5"><Printer className="w-3.5 h-3.5" /> Label</button>
           <button onClick={openAddForm} className="px-3 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Tambah</button>
         </div>
@@ -139,7 +173,22 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div><p className="text-sm font-medium text-stone-900 dark:text-stone-100">{p.name}</p><p className="text-xs text-stone-500 dark:text-stone-400">{p.brand}</p></div>
-                            {promoProductIds.has(p.id) && (() => { const cp = promoProductIds.get(p.id); const label = cp.promo_type === 'b1g1' ? 'B1G1' : cp.promo_type === 'b2g1' ? 'B2G1' : cp.promo_type === 'buy_x_get_y' ? `B${cp.buy_qty}G${cp.get_qty}` : `${Math.round((1 - (cp.promo_price || 0) / (cp.price || 1)) * 100)}%`; return <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded flex items-center gap-0.5"><Gift className="w-2.5 h-2.5" />{label}</span>; })()}
+                            {(() => {
+                              const offers = productOffers.get(p.id) || [];
+                              if (offers.length === 0) return null;
+                              const primary = offers[0];
+                              return (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setPromoDrawerProductId(p.id); }}
+                                  className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50 px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors"
+                                  title={offers.length > 1 ? `${offers.length} kampanye aktif` : primary.campaignName}
+                                >
+                                  <Gift className="w-2.5 h-2.5" />
+                                  {offerLabel(primary, p.price)}
+                                  {offers.length > 1 && <span className="ml-0.5 text-[9px] opacity-70">+{offers.length - 1}</span>}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="px-4 py-3"><span className="text-xs text-stone-500 dark:text-stone-400">{p.category}</span></td>
@@ -188,7 +237,16 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Nama Produk</label><input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Mie Goreng Jumbo" className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" /></div>
-                  <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Kategori</label><select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10">{CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                  <div>
+                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Kategori</label>
+                    <Select
+                      value={formData.category || 'Makanan'}
+                      onChange={v => setFormData({ ...formData, category: v })}
+                      options={CATEGORIES.slice(1).map(c => ({ value: c, label: c }))}
+                      className="w-full"
+                      buttonClassName="w-full"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Satuan</label><input value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} placeholder="pcs" className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" /></div>
@@ -309,6 +367,65 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
       </AnimatePresence>
 
       <PriceTagDrawer isOpen={isPriceTagDrawerOpen} onClose={() => { setIsPriceTagDrawerOpen(false); setProductForPriceTag(null); }} productsFromPage={currentItems} allProducts={products} companyName={userProfile.company?.name || 'MYSTORE STUDIO'} initialProduct={productForPriceTag} userProfile={userProfile} />
+
+      {/* Promo Detail Drawer */}
+      <AnimatePresence>
+        {promoDrawerProductId && (() => {
+          const product = products.find(p => p.id === promoDrawerProductId);
+          const offers = productOffers.get(promoDrawerProductId) || [];
+          if (!product) return null;
+          return (
+            <div className="fixed inset-0 z-[5500] flex items-center justify-center p-4 bg-black/50" onClick={() => setPromoDrawerProductId(null)}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white dark:bg-stone-900 rounded-xl max-w-md w-full shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh]"
+              >
+                <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                  <div className="min-w-0">
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Promo aktif untuk</p>
+                    <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate">{product.name}</h2>
+                  </div>
+                  <button onClick={() => setPromoDrawerProductId(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="p-5 overflow-y-auto flex-1 space-y-2">
+                  {offers.length === 0 ? (
+                    <p className="text-sm text-stone-400 dark:text-stone-500 text-center py-8">Tidak ada kampanye aktif.</p>
+                  ) : offers.map((offer, idx) => (
+                    <div key={offer.campaignProductId} className="p-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <p className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">{offer.campaignName}</p>
+                        {idx === 0 && offers.length > 1 && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 shrink-0">Prioritas</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
+                          <Gift className="w-3 h-3" />{offerLabel(offer, product.price)}
+                        </span>
+                        {offer.stackable && <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">Stack</span>}
+                        <span className="text-[11px] text-stone-500 dark:text-stone-400">P{offer.priority}</span>
+                      </div>
+                      {offer.promoType === 'price_cut' && offer.promoPrice != null && (
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 tabular-nums">
+                          Rp {product.price.toLocaleString()} → <span className="text-emerald-600 dark:text-emerald-400 font-medium">Rp {offer.promoPrice.toLocaleString()}</span>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 shrink-0">
+                  <button onClick={() => setPromoDrawerProductId(null)} className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">Tutup</button>
+                  <button onClick={() => { setPromoDrawerProductId(null); onNavigate('campaigns'); }} className="flex-1 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors">Buka kampanye</button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }
