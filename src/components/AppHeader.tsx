@@ -4,7 +4,7 @@ import { cn } from '../lib/utils';
 import { UserProfile } from '../types';
 import NotificationPopup from './NotificationPopup';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns' | 'reports';
 
 interface AppHeaderProps {
   currentPage: Page;

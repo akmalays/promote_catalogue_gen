@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { UserProfile } from '../types';
 import PriceTagDrawer from '../components/PriceTagDrawer';
 import Select from '../components/ui/Select';
-import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../lib/promo';
+import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer, projectStockDays, stockDaysLabel, stockDaysTone } from '../lib/promo';
 
 interface Product {
   id: string; name: string; brand: string; description: string; price: number; category: string; image_url: string; unit: string; plu: string; cost_price: number; stock?: number;
@@ -39,14 +39,19 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
   const [isPriceTagDrawerOpen, setIsPriceTagDrawerOpen] = useState(false);
   const [productForPriceTag, setProductForPriceTag] = useState<Product | null>(null);
   const [productOffers, setProductOffers] = useState<Map<string, PromoOffer[]>>(new Map());
+  const [dailyAverages, setDailyAverages] = useState<Map<string, number>>(new Map());
   const [onlyPromo, setOnlyPromo] = useState(false);
   const [promoDrawerProductId, setPromoDrawerProductId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({ name: '', brand: '', description: '', price: 0, category: 'Makanan', image_url: '', stock: 0, unit: 'pcs', plu: '', cost_price: 0 });
 
-  useEffect(() => { fetchProducts(); fetchActivePromo(); }, []);
+  useEffect(() => { fetchProducts(); fetchActivePromo(); fetchDailyAverages(); }, []);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, filterCategory, onlyPromo]);
 
   const fetchProducts = async () => { setIsLoading(true); try { setProducts(await api.getProducts(userProfile.company_id!)); } catch { setProducts([]); } finally { setIsLoading(false); } };
+  const fetchDailyAverages = async () => {
+    try { setDailyAverages(await api.getDailyAverages(userProfile.company_id!)); }
+    catch { setDailyAverages(new Map()); }
+  };
   const fetchActivePromo = async () => {
     try {
       const all = await api.getActiveCampaigns(userProfile.company_id!);
@@ -192,7 +197,27 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                           </div>
                         </td>
                         <td className="px-4 py-3"><span className="text-xs text-stone-500 dark:text-stone-400">{p.category}</span></td>
-                        <td className="px-4 py-3 text-right"><span className={cn("text-sm tabular-nums font-medium", (p.stock || 0) < 10 ? "text-red-600 dark:text-red-400" : "text-stone-900 dark:text-stone-100")}>{p.stock || 0}</span></td>
+                        <td className="px-4 py-3 text-right">
+                          {(() => {
+                            const stock = p.stock || 0;
+                            const avg = dailyAverages.get(p.id) || 0;
+                            const days = projectStockDays(stock, avg, productOffers.get(p.id)?.[0] || null);
+                            const tone = stockDaysTone(days);
+                            return (
+                              <div className="flex flex-col items-end gap-0.5">
+                                <span className={cn("text-sm tabular-nums font-medium", stock < 10 ? "text-red-600 dark:text-red-400" : "text-stone-900 dark:text-stone-100")}>{stock}</span>
+                                {tone !== 'idle' && (
+                                  <span className={cn(
+                                    "text-[10px] tabular-nums",
+                                    tone === 'danger' && "text-red-600 dark:text-red-400 font-medium",
+                                    tone === 'warn' && "text-amber-600 dark:text-amber-400",
+                                    tone === 'ok' && "text-stone-400 dark:text-stone-500",
+                                  )}>{stockDaysLabel(days)}</span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="px-4 py-3 text-right"><span className="text-sm text-stone-900 dark:text-stone-100 tabular-nums">Rp {p.price?.toLocaleString()}</span></td>
                         <td className="px-4 py-3 text-right"><span className="text-sm text-stone-500 dark:text-stone-400 tabular-nums">Rp {(p.cost_price || 0).toLocaleString()}</span></td>
                         <td className="px-4 py-3">

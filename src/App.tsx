@@ -20,13 +20,14 @@ import StockOpname from './pages/StockOpname';
 import Signup from './pages/Signup';
 import ResetPassword from './pages/ResetPassword';
 import CampaignManager from './pages/CampaignManager';
+import Reports from './pages/Reports';
 
 // Components
 import CatalogueEditor from './components/CatalogueEditor';
 import Sidebar from './components/Sidebar';
 import AppHeader from './components/AppHeader';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns' | 'reports';
 
 type AuthView = 'login' | 'signup' | 'reset-password';
 
@@ -92,7 +93,7 @@ export default function App() {
     
     const allowed: Page[] = ['dashboard', 'settings', 'pos', 'revenue'];
     if (isManager || isAdmin) { 
-       allowed.push('catalogue', 'promotions', 'campaigns', 'history', 'products', 'supply', 'notifications', 'stock_opname', 'activity', 'analytics');
+       allowed.push('catalogue', 'promotions', 'campaigns', 'reports', 'history', 'products', 'supply', 'notifications', 'stock_opname', 'activity', 'analytics');
     }
     
     if (!allowed.includes(currentPage)) {
@@ -220,6 +221,7 @@ export default function App() {
               )}
               {currentPage === 'promotions' && <Promotions userProfile={userProfile} />}
               {currentPage === 'campaigns' && <CampaignManager userProfile={userProfile} />}
+              {currentPage === 'reports' && <Reports userProfile={userProfile} />}
               {currentPage === 'history' && <CatalogueHistory onNavigate={setCurrentPage} userProfile={userProfile} onContinueEdit={handleContinueEdit} />}
               {currentPage === 'products' && <ProductInventory onNavigate={setCurrentPage} userProfile={userProfile} />}
               {currentPage === 'supply' && <Supply userProfile={userProfile} />}
