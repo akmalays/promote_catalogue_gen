@@ -308,7 +308,7 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
         )}
       </AnimatePresence>
 
-      <PriceTagDrawer isOpen={isPriceTagDrawerOpen} onClose={() => { setIsPriceTagDrawerOpen(false); setProductForPriceTag(null); }} productsFromPage={currentItems} allProducts={products} companyName={userProfile.company?.name || 'MYSTORE STUDIO'} initialProduct={productForPriceTag} />
+      <PriceTagDrawer isOpen={isPriceTagDrawerOpen} onClose={() => { setIsPriceTagDrawerOpen(false); setProductForPriceTag(null); }} productsFromPage={currentItems} allProducts={products} companyName={userProfile.company?.name || 'MYSTORE STUDIO'} initialProduct={productForPriceTag} userProfile={userProfile} />
     </div>
   );
 }
