@@ -1,41 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Plus, Edit2, Trash2, X, Filter, Tag, Info, AlertCircle, Check, DollarSign, Truck, ShoppingCart, ChevronDown, ChevronUp, Calendar, Layers, Barcode, Box } from 'lucide-react';
+import { Package, Search, Plus, Edit2, Trash2, X, AlertCircle, Truck, ChevronDown, ChevronUp, Layers, Printer, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import LoadingScreen from '../components/LoadingScreen';
 import toast from 'react-hot-toast';
+import { UserProfile } from '../types';
+import PriceTagDrawer from '../components/PriceTagDrawer';
+import Select from '../components/ui/Select';
+import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../lib/promo';
 
 interface Product {
-  id: string;
-  name: string;
-  brand: string;
-  description: string;
-  price: number;
-  category: string;
-  image_url: string;
-  unit: string;
-  plu: string;
-  cost_price: number;
+  id: string; name: string; brand: string; description: string; price: number; category: string; image_url: string; unit: string; plu: string; cost_price: number; stock?: number;
 }
 
-const CATEGORIES = [
-  'All', 'Makanan', 'Minuman', 'Kardus', 'Kebutuhan Rumah', 'Perawatan Diri', 'Bayi & Anak', 'Peralatan'
-];
-
-const INITIAL_PRODUCTS: Product[] = [];
-
-import { UserProfile } from '../types';
+const CATEGORIES = ['All', 'Makanan', 'Minuman', 'Kardus', 'Kebutuhan Rumah', 'Perawatan Diri', 'Bayi & Anak', 'Peralatan'];
 
 export default function ProductDatabase({ onNavigate, userProfile }: { onNavigate: (page: any) => void, userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
-  
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -45,465 +32,187 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<'supply' | 'sales' | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-
+  const [productSalesHistory, setProductSalesHistory] = useState<any[]>([]);
+  const [isSalesHistoryLoading, setIsSalesHistoryLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isLowStockExpanded, setIsLowStockExpanded] = useState(false);
+  const [isPriceTagDrawerOpen, setIsPriceTagDrawerOpen] = useState(false);
+  const [productForPriceTag, setProductForPriceTag] = useState<Product | null>(null);
+  const [productOffers, setProductOffers] = useState<Map<string, PromoOffer[]>>(new Map());
+  const [onlyPromo, setOnlyPromo] = useState(false);
+  const [promoDrawerProductId, setPromoDrawerProductId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<Product>>({ name: '', brand: '', description: '', price: 0, category: 'Makanan', image_url: '', stock: 0, unit: 'pcs', plu: '', cost_price: 0 });
 
-  // Form state
-  const [formData, setFormData] = useState<Partial<Product>>({
-    name: '',
-    brand: '',
-    description: '',
-    price: 0,
-    category: 'Makanan',
-    image_url: '',
-    stock: 0,
-    unit: 'pcs',
-    plu: '',
-    cost_price: 0
-  });
+  useEffect(() => { fetchProducts(); fetchActivePromo(); }, []);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterCategory, onlyPromo]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  // Reset page when filtering
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterCategory]);
-
-  const fetchProducts = async () => {
-    setIsLoading(true);
+  const fetchProducts = async () => { setIsLoading(true); try { setProducts(await api.getProducts(userProfile.company_id!)); } catch { setProducts([]); } finally { setIsLoading(false); } };
+  const fetchActivePromo = async () => {
     try {
-      const data = await api.getProducts(userProfile.company_id!);
-      setProducts(data);
-    } catch (e: any) {
-      console.warn('Gagal memuat produk dari DB cloud:', e);
-      setProducts(INITIAL_PRODUCTS);
-    } finally {
-      setIsLoading(false);
+      const all = await api.getActiveCampaigns(userProfile.company_id!);
+      const live = filterLiveCampaigns(all);
+      if (live.length === 0) { setProductOffers(new Map()); return; }
+      const cps = await api.getCampaignProductsBulk(live.map(c => c.id));
+      const byProduct = new Map<string, PromoOffer[]>();
+      const seen = new Set<string>();
+      cps.forEach(cp => seen.add(cp.product_id));
+      seen.forEach(pid => byProduct.set(pid, buildOffersForProduct(pid, live, cps)));
+      setProductOffers(byProduct);
+    } catch {
+      setProductOffers(new Map());
     }
   };
 
   const lowStockItems = products.filter(p => (p.stock || 0) < 10);
 
-  const openDeleteModal = (p: Product, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setProductToDelete(p);
-    setIsDeleteModalOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!productToDelete) return;
-    
-    setIsDeleting(true);
-    try {
-      await api.deleteProduct(productToDelete.id, userProfile.company_id!);
-      toast.success('Produk berhasil dihapus');
-      setIsDeleteModalOpen(false);
-      setProductToDelete(null);
-      fetchProducts();
-    } catch (e) {
-      toast.error('Gagal menghapus produk');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const openDeleteModal = (p: Product, e: React.MouseEvent) => { e.stopPropagation(); setProductToDelete(p); setIsDeleteModalOpen(true); };
+  const confirmDelete = async () => { if (!productToDelete) return; setIsDeleting(true); try { await api.deleteProduct(productToDelete.id, userProfile.company_id!); toast.success('Produk dihapus'); setIsDeleteModalOpen(false); setProductToDelete(null); fetchProducts(); } catch { toast.error('Gagal menghapus'); } finally { setIsDeleting(false); } };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.brand || !formData.price) {
-      toast.error('Lengkapi data wajib (Nama, Merek, Harga)');
-      return;
-    }
-
+    if (!formData.name || !formData.brand || !formData.price) { toast.error('Lengkapi data wajib (Nama, Merek, Harga)'); return; }
     setIsSubmitting(true);
-    try {
-      if (editingProduct) {
-        await api.updateProduct(editingProduct.id, { ...formData, company_id: userProfile.company_id });
-        toast.success('Produk berhasil diperbarui');
-      } else {
-        await api.addProduct({ ...formData, company_id: userProfile.company_id });
-        toast.success('Produk baru ditambahkan');
-      }
-      setIsFormOpen(false);
-      setEditingProduct(null);
-      fetchProducts();
-    } catch (e: any) {
-      console.error('Gagal simpan:', e);
-      toast.error('Gagal menyimpan produk ke database.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    try { if (editingProduct) { await api.updateProduct(editingProduct.id, { ...formData, company_id: userProfile.company_id }); toast.success('Produk diperbarui'); } else { await api.addProduct({ ...formData, company_id: userProfile.company_id }); toast.success('Produk ditambahkan'); } setIsFormOpen(false); setEditingProduct(null); fetchProducts(); }
+    catch { toast.error('Gagal menyimpan produk'); } finally { setIsSubmitting(false); }
   };
 
-  const openAddForm = () => {
-    // Generate a unique 6-digit PLU
-    const randomPlu = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    setEditingProduct(null);
-    setFormData({
-      name: '',
-      brand: '',
-      description: '',
-      price: 0,
-      category: 'Makanan',
-      image_url: '',
-      stock: 0,
-      unit: 'pcs',
-      plu: randomPlu
-    });
-    setIsFormOpen(true);
-  };
+  const openAddForm = () => { setEditingProduct(null); setFormData({ name: '', brand: '', description: '', price: 0, category: 'Makanan', image_url: '', stock: 0, unit: 'pcs', plu: Math.floor(100000 + Math.random() * 900000).toString(), cost_price: 0 }); setIsFormOpen(true); };
+  const openEditForm = (p: Product, e: React.MouseEvent) => { e.stopPropagation(); setEditingProduct(p); setFormData({ ...p }); setIsFormOpen(true); };
 
-  const openEditForm = (p: Product, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingProduct(p);
-    setFormData({ ...p });
-    setIsFormOpen(true);
-  };
-
-  useEffect(() => {
-    if (isDetailOpen && viewingProduct) {
-      fetchProductHistory(viewingProduct.id);
-    } else {
-      setExpandedSection(null);
-    }
-  }, [isDetailOpen, viewingProduct]);
+  useEffect(() => { if (isDetailOpen && viewingProduct) { fetchProductHistory(viewingProduct.id); } else { setExpandedSection(null); } }, [isDetailOpen, viewingProduct]);
 
   const fetchProductHistory = async (productId: string) => {
-    setIsHistoryLoading(true);
-    try {
-      const history = await api.getSupplyHistory(userProfile.company_id!);
-      const productLogs = history.filter((h: any) => h.product_id === productId);
-      setProductSupplyHistory(productLogs);
-    } catch (e) {
-      console.error('Gagal ambil riwayat:', e);
-    } finally {
-      setIsHistoryLoading(false);
-    }
+    setIsHistoryLoading(true); setIsSalesHistoryLoading(true);
+    try { const h = await api.getSupplyHistory(userProfile.company_id!); setProductSupplyHistory(h.filter((x: any) => x.product_id === productId)); } catch {} finally { setIsHistoryLoading(false); }
+    try { setProductSalesHistory(await api.getSalesByProduct(userProfile.company_id!, productId)); } catch {} finally { setIsSalesHistoryLoading(false); }
   };
 
-  const openDetail = (p: Product) => {
-    setViewingProduct(p);
-    setIsDetailOpen(true);
-  };
+  const openDetail = (p: Product) => { setViewingProduct(p); setIsDetailOpen(true); };
 
   const filteredProducts = products.filter(p => {
     const s = searchTerm.toLowerCase();
-    const matchesSearch = p.name.toLowerCase().includes(s) || 
-                         p.brand.toLowerCase().includes(s) ||
-                         (p.plu && p.plu.toLowerCase().includes(s));
-    const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSearch = p.name.toLowerCase().includes(s) || p.brand.toLowerCase().includes(s) || (p.plu && p.plu.toLowerCase().includes(s));
+    const matchesPromo = !onlyPromo || (productOffers.get(p.id)?.length ?? 0) > 0;
+    return matchesSearch && matchesPromo && (filterCategory === 'All' || p.category === filterCategory);
   });
 
-  // Smart Pagination Controls
-  const renderPageNumbers = () => {
-    const pages = [];
-    const maxVisible = 5;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, 4, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-      }
-    }
-    return pages;
-  };
-
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const currentItems = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage, 
-    currentPage * itemsPerPage
-  );
+  const currentItems = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
-      {/* Header Section */}
-      <div className="mb-10 lg:flex items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] shadow-sm shadow-[#8b7365]/10">
-            <Package className="w-8 h-8" />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-1.5">Product Inventory</h1>
-            <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none">Kelola stok dan database produk toko Anda</p>
-          </div>
+    <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-stone-50 dark:bg-stone-950">
+      {/* Header */}
+      <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Product Inventory</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Kelola stok dan database produk toko.</p>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Cari produk, merek atau plu..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl w-[260px] md:w-[320px] text-sm focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all shadow-sm font-bold"
-            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
+            <input type="text" placeholder="Cari produk, merek, PLU..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 pr-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg w-[240px] text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
           </div>
-          
-          <div className="relative group">
-            <Filter className={cn(
-              "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
-              filterCategory === 'All' ? "text-slate-400" : "text-[#8b7365]"
-            )} />
-            <select
-              value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
-              className="pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-black text-slate-700 focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all shadow-sm appearance-none cursor-pointer min-w-[180px]"
-            >
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat === 'All' ? 'Semua Kategori' : cat}</option>
-              ))}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-              <Plus className="w-3.5 h-3.5 rotate-45" />
-            </div>
-          </div>
-
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={openAddForm}
-            className="px-6 py-3 bg-[#8b7365] text-white rounded-2xl font-black text-sm shadow-xl shadow-[#8b7365]/20 flex items-center gap-2 hover:bg-[#7a6458] transition-colors"
+          <Select
+            value={filterCategory}
+            onChange={setFilterCategory}
+            options={CATEGORIES.map(cat => ({ value: cat, label: cat === 'All' ? 'Semua' : cat }))}
+            ariaLabel="Filter kategori"
+            className="min-w-[140px]"
+          />
+          <button
+            onClick={() => setOnlyPromo(v => !v)}
+            className={cn(
+              "px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 border",
+              onlyPromo
+                ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900"
+                : "bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700",
+            )}
           >
-            <Plus className="w-4 h-4" /> Add New Product
-          </motion.button>
+            <Gift className="w-3.5 h-3.5" /> Hanya promo
+          </button>
+          <button onClick={() => setIsPriceTagDrawerOpen(true)} className="px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-1.5"><Printer className="w-3.5 h-3.5" /> Label</button>
+          <button onClick={openAddForm} className="px-3 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Tambah</button>
         </div>
       </div>
 
-      {isLoading ? (
-        <LoadingScreen 
-          message="Sinkronisasi Database Produk..."
-          subMessage="Kami sedang mengambil seluruh daftar stok dan item terbaru untuk Anda."
-        />
-      ) : (
+      {isLoading ? <LoadingScreen message="Memuat produk..." subMessage="Mengambil data inventori." /> : (
         <>
-          {/* Low Stock Alerts (Expandable) */}
+          {/* Low stock alert */}
           {lowStockItems.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8 overflow-hidden rounded-[32px] border border-rose-200 bg-rose-50/30"
-            >
-              <div 
-                onClick={() => setIsLowStockExpanded(!isLowStockExpanded)}
-                className="flex items-center justify-between px-8 py-4 cursor-pointer hover:bg-rose-50/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-500/20">
-                     <AlertCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-rose-800 text-base leading-none">Peringatan: {lowStockItems.length} Produk Stok Menipis</h3>
-                    <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mt-1">Stok di bawah 10 unit</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">{isLowStockExpanded ? 'Tutup Detail' : 'Lihat Detail'}</span>
-                  <div className={cn("w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center transition-transform duration-300", 
-                    isLowStockExpanded && "rotate-180"
-                  )}>
-                    <Plus className="w-4 h-4 text-rose-600 rotate-45" />
-                  </div>
-                </div>
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span className="text-sm font-medium text-red-800 dark:text-red-300">{lowStockItems.length} produk stok menipis (&lt;10)</span>
               </div>
-
-              <AnimatePresence>
-                {isLowStockExpanded && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="px-8 pb-8"
-                  >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
-                       {lowStockItems.map(item => (
-                         <div key={item.id} onClick={() => openDetail(item)} className="bg-white p-3 rounded-2xl border border-rose-100 shadow-sm flex items-center gap-3 cursor-pointer hover:border-rose-300 transition-all group">
-                            <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 group-hover:scale-110 transition-transform">
-                               <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
-                            </div>
-                            <div className="min-w-0 pr-2">
-                               <p className="text-[10px] font-black text-[#8b7365] uppercase truncate tracking-tighter leading-none mb-1">{item.brand}</p>
-                               <h4 className="font-bold text-slate-800 text-xs truncate leading-tight">{item.name}</h4>
-                               <div className="flex items-center gap-1 mt-1">
-                                  <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Sisa:</span>
-                                  <span className="text-[11px] font-black text-rose-600">{item.stock || 0}</span>
-                                  <span className="text-[10px] font-black text-rose-400 lowercase">{item.unit || 'pcs'}</span>
-                               </div>
-                            </div>
-                         </div>
-                       ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+              <p className="text-xs text-red-600/70 dark:text-red-400/70">{lowStockItems.slice(0, 5).map(i => i.name).join(', ')}{lowStockItems.length > 5 ? ` +${lowStockItems.length - 5} lagi` : ''}</p>
+            </div>
           )}
 
           {filteredProducts.length === 0 ? (
-            <div className="h-[400px] bg-white rounded-[32px] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 text-center px-6">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                <Search className="w-10 h-10 opacity-20" />
-              </div>
-              <h3 className="text-xl font-black text-slate-800 mb-1">Produk tidak ditemukan</h3>
-              <p className="text-sm font-medium">Coba gunakan kata kunci lain atau tambahkan produk baru.</p>
-            </div>
+            <div className="py-16 text-center"><Package className="w-8 h-8 mx-auto mb-3 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-500 dark:text-stone-400">Produk tidak ditemukan</p></div>
           ) : (
-            <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center w-20">Gambar</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">PLU</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Nama Produk</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Merek</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Kategori</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Stok</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Satuan</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Harga</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">Aksi</th>
+                    <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800">
+                      <th className="px-4 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 w-12"></th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">PLU</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Produk</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Kategori</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Stok</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Harga Jual</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">HPP</th>
+                      <th className="px-4 py-3 w-24"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {currentItems.map((p, i) => (
-                      <motion.tr 
-                        key={p.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.03 }}
-                        className="group hover:bg-slate-50/80 transition-colors"
-                      >
-                        <td className="px-6 py-3">
-                          <div 
-                            onClick={() => openDetail(p)}
-                            className="w-11 h-11 bg-slate-50 rounded-lg border border-slate-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#8b7365]/20 transition-all mx-auto"
-                          >
-                            <img 
-                              src={p.image_url || 'https://via.placeholder.com/100x100?text=No+Img'} 
-                              alt={p.name} 
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                            />
+                  <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {currentItems.map((p) => (
+                      <tr key={p.id} onClick={() => openDetail(p)} className="hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors cursor-pointer group">
+                        <td className="px-4 py-3"><div className="w-9 h-9 bg-stone-100 dark:bg-stone-800 rounded-md overflow-hidden border border-stone-200 dark:border-stone-700"><img src={p.image_url || 'https://via.placeholder.com/40'} alt="" className="w-full h-full object-cover" /></div></td>
+                        <td className="px-4 py-3"><span className="text-xs font-mono text-stone-500 dark:text-stone-400">{p.plu || '—'}</span></td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div><p className="text-sm font-medium text-stone-900 dark:text-stone-100">{p.name}</p><p className="text-xs text-stone-500 dark:text-stone-400">{p.brand}</p></div>
+                            {(() => {
+                              const offers = productOffers.get(p.id) || [];
+                              if (offers.length === 0) return null;
+                              const primary = offers[0];
+                              return (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setPromoDrawerProductId(p.id); }}
+                                  className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50 px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors"
+                                  title={offers.length > 1 ? `${offers.length} kampanye aktif` : primary.campaignName}
+                                >
+                                  <Gift className="w-2.5 h-2.5" />
+                                  {offerLabel(primary, p.price)}
+                                  {offers.length > 1 && <span className="ml-0.5 text-[9px] opacity-70">+{offers.length - 1}</span>}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </td>
-                        <td className="px-6 py-3">
-                           <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded border border-rose-100">
-                              {p.plu || 'N/A'}
-                           </span>
-                        </td>
-                        <td className="px-6 py-3">
-                          <button 
-                            onClick={() => openDetail(p)}
-                            className="font-black text-slate-800 hover:text-[#8b7365] transition-colors text-left text-sm"
-                          >
-                            {p.name}
-                          </button>
-                        </td>
-                        <td className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                          {p.brand}
-                        </td>
-                        <td className="px-6 py-3">
-                          <span className="px-2.5 py-1 bg-slate-100 text-[9px] font-black text-slate-500 rounded uppercase tracking-tight">
-                            {p.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                           <div className="flex items-center gap-1.5">
-                              <span className={cn(
-                                "text-xs font-black",
-                                p.stock <= 10 ? "text-rose-500" : "text-slate-600"
-                              )}>
-                                {p.stock || 0}
-                              </span>
-                              {p.stock <= 10 && (
-                                <AlertCircle className="w-3 h-3 text-rose-500" />
-                              )}
-                           </div>
-                        </td>
-                        <td className="px-6 py-3">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            {p.unit || 'pcs'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                           <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1">JUAL</span>
-                              <span className="text-sm font-black text-emerald-600">Rp {p.price?.toLocaleString()}</span>
-                           </div>
-                        </td>
-                        <td className="px-6 py-3">
-                           <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 leading-none mb-1">BELI</span>
-                              <span className="text-sm font-black text-slate-400">Rp {p.cost_price?.toLocaleString() || 0}</span>
-                           </div>
-                        </td>
-                        <td className="px-6 py-3">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button 
-                              onClick={(e) => openEditForm(p, e)}
-                              className="p-2 bg-white text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-lg transition-all shadow-sm"
-                              title="Edit Produk"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                            <button 
-                              onClick={(e) => openDeleteModal(p, e)}
-                              className="p-2 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-100 rounded-lg transition-all shadow-sm"
-                              title="Hapus Produk"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                        <td className="px-4 py-3"><span className="text-xs text-stone-500 dark:text-stone-400">{p.category}</span></td>
+                        <td className="px-4 py-3 text-right"><span className={cn("text-sm tabular-nums font-medium", (p.stock || 0) < 10 ? "text-red-600 dark:text-red-400" : "text-stone-900 dark:text-stone-100")}>{p.stock || 0}</span></td>
+                        <td className="px-4 py-3 text-right"><span className="text-sm text-stone-900 dark:text-stone-100 tabular-nums">Rp {p.price?.toLocaleString()}</span></td>
+                        <td className="px-4 py-3 text-right"><span className="text-sm text-stone-500 dark:text-stone-400 tabular-nums">Rp {(p.cost_price || 0).toLocaleString()}</span></td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+                            <button onClick={(e) => openEditForm(p, e)} className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setProductForPriceTag(p); setIsPriceTagDrawerOpen(true); }} className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded transition-colors"><Printer className="w-3.5 h-3.5" /></button>
+                            <button onClick={(e) => openDeleteModal(p, e)} className="p-1.5 text-stone-400 hover:text-red-500 dark:hover:text-red-400 rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </td>
-                      </motion.tr>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              
-              {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="px-8 py-5 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
-                  <p className="text-xs font-bold text-slate-400 tracking-widest">
-                    Halaman {currentPage} dari {totalPages} <span className="mx-2">|</span> Total {filteredProducts.length} Produk
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
-                    >
-                      Sebelumnya
-                    </button>
-                    {renderPageNumbers().map((pg, i) => (
-                      <button
-                        key={i}
-                        onClick={() => typeof pg === 'number' && setCurrentPage(pg)}
-                        disabled={pg === '...'}
-                        className={cn(
-                          "w-9 h-9 rounded-xl text-xs font-black transition-all shadow-sm",
-                          currentPage === pg ? "bg-[#8b7365] text-white shadow-md shadow-[#8b7365]/20" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50",
-                          pg === '...' && "cursor-default border-none shadow-none bg-transparent"
-                        )}
-                      >
-                        {pg}
-                      </button>
-                    ))}
-                    <button
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
-                    >
-                      Berikutnya
-                    </button>
+                <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between">
+                  <p className="text-xs text-stone-500 dark:text-stone-400">{filteredProducts.length} produk · Hal {currentPage}/{totalPages}</p>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 rounded-md disabled:opacity-30 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">Prev</button>
+                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 rounded-md disabled:opacity-30 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">Next</button>
                   </div>
                 </div>
               )}
@@ -512,391 +221,210 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
         </>
       )}
 
-      {/* CRUD Modal */}
+      {/* CRUD Form Modal */}
       <AnimatePresence>
         {isFormOpen && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-[40px] p-8 max-w-2xl w-full shadow-2xl relative max-h-[95vh] overflow-y-auto mt-4"
-            >
-              <button 
-                onClick={() => setIsFormOpen(false)}
-                className="absolute top-6 right-8 p-2 hover:bg-slate-100 rounded-2xl transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
-
-              <div className="mb-10 flex flex-col items-start">
-                <div className="w-16 h-16 bg-[#8b7365]/10 rounded-2xl flex items-center justify-center text-[#8b7365] mb-6 shadow-sm">
-                   {editingProduct ? <Edit2 className="w-8 h-8" /> : <Package className="w-8 h-8" />}
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/50">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="bg-white dark:bg-stone-900 rounded-xl max-w-xl w-full shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[90vh]">
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">{editingProduct ? 'Edit Produk' : 'Tambah Produk'}</h2>
+                <button onClick={() => setIsFormOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">PLU</label><input value={formData.plu} readOnly className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm text-stone-500 dark:text-stone-400 font-mono" /></div>
+                  <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Merek</label><input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} placeholder="Indomie" className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" /></div>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Nama Produk</label><input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Mie Goreng Jumbo" className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" /></div>
+                  <div>
+                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Kategori</label>
+                    <Select
+                      value={formData.category || 'Makanan'}
+                      onChange={v => setFormData({ ...formData, category: v })}
+                      options={CATEGORIES.slice(1).map(c => ({ value: c, label: c }))}
+                      className="w-full"
+                      buttonClassName="w-full"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Satuan</label><input value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} placeholder="pcs" className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" /></div>
+                  <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Stok</label><input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 tabular-nums" /></div>
+                  <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Harga Beli</label><input type="number" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: Number(e.target.value)})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 tabular-nums" /></div>
+                </div>
+                <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Harga Jual</label><input type="number" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 tabular-nums" /></div>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-3">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-                  <p className="text-slate-400 text-[10px] font-black tracking-widest leading-none">Lengkapi detail produk di bawah ini.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-rose-500 tracking-widest ml-1">KODE PLU (AUTO)</label>
-                  <input 
-                    value={formData.plu}
-                    readOnly
-                    className="w-full px-4 py-3 bg-rose-50/30 border border-rose-100 rounded-2xl outline-none font-black text-rose-600 cursor-not-allowed text-sm"
-                  />
-                </div>
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Merek (Brand)</label>
-                  <input 
-                    value={formData.brand}
-                    onChange={e => setFormData({...formData, brand: e.target.value})}
-                    placeholder="Contoh: Indomie / Coca Cola"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
-                  />
-                </div>
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Nama Produk</label>
-                  <input 
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                    placeholder="Contoh: Mie Goreng Jumbo"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-sm"
-                  />
-                </div>
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Kategori</label>
-                  <select 
-                    value={formData.category}
-                    onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold appearance-none text-sm"
-                  >
-                    {CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Satuan</label>
-                  <input 
-                    value={formData.unit}
-                    onChange={e => setFormData({...formData, unit: e.target.value})}
-                    placeholder="Contoh: pcs / kardus"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
-                  />
-                </div>
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Stok Awal</label>
-                  <input 
-                    type="number"
-                    value={formData.stock}
-                    onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
-                    placeholder="0"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#8b7365]/10 focus:border-[#8b7365] outline-none transition-all font-bold text-sm"
-                  />
-                </div>
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Harga Beli (Cogs)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">Rp</span>
-                    <input 
-                      type="number"
-                      value={formData.cost_price}
-                      onChange={e => setFormData({...formData, cost_price: Number(e.target.value)})}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-black text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-2 md:col-span-1 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Harga Jual</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-emerald-400 text-sm">Rp</span>
-                    <input 
-                      type="number"
-                      value={formData.price}
-                      onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-black text-sm text-emerald-600"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Gambar Produk</label>
-                  <div className="flex gap-4 items-center">
-                    <div className="w-20 h-20 bg-white rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group relative shadow-inner">
-                      {formData.image_url ? (
-                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain" />
-                      ) : (
-                        <Plus className="w-6 h-6 text-slate-200" />
-                      )}
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                         className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setFormData({ ...formData, image_url: reader.result as string });
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
+                  <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Gambar</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 bg-stone-100 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden flex items-center justify-center relative">
+                      {formData.image_url ? <img src={formData.image_url} alt="" className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-stone-300 dark:text-stone-600" />}
+                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onloadend = () => setFormData({...formData, image_url: r.result as string}); r.readAsDataURL(f); } }} />
                     </div>
-                    <div className="flex-1">
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-                          input?.click();
-                        }}
-                        className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-[#8b7365] hover:bg-slate-50 transition-all shadow-sm"
-                      >
-                        Ganti Gambar Produk
-                      </button>
-                    </div>
+                    <span className="text-xs text-stone-400 dark:text-stone-500">Klik untuk upload</span>
                   </div>
                 </div>
-                <div className="col-span-2 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Deskripsi Produk</label>
-                  <textarea 
-                    value={formData.description}
-                    onChange={e => setFormData({...formData, description: e.target.value})}
-                    rows={3}
-                    placeholder="Jelaskan keunggulan produk ini..."
-                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium resize-none text-xs"
-                  />
-                </div>
+                <div><label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">Deskripsi</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={2} placeholder="Opsional..." className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 resize-none" /></div>
               </div>
-
-              <div className="flex gap-3 mt-6">
-                <button 
-                  onClick={() => setIsFormOpen(false)}
-                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-[20px] font-black hover:bg-slate-200 transition-colors text-sm"
-                >
-                  Batal
-                </button>
-                <button 
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className={cn(
-                    "flex-3 py-3 text-white rounded-[20px] font-black transition-all shadow-2xl flex items-center justify-center gap-2 text-sm",
-                    isSubmitting 
-                      ? "bg-slate-400 cursor-not-allowed" 
-                      : "bg-[#8b7365] hover:bg-[#7a6458] shadow-[#8b7365]/20"
-                  )}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {editingProduct ? 'Updating...' : 'Saving...'}
-                    </>
-                  ) : (
-                    editingProduct ? 'Update Produk' : 'Simpan Produk'
-                  )}
-                </button>
+              <div className="p-5 border-t border-stone-200 dark:border-stone-800 flex gap-2 justify-end shrink-0">
+                <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors">Batal</button>
+                <button onClick={handleSubmit} disabled={isSubmitting} className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50">{isSubmitting ? 'Menyimpan...' : editingProduct ? 'Update' : 'Simpan'}</button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
+      {/* Detail Modal */}
       <AnimatePresence>
         {isDetailOpen && viewingProduct && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-[40px] p-10 max-w-lg w-full shadow-2xl relative"
-            >
-              <button 
-                onClick={() => setIsDetailOpen(false)}
-                className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-2xl transition-colors"
-              >
-                <X className="w-6 h-6 text-slate-400" />
-              </button>
-
-               <div className="mb-6 flex items-center gap-6">
-                <div className="w-20 h-20 bg-slate-50 rounded-2xl border border-slate-100 p-3 shrink-0">
-                  <img 
-                    src={viewingProduct.image_url} 
-                    alt={viewingProduct.name} 
-                    className="w-full h-full object-contain"
-                  />
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/50">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="bg-white dark:bg-stone-900 rounded-xl max-w-md w-full shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh]">
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-stone-100 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden"><img src={viewingProduct.image_url} alt="" className="w-full h-full object-cover" /></div>
+                  <div><p className="text-xs text-stone-500 dark:text-stone-400">{viewingProduct.brand} · PLU: {viewingProduct.plu}</p><h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{viewingProduct.name}</h2></div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-[9px] font-black text-[#8b7365] uppercase tracking-widest mb-1">{viewingProduct.brand}</p>
-                  <h2 className="text-xl font-black text-slate-800 leading-tight">{viewingProduct.name}</h2>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">PLU: {viewingProduct.plu}</p>
-                </div>
+                <button onClick={() => setIsDetailOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
               </div>
-
-              {/* Big Stock Block */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                 <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 text-center flex flex-col items-center justify-center">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">TOTAL STOK</p>
-                    <div className="flex items-end gap-2">
-                      <p className="text-5xl font-black text-[#8b7365] tracking-tighter">{viewingProduct.stock}</p>
-                      <p className="text-xs font-black text-[#8b7365]/50 uppercase mb-2">{viewingProduct.unit}</p>
-                    </div>
-                 </div>
-                 <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100 text-center flex flex-col items-center justify-center">
-                    <p className="text-[9px] font-black text-emerald-600/50 uppercase tracking-widest mb-1">HARGA SATUAN</p>
-                    <p className="text-2xl font-black text-emerald-600 tracking-tight">Rp {viewingProduct.price.toLocaleString()}</p>
-                 </div>
-              </div>
-
-              <div className="space-y-3">
-                {/* Supply History Expandable */}
-                <div className="border border-slate-100 rounded-3xl overflow-hidden">
-                   <button 
-                     onClick={() => setExpandedSection(expandedSection === 'supply' ? null : 'supply')}
-                     className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-                   >
-                      <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100">
-                            <Truck className="w-4 h-4" />
-                         </div>
-                         <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">Riwayat Barang Masuk</span>
-                      </div>
-                      {expandedSection === 'supply' ? <ChevronUp className="w-4 h-4 text-slate-400"/> : <ChevronDown className="w-4 h-4 text-slate-400"/>}
-                   </button>
-                   <AnimatePresence>
-                      {expandedSection === 'supply' && (
-                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-slate-50/30">
-                           <div className="p-4 pt-0 space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
-                              {isHistoryLoading ? (
-                                <div className="py-8 text-center text-[10px] font-bold text-slate-400">Memuat data...</div>
-                              ) : productSupplyHistory.length === 0 ? (
-                                <div className="py-8 text-center text-[10px] font-bold text-slate-300">Belum ada riwayat masuk.</div>
-                              ) : (
-                                productSupplyHistory.map(log => (
-                                  <div key={log.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
-                                     <div className="min-w-0 pr-4">
-                                        <p className="text-[10px] font-black text-slate-800 line-clamp-1">{log.supplier}</p>
-                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                           <span className="text-[8px] font-bold text-slate-400">{new Date(log.created_at).toLocaleDateString()}</span>
-                                           <span className="text-[8px] font-bold text-slate-400 text-[6px]">●</span>
-                                           <span className="text-[8px] font-bold text-slate-400 uppercase">{log.salesman}</span>
-                                        </div>
-                                     </div>
-                                     <span className="text-xs font-black text-emerald-600 shrink-0">+{log.quantity}</span>
-                                  </div>
-                                ))
-                              )}
-                           </div>
-                        </motion.div>
-                      )}
-                   </AnimatePresence>
+              <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg text-center"><p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Stok</p><p className="text-2xl font-semibold text-stone-900 dark:text-stone-100 tabular-nums">{viewingProduct.stock}<span className="text-xs text-stone-400 dark:text-stone-500 ml-1">{viewingProduct.unit}</span></p></div>
+                  <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg text-center"><p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Harga Jual</p><p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">Rp {viewingProduct.price.toLocaleString()}</p></div>
                 </div>
-
-                {/* Sales History Expandable (Mock for UI) */}
-                <div className="border border-slate-100 rounded-3xl overflow-hidden">
-                   <button 
-                     onClick={() => setExpandedSection(expandedSection === 'sales' ? null : 'sales')}
-                     className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-                   >
-                      <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 border border-rose-100">
-                            <ShoppingCart className="w-4 h-4" />
-                         </div>
-                         <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">Riwayat Penjualan (Out)</span>
+                {/* Supply History */}
+                <div className="border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+                  <button onClick={() => setExpandedSection(expandedSection === 'supply' ? null : 'supply')} className="w-full p-3 flex items-center justify-between hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
+                    <div className="flex items-center gap-2"><Truck className="w-4 h-4 text-stone-400 dark:text-stone-500" /><span className="text-sm font-medium text-stone-700 dark:text-stone-200">Riwayat Masuk</span></div>
+                    {expandedSection === 'supply' ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
+                  </button>
+                  <AnimatePresence>{expandedSection === 'supply' && (
+                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
+                      <div className="p-3 pt-0 space-y-1.5 max-h-[180px] overflow-y-auto">
+                        {isHistoryLoading ? <p className="text-xs text-stone-400 dark:text-stone-500 text-center py-4">Memuat...</p> : productSupplyHistory.length === 0 ? <p className="text-xs text-stone-400 dark:text-stone-500 text-center py-4">Belum ada riwayat</p> : productSupplyHistory.map(log => (
+                          <div key={log.id} className="flex items-center justify-between p-2 bg-stone-50 dark:bg-stone-800 rounded-md">
+                            <div><p className="text-xs font-medium text-stone-700 dark:text-stone-200">{log.supplier || 'Stok Masuk'}</p><p className="text-[10px] text-stone-400 dark:text-stone-500">{new Date(log.created_at).toLocaleDateString('id-ID')}</p></div>
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">+{log.quantity}</span>
+                          </div>
+                        ))}
                       </div>
-                      {expandedSection === 'sales' ? <ChevronUp className="w-4 h-4 text-slate-400"/> : <ChevronDown className="w-4 h-4 text-slate-400"/>}
-                   </button>
-                   <AnimatePresence>
-                      {expandedSection === 'sales' && (
-                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-slate-50/30">
-                           <div className="p-4 pt-0 space-y-2">
-                              {/* Mock Sales Data */}
-                              {[
-                                { date: 'Senin, 30 Mar', qty: 12 },
-                                { date: 'Selasa, 31 Mar', qty: 8 },
-                                { date: 'Hari Ini', qty: 5 },
-                              ].map((s, i) => (
-                                <div key={i} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
-                                   <div className="flex items-center gap-2">
-                                      <Calendar className="w-3 h-3 text-slate-300" />
-                                      <span className="text-[10px] font-bold text-slate-600">{s.date}</span>
-                                   </div>
-                                   <span className="text-xs font-black text-rose-500">-{s.qty} {viewingProduct.unit}</span>
-                                </div>
-                              ))}
-                              <div className="py-4 text-center">
-                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Data Penjualan akan diupdate otomatis<br/>oleh sistem kasir nantinya.</p>
+                    </motion.div>
+                  )}</AnimatePresence>
+                </div>
+                {/* Stock Ledger */}
+                <div className="border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+                  <button onClick={() => setExpandedSection(expandedSection === 'sales' ? null : 'sales')} className="w-full p-3 flex items-center justify-between hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
+                    <div className="flex items-center gap-2"><Layers className="w-4 h-4 text-stone-400 dark:text-stone-500" /><span className="text-sm font-medium text-stone-700 dark:text-stone-200">Buku Stok</span></div>
+                    {expandedSection === 'sales' ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
+                  </button>
+                  <AnimatePresence>{expandedSection === 'sales' && (
+                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
+                      <div className="p-3 pt-0 space-y-1.5 max-h-[220px] overflow-y-auto">
+                        {(isHistoryLoading || isSalesHistoryLoading) ? <p className="text-xs text-stone-400 dark:text-stone-500 text-center py-4">Memuat...</p> : (() => {
+                          const merged = [
+                            ...productSupplyHistory.map((l: any) => ({ id: `s-${l.id}`, date: l.created_at, type: 'in' as const, qty: l.quantity || 0, source: l.supplier || 'Masuk', promo_type: null, is_free_item: false })),
+                            ...productSalesHistory.map((l: any) => ({ id: `o-${l.id}`, date: l.date, type: 'out' as const, qty: l.qty, source: `Terjual (${l.cashier})`, promo_type: l.promo_type, is_free_item: l.is_free_item }))
+                          ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                          if (merged.length === 0) return <p className="text-xs text-stone-400 dark:text-stone-500 text-center py-4">Belum ada gerakan stok</p>;
+                          return merged.map(ev => (
+                            <div key={ev.id} className="flex items-center gap-2 p-2 bg-stone-50 dark:bg-stone-800 rounded-md">
+                              <span className={cn("text-xs font-medium w-6 text-center", ev.type === 'in' ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>{ev.type === 'in' ? '+' : '-'}{ev.qty}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-stone-700 dark:text-stone-200 truncate">{ev.source}{ev.promo_type ? ` [${ev.promo_type.toUpperCase()}]` : ''}{ev.is_free_item ? ' (GRATIS)' : ''}</p>
+                                <p className="text-[10px] text-stone-400 dark:text-stone-500">{new Date(ev.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                               </div>
-                           </div>
-                        </motion.div>
-                      )}
-                   </AnimatePresence>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </motion.div>
+                  )}</AnimatePresence>
                 </div>
               </div>
-
-              <div className="mt-8 flex gap-3">
-                 <button 
-                   onClick={() => setIsDetailOpen(false)}
-                   className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-[20px] font-black hover:bg-slate-200 transition-colors text-xs"
-                 >
-                   TUTUP
-                 </button>
-                 <button 
-                   onClick={() => { setIsDetailOpen(false); openEditForm(viewingProduct, { stopPropagation: () => {} } as any); }}
-                   className="flex-1 py-4 bg-[#8b7365] text-white rounded-[20px] font-black hover:bg-[#7a6458] transition-colors shadow-lg shadow-[#8b7365]/20 text-xs"
-                 >
-                   EDIT STOK / DATA
-                 </button>
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 shrink-0">
+                <button onClick={() => setIsDetailOpen(false)} className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">Tutup</button>
+                <button onClick={() => { setIsDetailOpen(false); openEditForm(viewingProduct, { stopPropagation: () => {} } as any); }} className="flex-1 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors">Edit</button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-      {/* Delete Confirmation Modal */}
+
+      {/* Delete Modal */}
       <AnimatePresence>
         {isDeleteModalOpen && productToDelete && (
-          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-               animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-               className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl p-8 z-10"
-            >
-               <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mb-6">
-                  <AlertCircle className="w-8 h-8" />
-               </div>
-               
-               <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-3">
-                 Hapus Produk?
-               </h3>
-               <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
-                 Apakah Anda yakin ingin menghapus <span className="text-slate-800 font-bold">"{productToDelete.name}"</span>? Aksi ini tidak dapat dibatalkan.
-               </p>
-               
-               <div className="flex gap-3">
-                 <button 
-                   onClick={() => setIsDeleteModalOpen(false)}
-                   disabled={isDeleting}
-                   className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all disabled:opacity-50"
-                 >
-                   Batal
-                 </button>
-                 <button 
-                   onClick={confirmDelete}
-                   disabled={isDeleting}
-                   className="flex-1 py-3.5 bg-red-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                 >
-                   {isDeleting ? (
-                     <>
-                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Sedang Menghapus...
-                     </>
-                   ) : 'Ya, Hapus'}
-                 </button>
-               </div>
+          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-black/50">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 p-6">
+              <h3 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-2">Hapus produk?</h3>
+              <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Hapus <strong className="text-stone-700 dark:text-stone-200">"{productToDelete.name}"</strong>? Aksi ini tidak dapat dibatalkan.</p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting} className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors">Batal</button>
+                <button onClick={confirmDelete} disabled={isDeleting} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50">{isDeleting ? 'Menghapus...' : 'Hapus'}</button>
+              </div>
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
+      <PriceTagDrawer isOpen={isPriceTagDrawerOpen} onClose={() => { setIsPriceTagDrawerOpen(false); setProductForPriceTag(null); }} productsFromPage={currentItems} allProducts={products} companyName={userProfile.company?.name || 'MYSTORE STUDIO'} initialProduct={productForPriceTag} userProfile={userProfile} />
+
+      {/* Promo Detail Drawer */}
+      <AnimatePresence>
+        {promoDrawerProductId && (() => {
+          const product = products.find(p => p.id === promoDrawerProductId);
+          const offers = productOffers.get(promoDrawerProductId) || [];
+          if (!product) return null;
+          return (
+            <div className="fixed inset-0 z-[5500] flex items-center justify-center p-4 bg-black/50" onClick={() => setPromoDrawerProductId(null)}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white dark:bg-stone-900 rounded-xl max-w-md w-full shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh]"
+              >
+                <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                  <div className="min-w-0">
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Promo aktif untuk</p>
+                    <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate">{product.name}</h2>
+                  </div>
+                  <button onClick={() => setPromoDrawerProductId(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="p-5 overflow-y-auto flex-1 space-y-2">
+                  {offers.length === 0 ? (
+                    <p className="text-sm text-stone-400 dark:text-stone-500 text-center py-8">Tidak ada kampanye aktif.</p>
+                  ) : offers.map((offer, idx) => (
+                    <div key={offer.campaignProductId} className="p-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <p className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">{offer.campaignName}</p>
+                        {idx === 0 && offers.length > 1 && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 shrink-0">Prioritas</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
+                          <Gift className="w-3 h-3" />{offerLabel(offer, product.price)}
+                        </span>
+                        {offer.stackable && <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">Stack</span>}
+                        <span className="text-[11px] text-stone-500 dark:text-stone-400">P{offer.priority}</span>
+                      </div>
+                      {offer.promoType === 'price_cut' && offer.promoPrice != null && (
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 tabular-nums">
+                          Rp {product.price.toLocaleString()} → <span className="text-emerald-600 dark:text-emerald-400 font-medium">Rp {offer.promoPrice.toLocaleString()}</span>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 shrink-0">
+                  <button onClick={() => setPromoDrawerProductId(null)} className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">Tutup</button>
+                  <button onClick={() => { setPromoDrawerProductId(null); onNavigate('campaigns'); }} className="flex-1 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors">Buka kampanye</button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
