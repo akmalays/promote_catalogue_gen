@@ -82,7 +82,7 @@ export default function Notifications({ userProfile }: { userProfile: UserProfil
       </div>
 
       {/* Filter tabs */}
-      <div className="px-6 md:px-8 py-3 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shrink-0">
+      <div className="px-6 md:px-8 py-3 shrink-0">
         <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg w-fit">
           {[
             { key: 'all', label: 'Semua' },
@@ -98,11 +98,11 @@ export default function Notifications({ userProfile }: { userProfile: UserProfil
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8">
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col">
         {isLoading ? (
           <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="bg-white dark:bg-stone-900 rounded-lg p-5 border border-stone-200 dark:border-stone-800 animate-pulse"><div className="h-4 bg-stone-100 dark:bg-stone-800 rounded w-1/3 mb-2" /><div className="h-3 bg-stone-100 dark:bg-stone-800 rounded w-2/3" /></div>)}</div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center"><Bell className="w-8 h-8 mx-auto mb-3 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-400 dark:text-stone-500">Tidak ada notifikasi</p></div>
+          <div className="flex-1 flex flex-col items-center justify-center text-center"><Bell className="w-8 h-8 mb-3 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-400 dark:text-stone-500">Tidak ada notifikasi</p></div>
         ) : (
           <div className="space-y-2">
             {filtered.map(notif => {
