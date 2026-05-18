@@ -8,6 +8,7 @@ import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import { PromoCampaign, CampaignProduct, UserProfile, CampaignMetric } from '../types';
 import toast from 'react-hot-toast';
+import DatePicker from '../components/ui/DatePicker';
 import Select from '../components/ui/Select';
 import Toggle from '../components/ui/Toggle';
 import { stockDaysLabel, stockDaysTone } from '../lib/promo';
@@ -926,20 +927,19 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Mulai</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={form.start_date}
-                      onChange={e => setForm({ ...form, start_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
+                      onChange={v => setForm({ ...form, start_date: v })}
+                      className="w-full"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Selesai</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={form.end_date}
-                      onChange={e => setForm({ ...form, end_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
+                      onChange={v => setForm({ ...form, end_date: v })}
+                      className="w-full"
+                      align="right"
                     />
                   </div>
                 </div>

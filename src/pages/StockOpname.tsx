@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import LoadingScreen from '../components/LoadingScreen';
 import Select from '../components/ui/Select';
+import DatePicker from '../components/ui/DatePicker';
 
 interface Product {
   id: string;
@@ -418,11 +419,11 @@ export default function StockOpname({ userProfile }: { userProfile: UserProfile 
                 size="sm"
                 className="min-w-[110px]"
               />
-              <input
-                type="date"
+              <DatePicker
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
+                onChange={(v) => setSelectedDate(v || new Date().toISOString().split('T')[0])}
+                size="sm"
+                align="right"
               />
             </div>
           ) : null}

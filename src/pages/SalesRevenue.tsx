@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
 import LoadingScreen from '../components/LoadingScreen';
+import DatePicker from '../components/ui/DatePicker';
 
 interface Sale {
   id: string | number;
@@ -98,7 +99,7 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Pantau performa penjualan harian.</p>
         </div>
         <div className="flex items-center gap-2">
-          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="px-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
+          <DatePicker value={selectedDate} onChange={(v) => setSelectedDate(v || new Date().toISOString().split('T')[0])} size="sm" align="right" />
           {isAdmin && (
             <button onClick={() => setIsTargetModalOpen(true)} className="px-3 py-2 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5" /> Target
