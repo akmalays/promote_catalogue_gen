@@ -84,7 +84,7 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-stone-50 dark:bg-stone-950">
-      <style>{`@media print { body > * { visibility: hidden !important; } .ReportPrintArea, .ReportPrintArea * { visibility: visible !important; } .ReportPrintArea { position: fixed !important; left: 0; top: 0; width: 100%; padding: 40px !important; background: white !important; } .no-print { display: none !important; } }`}</style>
+      <style>{`@media print { body > * { visibility: hidden !important; } .ReportPrintArea, .ReportPrintArea *, .ReceiptPrintArea, .ReceiptPrintArea * { visibility: visible !important; } .ReportPrintArea, .ReceiptPrintArea { position: fixed !important; left: 0; top: 0; width: 100%; padding: 24px !important; background: white !important; } .no-print { display: none !important; } }`}</style>
 
       {/* Header */}
       <div className="px-6 md:px-8 pt-6 pb-4 flex items-center justify-between gap-4 no-print shrink-0">
@@ -140,18 +140,21 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
 
         {/* Focus Items */}
         {stats.focusItems.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {stats.focusItems.map((item, i) => (
-              <div key={i} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-stone-700 dark:text-stone-200 truncate pr-2">{item.name}</p>
-                  <span className="text-xs text-stone-500 dark:text-stone-400 tabular-nums shrink-0">{item.sold}/{item.target}</span>
+          <div className="mb-6">
+            <h2 className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-3">Item Fokus</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {stats.focusItems.map((item, i) => (
+                <div key={i} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-stone-700 dark:text-stone-200 truncate pr-2">{item.name}</p>
+                    <span className="text-xs text-stone-500 dark:text-stone-400 tabular-nums shrink-0">{item.sold}/{item.target}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-stone-700 dark:bg-stone-300 rounded-full transition-all duration-500" style={{ width: `${item.progress}%` }} />
+                  </div>
                 </div>
-                <div className="h-1.5 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-stone-700 dark:bg-stone-300 rounded-full transition-all duration-500" style={{ width: `${item.progress}%` }} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
@@ -352,10 +355,20 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
 
       {/* Receipt Modal */}
       <AnimatePresence>
-        {selectedSale && (
+        {selectedSale && (() => {
+          const items = (selectedSale.items || []).filter((i: any) => !i.is_metadata);
+          const cashier = selectedSale.items?.find((i: any) => i.is_metadata)?.cashier_name || 'Admin';
+          // Compute totals based on item snapshots
+          const originalTotal = items.reduce((acc: number, it: any) => {
+            const qty = it.qty || it.quantity || 0;
+            const normal = it.original_price ?? it.price ?? 0;
+            return acc + normal * qty;
+          }, 0);
+          const totalDiscount = Math.max(0, originalTotal - selectedSale.total_amount);
+          return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedSale(null)} className="absolute inset-0 bg-black/40 no-print" />
-            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10 ReceiptPrintArea">
               <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between no-print">
                 <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Detail Transaksi</h3>
                 <button onClick={() => setSelectedSale(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
@@ -368,30 +381,53 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
                 <div className="space-y-1 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700 text-xs text-stone-600 dark:text-stone-400">
                   <div className="flex justify-between"><span>No.</span><span className="font-mono">#{selectedSale.id.toString().toUpperCase()}</span></div>
                   <div className="flex justify-between"><span>Waktu</span><span>{new Date(selectedSale.created_at).toLocaleString('id-ID')}</span></div>
-                  <div className="flex justify-between"><span>Kasir</span><span>{selectedSale.items?.find((i: any) => i.is_metadata)?.cashier_name || 'Admin'}</span></div>
+                  <div className="flex justify-between"><span>Kasir</span><span>{cashier}</span></div>
                 </div>
                 <div className="space-y-2 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700">
-                  {selectedSale.items?.filter((i: any) => !i.is_metadata).map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm">
-                      <div><p className="text-stone-800 dark:text-stone-200">{item.name || 'Produk'}</p><p className="text-xs text-stone-400 dark:text-stone-500">{item.qty || item.quantity} × Rp {(item.price || 0).toLocaleString()}</p></div>
-                      <span className="font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {((item.qty || item.quantity || 0) * (item.price || 0)).toLocaleString()}</span>
-                    </div>
-                  ))}
+                  {items.map((item: any, idx: number) => {
+                    const qty = item.qty || item.quantity || 0;
+                    const normal = item.original_price ?? item.price ?? 0;
+                    const lineNormal = normal * qty;
+                    const after = item.is_free_item ? 0 : (item.price ?? normal);
+                    const lineDiscount = item.is_free_item
+                      ? lineNormal
+                      : Math.max(0, (normal - after) * qty);
+                    return (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <div className="min-w-0 pr-2">
+                          <p className="text-stone-800 dark:text-stone-200">{item.name || 'Produk'}</p>
+                          <p className="text-xs text-stone-400 dark:text-stone-500">{qty} × Rp {normal.toLocaleString()}</p>
+                          {lineDiscount > 0 && (
+                            <p className="text-xs text-stone-500 dark:text-stone-400">
+                              Diskon{item.campaign_name ? ` ${item.campaign_name}` : ''}: − Rp {lineDiscount.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <span className="font-medium text-stone-900 dark:text-stone-100 tabular-nums shrink-0">Rp {lineNormal.toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="space-y-1 text-sm mb-4">
-                  <div className="flex justify-between font-semibold text-stone-900 dark:text-stone-100"><span>Total</span><span className="tabular-nums">Rp {selectedSale.total_amount.toLocaleString()}</span></div>
-                  <div className="flex justify-between text-stone-600 dark:text-stone-400"><span>{selectedSale.payment_method === 'cash' ? 'Tunai' : selectedSale.payment_method.toUpperCase()}</span><span className="tabular-nums">Rp {(selectedSale.payment_amount || selectedSale.total_amount).toLocaleString()}</span></div>
+                  <div className="flex justify-between text-stone-700 dark:text-stone-300"><span>Subtotal (harga normal)</span><span className="tabular-nums">Rp {originalTotal.toLocaleString()}</span></div>
+                  <div className="flex justify-between text-stone-700 dark:text-stone-300"><span>Total diskon</span><span className="tabular-nums">− Rp {totalDiscount.toLocaleString()}</span></div>
+                  <div className="flex justify-between font-semibold text-stone-900 dark:text-stone-100 pt-1 border-t border-dashed border-stone-200 dark:border-stone-700 mt-1"><span>Total</span><span className="tabular-nums">Rp {selectedSale.total_amount.toLocaleString()}</span></div>
+                  <div className="flex justify-between text-stone-600 dark:text-stone-400 pt-1"><span>{selectedSale.payment_method === 'cash' ? 'Tunai' : selectedSale.payment_method.toUpperCase()}</span><span className="tabular-nums">Rp {(selectedSale.payment_amount || selectedSale.total_amount).toLocaleString()}</span></div>
+                  {selectedSale.payment_method !== 'cash' && selectedSale.payment_ref && (
+                    <div className="flex justify-between text-stone-600 dark:text-stone-400"><span>Ref / Trace</span><span className="font-mono">{selectedSale.payment_ref}</span></div>
+                  )}
                   {selectedSale.change_amount > 0 && <div className="flex justify-between text-stone-600 dark:text-stone-400"><span>Kembali</span><span className="tabular-nums">Rp {selectedSale.change_amount.toLocaleString()}</span></div>}
                 </div>
                 <div className="text-center pt-4 border-t border-dashed border-stone-200 dark:border-stone-700"><p className="text-xs text-stone-400 dark:text-stone-500">{posSettings.slogan}</p></div>
               </div>
               <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 no-print">
-                <button onClick={() => window.print()} className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-1.5"><Printer className="w-3.5 h-3.5" /> Cetak</button>
+                <button onClick={() => { document.title = `Struk_${selectedSale.id}`; window.print(); setTimeout(() => { document.title = 'myStore Studio'; }, 100); }} className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-1.5"><Printer className="w-3.5 h-3.5" /> Cetak</button>
                 <button onClick={() => setSelectedSale(null)} className="flex-1 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors">Tutup</button>
               </div>
             </motion.div>
           </div>
-        )}
+          );
+        })()}
       </AnimatePresence>
     </div>
   );

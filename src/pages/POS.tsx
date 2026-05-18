@@ -69,6 +69,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
   const [activeCampaigns, setActiveCampaigns] = useState<PromoCampaign[]>([]);
   const [productOffers, setProductOffers] = useState<Map<string, PromoOffer[]>>(new Map());
   const [pendingPickProduct, setPendingPickProduct] = useState<Product | null>(null);
+  const [showActivePromoDrawer, setShowActivePromoDrawer] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -298,6 +299,8 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
             cost_price: i.product.cost_price || 0,
             promo_type: i.promoType || null,
             is_free_item: i.isFreeItem || false,
+            campaign_id: i.campaignId || null,
+            campaign_name: i.campaignName || null,
           })),
           {
             is_metadata: true,
@@ -423,14 +426,20 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
         <div className="flex-1 p-6 overflow-y-auto flex flex-col">
            {/* Active campaigns banner */}
            {activeCampaigns.length > 0 && (
-             <div className="mb-4 flex items-center gap-2 flex-wrap">
+             <button
+               type="button"
+               onClick={() => setShowActivePromoDrawer(true)}
+               className="mb-4 self-start flex items-center gap-2 flex-wrap text-left rounded-lg px-2 py-1 -mx-2 hover:bg-stone-100 dark:hover:bg-stone-800/60 transition-colors"
+               title="Lihat detail promo"
+             >
                <span className="text-xs text-stone-500 dark:text-stone-400 inline-flex items-center gap-1.5"><Gift className="w-3.5 h-3.5 text-amber-500" />Kampanye aktif:</span>
                {activeCampaigns.map(c => (
                  <span key={c.id} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60">
                    {c.name}
                  </span>
                ))}
-             </div>
+               <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 underline underline-offset-2 ml-1">Lihat detail</span>
+             </button>
            )}
 
            {/* Search Box */}
@@ -635,99 +644,92 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
       <AnimatePresence>
         {isPaymentModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-             <motion.div 
-               initial={{ opacity: 0 }} 
-               animate={{ opacity: 1 }} 
-               exit={{ opacity: 0 }} 
-               onClick={() => setIsPaymentModalOpen(false)} 
-               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
-             />
-             <motion.div 
-               initial={{ opacity: 0, scale: 0.9, y: 20 }} 
-               animate={{ opacity: 1, scale: 1, y: 0 }} 
-               exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-               className="bg-white rounded-xl w-full max-w-2xl shadow-lg relative overflow-hidden flex flex-col z-[110]"
-             >
-                <div className="p-10 border-b flex items-center justify-between bg-slate-50">
-                   <div>
-                      <h2 className="text-3xl font-medium text-slate-800 er mb-1">Penyelesaian Transaksi</h2>
-                      <p className="text-[10px] font-medium text-slate-400  ">Metode Pembayaran: Tunai / Cash</p>
-                   </div>
-                   <div className="text-right">
-                      <p className="text-[10px] font-medium text-rose-500   mb-1">Total Tagihan</p>
-                      <h3 className="text-4xl font-medium text-slate-800 er">Rp {subtotal.toLocaleString()}</h3>
-                   </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsPaymentModalOpen(false)} className="absolute inset-0 bg-black/40" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 z-10"
+            >
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Pembayaran Tunai</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Masukkan jumlah uang yang diterima</p>
+                </div>
+                <button onClick={() => setIsPaymentModalOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-stone-500 dark:text-stone-400">Total tagihan</span>
+                  <span className="text-lg font-semibold text-stone-900 dark:text-stone-100 tabular-nums">Rp {subtotal.toLocaleString()}</span>
                 </div>
 
-                <div className="p-10 space-y-8">
-                   <div className="space-y-4">
-                      <label className="text-xs font-medium text-slate-400   ml-1">Uang yang Diterima</label>
-                      <div className="relative">
-                         <div className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-medium text-slate-300">Rp</div>
-                         <input 
-                            autoFocus
-                            type="number" 
-                            value={paymentAmount}
-                            onChange={(e) => setPaymentAmount(e.target.value)}
-                            placeholder="0"
-                            className="w-full pl-20 pr-10 py-8 bg-slate-50 border-none rounded-lg text-5xl font-medium text-slate-800 outline-none focus:ring-4 focus:ring-stone-900/10 transition-all placeholder-slate-200"
-                         />
-                      </div>
-                   </div>
-
-                   {/* Quick Payment Options */}
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[50000, 100000, 150000, 200000].map(amount => (
-                        <button 
-                          key={amount}
-                          onClick={() => handleQuickPay(amount)}
-                          className="py-4 rounded-lg border-2 border-slate-100 font-medium text-slate-600 hover:border-stone-900 hover:text-stone-700 hover:bg-stone-900/5 transition-all"
-                        >
-                          Rp {amount.toLocaleString()}
-                        </button>
-                      ))}
-                      <button 
-                        onClick={() => handleQuickPay(subtotal)}
-                        className="py-4 col-span-2 rounded-lg border border-stone-200 dark:border-stone-700 font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-all flex items-center justify-center gap-2"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        UANG PAS (Rp {subtotal.toLocaleString()})
-                      </button>
-                   </div>
-
-                   {/* Change Indicator */}
-                   {Number(paymentAmount) >= subtotal && (
-                     <motion.div 
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-8 bg-emerald-50 rounded-lg border border-stone-200 dark:border-stone-700 flex items-center justify-between"
-                      >
-                        <div>
-                           <p className="text-[10px] font-medium text-emerald-600   mb-1">Uang Kembalian</p>
-                           <h4 className="text-4xl font-medium text-emerald-700 er">Rp {(Number(paymentAmount) - subtotal).toLocaleString()}</h4>
-                        </div>
-                        <CheckCircle2 className="w-12 h-12 text-emerald-500 opacity-20" />
-                     </motion.div>
-                   )}
-
-                   <div className="pt-6 flex gap-4">
-                      <button 
-                        onClick={() => setIsPaymentModalOpen(false)}
-                        className="flex-1 py-5 rounded-lg font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-                      >
-                         Batal
-                      </button>
-                      <button 
-                        disabled={!paymentAmount || Number(paymentAmount) < subtotal || isProcessing}
-                        onClick={processPayment}
-                        className="flex-[2] py-5 bg-stone-900 text-white rounded-lg font-medium  hover:bg-stone-800 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
-                      >
-                         {isProcessing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Calculator className="w-5 h-5" />}
-                         KONFIRMASI BAYAR
-                      </button>
-                   </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">Uang diterima</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400 dark:text-stone-500">Rp</span>
+                    <input
+                      autoFocus
+                      type="number"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      placeholder="0"
+                      className="w-full pl-9 pr-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 tabular-nums"
+                    />
+                  </div>
                 </div>
-             </motion.div>
+
+                <div>
+                  <p className="text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">Cepat</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[20000, 50000, 100000].map(amount => (
+                      <button
+                        key={amount}
+                        onClick={() => handleQuickPay(amount)}
+                        className="px-2 py-2 rounded-md border border-stone-200 dark:border-stone-700 text-sm text-stone-700 dark:text-stone-200 tabular-nums hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+                      >
+                        {amount.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => handleQuickPay(subtotal)}
+                    className="w-full mt-2 px-3 py-2 rounded-md border border-stone-200 dark:border-stone-700 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Uang pas (Rp {subtotal.toLocaleString()})
+                  </button>
+                </div>
+
+                {Number(paymentAmount) >= subtotal && Number(paymentAmount) > 0 && (
+                  <div className="flex items-center justify-between text-sm pt-3 border-t border-dashed border-stone-200 dark:border-stone-700">
+                    <span className="text-stone-500 dark:text-stone-400">Kembalian</span>
+                    <span className="text-base font-semibold text-stone-900 dark:text-stone-100 tabular-nums">Rp {(Number(paymentAmount) - subtotal).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2">
+                <button
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  disabled={!paymentAmount || Number(paymentAmount) < subtotal || isProcessing}
+                  onClick={processPayment}
+                  className="flex-[2] py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {isProcessing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  Konfirmasi bayar
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -736,104 +738,99 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
       <AnimatePresence>
         {isDebitQRISModalOpen && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-             <motion.div 
-               initial={{ opacity: 0 }} 
-               animate={{ opacity: 1 }} 
-               exit={{ opacity: 0 }} 
-               onClick={() => setIsDebitQRISModalOpen(false)} 
-               className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
-             />
-             <motion.div 
-               initial={{ opacity: 0, scale: 0.9, y: 20 }} 
-               animate={{ opacity: 1, scale: 1, y: 0 }} 
-               exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-               className="bg-white rounded-xl w-full max-w-xl shadow-lg relative overflow-hidden flex flex-col z-[160]"
-             >
-                <div className="p-8 bg-slate-50 border-b flex items-center justify-between">
-                   <div>
-                      <h2 className="text-2xl font-medium text-slate-800 er">Pembayaran Non-Tunai</h2>
-                      <p className="text-[10px] font-medium text-slate-400  ">Pilih Metode EDC / Digital</p>
-                   </div>
-                   <div className="text-right">
-                      <p className="text-[10px] font-medium text-rose-500   mb-1">Total Tagihan</p>
-                      <h3 className="text-3xl font-medium text-slate-800 er">Rp {subtotal.toLocaleString()}</h3>
-                   </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDebitQRISModalOpen(false)} className="absolute inset-0 bg-black/40" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 z-10"
+            >
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Pembayaran Non-Tunai</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Pilih metode EDC atau QRIS</p>
+                </div>
+                <button onClick={() => setIsDebitQRISModalOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-stone-500 dark:text-stone-400">Total tagihan</span>
+                  <span className="text-lg font-semibold text-stone-900 dark:text-stone-100 tabular-nums">Rp {subtotal.toLocaleString()}</span>
                 </div>
 
-                <div className="p-8 space-y-8">
-                   {/* Tab Toggle */}
-                   <div className="flex p-1.5 bg-slate-100 rounded-lg gap-1">
-                      <button 
-                        onClick={() => setPaymentMethod('debit')}
-                        className={cn(
-                          "flex-1 py-3 rounded-xl font-medium text-xs  transition-all flex items-center justify-center gap-2",
-                          paymentMethod === 'debit' ? "bg-white text-stone-700 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                        )}
-                      >
-                         <CreditCard className="w-4 h-4" /> Kartu Debit
-                      </button>
-                      <button 
-                        onClick={() => setPaymentMethod('qris')}
-                        className={cn(
-                          "flex-1 py-3 rounded-xl font-medium text-xs  transition-all flex items-center justify-center gap-2",
-                          paymentMethod === 'qris' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                        )}
-                      >
-                         <QrCode className="w-4 h-4" /> QRIS Scan
-                      </button>
-                   </div>
-
-                   {/* Content */}
-                   {paymentMethod === 'debit' ? (
-                      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                         <div className="text-center py-6 border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
-                            <CreditCard className="w-12 h-12 mx-auto text-slate-200 mb-2" />
-                            <p className="text-xs font-medium text-slate-400  ">Silahkan Gesek / Masukkan Kartu pada Mesin EDC</p>
-                         </div>
-                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-medium text-slate-400   ml-1">Nomor Referensi / Trace</label>
-                            <input 
-                               type="text" 
-                               value={nonCashRef}
-                               onChange={(e) => setNonCashRef(e.target.value)}
-                               placeholder="Contoh: 123456"
-                               className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-lg focus:border-stone-900 focus:bg-white focus:outline-none transition-all font-bold text-slate-800"
-                            />
-                         </div>
-                      </div>
-                   ) : (
-                      <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-2">
-                         <div className="w-48 h-48 bg-white mx-auto p-4 rounded-lg shadow-xl border border-slate-100 flex items-center justify-center">
-                            {/* Mock QR Code */}
-                            <div className="relative group">
-                               <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=POS-LILYMART" alt="QRIS" className="w-40 h-40 group-hover:blur-[2px] transition-all" />
-                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                  <QrCode className="w-10 h-10 text-emerald-600" />
-                               </div>
-                            </div>
-                         </div>
-                         <p className="text-[10px] font-medium text-emerald-600  ">Scan QRIS via Dana / ShopeePay / OVO / M-Banking</p>
-                      </div>
-                   )}
-
-                   <div className="pt-6 flex gap-4">
-                      <button 
-                        onClick={() => setIsDebitQRISModalOpen(false)}
-                        className="flex-1 py-5 rounded-lg font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all  text-xs"
-                      >
-                         Batal
-                      </button>
-                      <button 
-                        disabled={isProcessing || (paymentMethod === 'debit' && !nonCashRef)}
-                        onClick={processPayment}
-                        className="flex-[2] py-5 bg-stone-900 text-white rounded-lg font-medium  hover:bg-stone-800 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3  text-xs "
-                      >
-                         {isProcessing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                         KONFIRMASI BAYAR LUNAS
-                      </button>
-                   </div>
+                <div className="flex p-1 bg-stone-100 dark:bg-stone-800 rounded-lg gap-1">
+                  <button
+                    onClick={() => setPaymentMethod('debit')}
+                    className={cn(
+                      "flex-1 py-1.5 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-1.5",
+                      paymentMethod === 'debit'
+                        ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm"
+                        : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200",
+                    )}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" /> Debit
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('qris')}
+                    className={cn(
+                      "flex-1 py-1.5 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-1.5",
+                      paymentMethod === 'qris'
+                        ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm"
+                        : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200",
+                    )}
+                  >
+                    <QrCode className="w-3.5 h-3.5" /> QRIS
+                  </button>
                 </div>
-             </motion.div>
+
+                {paymentMethod === 'debit' ? (
+                  <div className="space-y-3">
+                    <div className="text-center py-4 border border-dashed border-stone-200 dark:border-stone-700 rounded-lg">
+                      <CreditCard className="w-8 h-8 mx-auto text-stone-300 dark:text-stone-600 mb-2" />
+                      <p className="text-xs text-stone-500 dark:text-stone-400">Gesek atau insert kartu pada mesin EDC</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">No. referensi / trace</label>
+                      <input
+                        type="text"
+                        value={nonCashRef}
+                        onChange={(e) => setNonCashRef(e.target.value)}
+                        placeholder="123456"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 font-mono"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-2 py-2">
+                    <div className="w-40 h-40 mx-auto bg-white p-3 rounded-lg border border-stone-200 dark:border-stone-700 flex items-center justify-center">
+                      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=POS-LILYMART" alt="QRIS" className="w-full h-full object-contain" />
+                    </div>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Scan QRIS dari aplikasi mobile banking / e-wallet</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2">
+                <button
+                  onClick={() => setIsDebitQRISModalOpen(false)}
+                  className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  disabled={isProcessing || (paymentMethod === 'debit' && !nonCashRef)}
+                  onClick={processPayment}
+                  className="flex-[2] py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {isProcessing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  Konfirmasi bayar
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -1052,6 +1049,108 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
                    </button>
                 </div>
              </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- ACTIVE CAMPAIGNS DRAWER --- */}
+      <AnimatePresence>
+        {showActivePromoDrawer && (
+          <div className="fixed inset-0 z-[5500] flex items-center justify-center p-4 bg-black/50" onClick={() => setShowActivePromoDrawer(false)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-stone-900 rounded-xl max-w-lg w-full shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh]"
+            >
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-amber-500" /> Promo aktif
+                  </h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{activeCampaigns.length} kampanye, {Array.from(productOffers.keys()).length} produk terkait</p>
+                </div>
+                <button onClick={() => setShowActivePromoDrawer(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {activeCampaigns.length === 0 ? (
+                  <p className="text-sm text-stone-400 dark:text-stone-500 text-center py-8">Tidak ada kampanye aktif saat ini.</p>
+                ) : activeCampaigns.map(camp => {
+                  // Collect all offers belonging to this campaign
+                  const offersForCamp: Array<{ pid: string; offer: PromoOffer }> = [];
+                  productOffers.forEach((offers, pid) => {
+                    offers.forEach(o => {
+                      if (o.campaignId === camp.id) offersForCamp.push({ pid, offer: o });
+                    });
+                  });
+                  return (
+                    <div key={camp.id} className="border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+                      <div className="px-4 py-3 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate">{camp.name}</p>
+                            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                              {new Date(camp.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} – {new Date(camp.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                              {' · '}{offersForCamp.length} produk
+                            </p>
+                          </div>
+                          {camp.stackable && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 shrink-0">Stack</span>
+                          )}
+                        </div>
+                        {camp.description && (
+                          <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1.5">{camp.description}</p>
+                        )}
+                      </div>
+                      <div className="divide-y divide-stone-100 dark:divide-stone-800">
+                        {offersForCamp.length === 0 ? (
+                          <p className="text-xs text-stone-400 dark:text-stone-500 px-4 py-4 text-center">Belum ada produk di kampanye ini</p>
+                        ) : offersForCamp.map(({ pid, offer }) => {
+                          const product = products.find(p => p.id === pid);
+                          if (!product) return null;
+                          return (
+                            <div key={`${camp.id}-${pid}`} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm text-stone-900 dark:text-stone-100 truncate">{product.name}</p>
+                                <p className="text-[11px] text-stone-400 dark:text-stone-500">
+                                  {product.brand}{product.plu ? ` · PLU ${product.plu}` : ''}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
+                                  {offerLabel(offer, product.price)}
+                                </span>
+                                {offer.promoType === 'price_cut' && offer.promoPrice != null ? (
+                                  <p className="text-[11px] tabular-nums mt-0.5">
+                                    <span className="text-stone-400 dark:text-stone-500 line-through">Rp {product.price.toLocaleString()}</span>
+                                    {' '}
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">Rp {offer.promoPrice.toLocaleString()}</span>
+                                  </p>
+                                ) : (
+                                  <p className="text-[11px] tabular-nums text-stone-500 dark:text-stone-400 mt-0.5">
+                                    Rp {product.price.toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 shrink-0">
+                <button
+                  onClick={() => setShowActivePromoDrawer(false)}
+                  className="w-full py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

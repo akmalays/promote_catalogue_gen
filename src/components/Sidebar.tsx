@@ -22,7 +22,7 @@ interface SidebarProps {
 const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'campaigns', label: 'Promo & Campaign', icon: <Gift className="w-[18px] h-[18px] shrink-0" /> },
-  { id: 'reports', label: 'Laporan Promo', icon: <BarChart3 className="w-[18px] h-[18px] shrink-0" /> },
+  { id: 'reports', label: 'Promo Reports', icon: <BarChart3 className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'revenue', label: 'Sales Report', icon: <TrendingUp className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'products', label: 'Product Database', icon: <Package className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-[18px] h-[18px] shrink-0" /> },
