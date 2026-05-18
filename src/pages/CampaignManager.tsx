@@ -8,8 +8,10 @@ import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import { PromoCampaign, CampaignProduct, UserProfile, CampaignMetric } from '../types';
 import toast from 'react-hot-toast';
+import DatePicker from '../components/ui/DatePicker';
 import Select from '../components/ui/Select';
 import Toggle from '../components/ui/Toggle';
+import { stockDaysLabel, stockDaysTone } from '../lib/promo';
 
 const PROMO_TYPE_OPTIONS = [
   { value: 'price_cut', label: 'Potong harga' },
@@ -41,6 +43,7 @@ interface Product {
   price: number;
   cost_price: number;
   category: string;
+  stock?: number;
 }
 
 type CampaignStatus = 'active' | 'scheduled' | 'ended' | 'draft';
@@ -123,6 +126,7 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dailyAverages, setDailyAverages] = useState<Map<string, number>>(new Map());
 
   useEffect(() => { loadData(); }, [userProfile.company_id]);
 
@@ -133,14 +137,16 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
         toast.error('ID Perusahaan tidak ditemukan');
         return;
       }
-      const [campData, products, met] = await Promise.all([
+      const [campData, products, met, avgs] = await Promise.all([
         api.getPromoCampaigns(userProfile.company_id),
         api.getProducts(userProfile.company_id),
         api.getCampaignMetrics(userProfile.company_id).catch(() => []),
+        api.getDailyAverages(userProfile.company_id).catch(() => new Map<string, number>()),
       ]);
       setCampaigns(campData);
       setAllProducts(products);
       setMetrics(met);
+      setDailyAverages(avgs);
     } catch (err) {
       console.error(err);
       toast.error('Gagal memuat data kampanye');
@@ -694,6 +700,26 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
                               <td className="px-5 py-3.5">
                                 <p className="text-xs text-stone-500 dark:text-stone-400 mb-0.5">{item.brand}</p>
                                 <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{item.name}</p>
+                                {(() => {
+                                  const masterProduct = allProducts.find(p => p.id === item.product_id);
+                                  const stock = masterProduct?.stock ?? 0;
+                                  const avg = dailyAverages.get(item.product_id) || 0;
+                                  if (stock <= 0 && avg <= 0) return null;
+                                  const days = avg > 0 ? stock / avg : Infinity;
+                                  const tone = stockDaysTone(days);
+                                  return (
+                                    <div className="flex items-center gap-2 mt-1 text-[11px] text-stone-500 dark:text-stone-400">
+                                      <span className={cn(stock < 10 && "text-red-600 dark:text-red-400")}>Stok {stock}</span>
+                                      {tone !== 'idle' && (
+                                        <span className={cn(
+                                          tone === 'danger' && "text-red-600 dark:text-red-400 font-medium",
+                                          tone === 'warn' && "text-amber-600 dark:text-amber-400",
+                                          tone === 'ok' && "text-stone-400 dark:text-stone-500",
+                                        )}>· {stockDaysLabel(days)}</span>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </td>
                               <td className="px-5 py-3.5">
                                 <Select
@@ -901,20 +927,19 @@ export default function CampaignManager({ userProfile }: { userProfile: UserProf
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Mulai</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={form.start_date}
-                      onChange={e => setForm({ ...form, start_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
+                      onChange={v => setForm({ ...form, start_date: v })}
+                      className="w-full"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Selesai</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={form.end_date}
-                      onChange={e => setForm({ ...form, end_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-100 focus:border-transparent"
+                      onChange={v => setForm({ ...form, end_date: v })}
+                      className="w-full"
+                      align="right"
                     />
                   </div>
                 </div>

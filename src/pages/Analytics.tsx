@@ -53,7 +53,7 @@ export default function Analytics({ userProfile }: { userProfile: UserProfile })
     return { total, totalProfit: total - totalCost, count, growth, bestsellers };
   }, [sales]);
 
-  if (isLoading) return <LoadingScreen message="Memuat data revenue..." subMessage="Menghitung statistik penjualan." />;
+  if (isLoading) return <LoadingScreen page="analytics" />;
 
   return (
     <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-stone-50 dark:bg-stone-950">

@@ -167,6 +167,23 @@ export function projectStockDays(
   return currentStock / avgDailyUnits;
 }
 
+/** Human-friendly stock-burn label. */
+export function stockDaysLabel(days: number): string {
+  if (!isFinite(days)) return '—';
+  if (days < 1) return '< 1 hari';
+  if (days < 7) return `≈ ${Math.round(days)} hari`;
+  if (days < 30) return `≈ ${Math.round(days / 7)} mgg`;
+  return `≈ ${Math.round(days / 30)} bln`;
+}
+
+/** Tone for stock-burn badge: danger (<3 days), warn (<7 days), ok otherwise. */
+export function stockDaysTone(days: number): 'danger' | 'warn' | 'ok' | 'idle' {
+  if (!isFinite(days)) return 'idle';
+  if (days < 3) return 'danger';
+  if (days < 7) return 'warn';
+  return 'ok';
+}
+
 /** Short, human-friendly label e.g. "B1G1", "B2G1", "B3G2", "-25%". */
 export function offerLabel(offer: PromoOffer, basePrice?: number): string {
   if (offer.promoType === 'b1g1') return 'B1G1';

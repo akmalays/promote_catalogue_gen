@@ -336,14 +336,32 @@ export const api = {
     salesman?: string;
     invoice_image?: string | null;
   }) => {
-    // 1. Get current product to calculate moving average
+    // Atomic via Postgres RPC (locks product row + writes supply_history).
+    // Falls back to the legacy two-step update if the RPC is missing in
+    // older databases that have not run migration 20260517010000_background_jobs_and_rpc.sql.
+    const { data, error } = await supabase.rpc('process_inbound', {
+      p_product_id: details.product_id,
+      p_quantity: details.quantity,
+      p_purchase_price: details.purchase_price,
+      p_company_id: details.company_id,
+      p_supplier: details.supplier ?? null,
+      p_salesman: details.salesman ?? null,
+      p_invoice_image: details.invoice_image ?? null,
+    });
+
+    if (!error) return data;
+
+    // ---- Legacy fallback ----
+    // Only triggered if the RPC was not yet deployed.
+    const isMissingRpc = (error.message || '').toLowerCase().includes('process_inbound');
+    if (!isMissingRpc) throw error;
+
     const { data: product, error: fetchError } = await supabase
       .from('products')
       .select('stock, cost_price')
       .eq('id', details.product_id)
       .eq('company_id', details.company_id)
       .single();
-
     if (fetchError) throw fetchError;
 
     const currentStock = Number(product.stock || 0);
@@ -351,27 +369,19 @@ export const api = {
     const newQty = Number(details.quantity);
     const newPurchasePrice = Number(details.purchase_price);
 
-    // Moving Average Formula
     const totalStock = currentStock + newQty;
     let newCostPrice = newPurchasePrice;
-    
     if (currentStock > 0 && totalStock > 0) {
       newCostPrice = ((currentStock * currentCost) + (newQty * newPurchasePrice)) / totalStock;
     }
 
-    // 2. Update Product (Stock & Cost Price)
     const { error: updateError } = await supabase
       .from('products')
-      .update({ 
-        stock: totalStock,
-        cost_price: Math.round(newCostPrice)
-      })
+      .update({ stock: totalStock, cost_price: Math.round(newCostPrice) })
       .eq('id', details.product_id)
       .eq('company_id', details.company_id);
-
     if (updateError) throw updateError;
 
-    // 3. Add to Supply History
     return api.addSupplyHistory({
       product_id: details.product_id,
       quantity: details.quantity,
@@ -498,6 +508,36 @@ export const api = {
         payment_method: sale.payment_method,
       };
     });
+  },
+
+  /**
+   * Compute average daily units sold per product over the last `days` days.
+   * Reads recent sales in one query, aggregates client-side. Cheap for stores
+   * with up to a few hundred transactions per day.
+   * Returns Map<productId, avgPerDay>.
+   */
+  getDailyAverages: async (companyId: string, days: number = 14): Promise<Map<string, number>> => {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from('sales')
+      .select('items, created_at')
+      .eq('company_id', companyId)
+      .gte('created_at', since);
+    if (error) throw error;
+    const totals = new Map<string, number>();
+    (data || []).forEach((sale: any) => {
+      const items = Array.isArray(sale.items) ? sale.items : [];
+      items.forEach((it: any) => {
+        if (it.is_metadata || !it.product_id) return;
+        // Include free-item movements; they still drain stock.
+        const qty = Number(it.qty || 0);
+        if (qty <= 0) return;
+        totals.set(it.product_id, (totals.get(it.product_id) || 0) + qty);
+      });
+    });
+    const avgs = new Map<string, number>();
+    totals.forEach((total, pid) => avgs.set(pid, total / days));
+    return avgs;
   },
 
   // ===== NOTIFICATIONS =====

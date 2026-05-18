@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
+import LoadingScreen from '../components/LoadingScreen';
+import DatePicker from '../components/ui/DatePicker';
 import { UserProfile } from '../types';
 
 interface Product { id: string; plu: string; name: string; brand: string; stock: number; unit: string; price: number; cost_price: number; image_url?: string; }
@@ -93,7 +95,7 @@ export default function Supply({ userProfile }: { userProfile: UserProfile }) {
   const paginatedHistory = groupedFullHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const recentHistory = history.slice(0, 8);
 
-  if (isLoading) return <div className="flex-1 flex items-center justify-center"><p className="text-sm text-stone-400 dark:text-stone-500">Memuat data...</p></div>;
+  if (isLoading) return <LoadingScreen page="supply" />;
 
   return (
     <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-stone-50 dark:bg-stone-950">
@@ -232,7 +234,7 @@ export default function Supply({ userProfile }: { userProfile: UserProfile }) {
                     </button>
                   ))}
                 </div>
-                <input type="date" value={fullHistoryDate} onChange={e => { setFullHistoryDate(e.target.value); setFullHistoryFilter('custom'); setCurrentPage(1); }} className="px-3 py-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs text-stone-700 dark:text-stone-200 focus:outline-none" />
+                <DatePicker value={fullHistoryDate} onChange={v => { setFullHistoryDate(v); if (v) { setFullHistoryFilter('custom'); } setCurrentPage(1); }} size="sm" align="right" />
                 <div className="relative flex-1 max-w-xs">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
                   <input value={fullHistorySearch} onChange={e => { setFullHistorySearch(e.target.value); setCurrentPage(1); }} placeholder="Cari supplier / produk..." className="w-full pl-8 pr-3 py-1.5 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-xs text-stone-700 dark:text-stone-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />

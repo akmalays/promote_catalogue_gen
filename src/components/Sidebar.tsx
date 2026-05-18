@@ -8,7 +8,7 @@ import { cn } from '../lib/utils';
 import { UserProfile } from '../types';
 import logoAsset from '../assets/img/pcs_logo.png';
 
-type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns';
+type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns' | 'reports';
 
 interface SidebarProps {
   currentPage: Page;
@@ -22,6 +22,7 @@ interface SidebarProps {
 const allNavItems: { id: Page; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'campaigns', label: 'Promo & Campaign', icon: <Gift className="w-[18px] h-[18px] shrink-0" /> },
+  { id: 'reports', label: 'Promo Reports', icon: <BarChart3 className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'revenue', label: 'Sales Report', icon: <TrendingUp className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'products', label: 'Product Database', icon: <Package className="w-[18px] h-[18px] shrink-0" /> },
   { id: 'supply', label: 'Supply Inbound', icon: <Truck className="w-[18px] h-[18px] shrink-0" /> },
@@ -45,7 +46,7 @@ export default function Sidebar({ currentPage, isSidebarExpanded, userProfile, o
 
     if (isAdmin) return true;
     if (['settings', 'dashboard'].includes(item.id)) return true;
-    if (isManager) return ['catalogue', 'promotions', 'campaigns', 'history', 'revenue', 'pos', 'products', 'supply', 'notifications', 'stock_opname'].includes(item.id);
+    if (isManager) return ['catalogue', 'promotions', 'campaigns', 'reports', 'history', 'revenue', 'pos', 'products', 'supply', 'notifications', 'stock_opname'].includes(item.id);
     if (isKasir) return ['pos', 'revenue'].includes(item.id);
 
     return false;

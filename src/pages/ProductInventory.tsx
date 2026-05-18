@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { UserProfile } from '../types';
 import PriceTagDrawer from '../components/PriceTagDrawer';
 import Select from '../components/ui/Select';
-import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../lib/promo';
+import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer, projectStockDays, stockDaysLabel, stockDaysTone } from '../lib/promo';
 
 interface Product {
   id: string; name: string; brand: string; description: string; price: number; category: string; image_url: string; unit: string; plu: string; cost_price: number; stock?: number;
@@ -39,14 +39,20 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
   const [isPriceTagDrawerOpen, setIsPriceTagDrawerOpen] = useState(false);
   const [productForPriceTag, setProductForPriceTag] = useState<Product | null>(null);
   const [productOffers, setProductOffers] = useState<Map<string, PromoOffer[]>>(new Map());
+  const [showLowStockDetail, setShowLowStockDetail] = useState(false);
+  const [dailyAverages, setDailyAverages] = useState<Map<string, number>>(new Map());
   const [onlyPromo, setOnlyPromo] = useState(false);
   const [promoDrawerProductId, setPromoDrawerProductId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({ name: '', brand: '', description: '', price: 0, category: 'Makanan', image_url: '', stock: 0, unit: 'pcs', plu: '', cost_price: 0 });
 
-  useEffect(() => { fetchProducts(); fetchActivePromo(); }, []);
+  useEffect(() => { fetchProducts(); fetchActivePromo(); fetchDailyAverages(); }, []);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, filterCategory, onlyPromo]);
 
   const fetchProducts = async () => { setIsLoading(true); try { setProducts(await api.getProducts(userProfile.company_id!)); } catch { setProducts([]); } finally { setIsLoading(false); } };
+  const fetchDailyAverages = async () => {
+    try { setDailyAverages(await api.getDailyAverages(userProfile.company_id!)); }
+    catch { setDailyAverages(new Map()); }
+  };
   const fetchActivePromo = async () => {
     try {
       const all = await api.getActiveCampaigns(userProfile.company_id!);
@@ -64,6 +70,7 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
   };
 
   const lowStockItems = products.filter(p => (p.stock || 0) < 10);
+  const lowStockSorted = [...lowStockItems].sort((a, b) => (a.stock || 0) - (b.stock || 0));
 
   const openDeleteModal = (p: Product, e: React.MouseEvent) => { e.stopPropagation(); setProductToDelete(p); setIsDeleteModalOpen(true); };
   const confirmDelete = async () => { if (!productToDelete) return; setIsDeleting(true); try { await api.deleteProduct(productToDelete.id, userProfile.company_id!); toast.success('Produk dihapus'); setIsDeleteModalOpen(false); setProductToDelete(null); fetchProducts(); } catch { toast.error('Gagal menghapus'); } finally { setIsDeleting(false); } };
@@ -134,16 +141,75 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
         </div>
       </div>
 
-      {isLoading ? <LoadingScreen message="Memuat produk..." subMessage="Mengambil data inventori." /> : (
+      {isLoading ? <LoadingScreen page="inventory" /> : (
         <>
           {/* Low stock alert */}
           {lowStockItems.length > 0 && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <span className="text-sm font-medium text-red-800 dark:text-red-300">{lowStockItems.length} produk stok menipis (&lt;10)</span>
-              </div>
-              <p className="text-xs text-red-600/70 dark:text-red-400/70">{lowStockItems.slice(0, 5).map(i => i.name).join(', ')}{lowStockItems.length > 5 ? ` +${lowStockItems.length - 5} lagi` : ''}</p>
+            <div className="mb-6 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowLowStockDetail(v => !v)}
+                className="w-full p-4 flex items-center justify-between gap-3 hover:bg-red-100/50 dark:hover:bg-red-950/30 transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                  <div className="min-w-0 text-left">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                      {lowStockItems.length} produk stok menipis (&lt;10)
+                    </p>
+                    <p className="text-xs text-red-600/70 dark:text-red-400/70 truncate">
+                      {lowStockSorted.slice(0, 3).map(i => `${i.name} (${i.stock || 0})`).join(' · ')}
+                      {lowStockItems.length > 3 ? ` · +${lowStockItems.length - 3} lainnya` : ''}
+                    </p>
+                  </div>
+                </div>
+                {showLowStockDetail
+                  ? <ChevronUp className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                  : <ChevronDown className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />}
+              </button>
+              {showLowStockDetail && (
+                <div className="border-t border-red-200/60 dark:border-red-900/40 max-h-72 overflow-y-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-red-100/60 dark:bg-red-950/40 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-2 font-medium text-red-700 dark:text-red-300">Produk</th>
+                        <th className="px-4 py-2 font-medium text-red-700 dark:text-red-300">Kategori</th>
+                        <th className="px-4 py-2 font-medium text-red-700 dark:text-red-300 text-right">Stok</th>
+                        <th className="px-4 py-2 font-medium text-red-700 dark:text-red-300 text-right">PLU</th>
+                        <th className="px-4 py-2 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-200/40 dark:divide-red-900/30">
+                      {lowStockSorted.map(p => (
+                        <tr key={p.id} className="hover:bg-red-100/40 dark:hover:bg-red-950/30">
+                          <td className="px-4 py-2">
+                            <p className="text-stone-800 dark:text-stone-200">{p.name}</p>
+                            <p className="text-[10px] text-stone-500 dark:text-stone-400">{p.brand}</p>
+                          </td>
+                          <td className="px-4 py-2 text-stone-600 dark:text-stone-400">{p.category}</td>
+                          <td className="px-4 py-2 text-right">
+                            <span className={cn(
+                              "font-medium tabular-nums",
+                              (p.stock || 0) === 0 ? "text-red-700 dark:text-red-400" : "text-red-600 dark:text-red-400",
+                            )}>
+                              {p.stock || 0}{(p.stock || 0) === 0 ? ' (habis)' : ''}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right font-mono text-stone-500 dark:text-stone-400">{p.plu || '—'}</td>
+                          <td className="px-4 py-2 text-right">
+                            <button
+                              onClick={(e) => openEditForm(p, e)}
+                              className="text-[11px] text-stone-700 dark:text-stone-300 hover:underline underline-offset-2"
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -192,7 +258,27 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
                           </div>
                         </td>
                         <td className="px-4 py-3"><span className="text-xs text-stone-500 dark:text-stone-400">{p.category}</span></td>
-                        <td className="px-4 py-3 text-right"><span className={cn("text-sm tabular-nums font-medium", (p.stock || 0) < 10 ? "text-red-600 dark:text-red-400" : "text-stone-900 dark:text-stone-100")}>{p.stock || 0}</span></td>
+                        <td className="px-4 py-3 text-right">
+                          {(() => {
+                            const stock = p.stock || 0;
+                            const avg = dailyAverages.get(p.id) || 0;
+                            const days = projectStockDays(stock, avg, productOffers.get(p.id)?.[0] || null);
+                            const tone = stockDaysTone(days);
+                            return (
+                              <div className="flex flex-col items-end gap-0.5">
+                                <span className={cn("text-sm tabular-nums font-medium", stock < 10 ? "text-red-600 dark:text-red-400" : "text-stone-900 dark:text-stone-100")}>{stock}</span>
+                                {tone !== 'idle' && (
+                                  <span className={cn(
+                                    "text-[10px] tabular-nums",
+                                    tone === 'danger' && "text-red-600 dark:text-red-400 font-medium",
+                                    tone === 'warn' && "text-amber-600 dark:text-amber-400",
+                                    tone === 'ok' && "text-stone-400 dark:text-stone-500",
+                                  )}>{stockDaysLabel(days)}</span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="px-4 py-3 text-right"><span className="text-sm text-stone-900 dark:text-stone-100 tabular-nums">Rp {p.price?.toLocaleString()}</span></td>
                         <td className="px-4 py-3 text-right"><span className="text-sm text-stone-500 dark:text-stone-400 tabular-nums">Rp {(p.cost_price || 0).toLocaleString()}</span></td>
                         <td className="px-4 py-3">
