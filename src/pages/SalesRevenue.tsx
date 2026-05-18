@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
+import LoadingScreen from '../components/LoadingScreen';
 
 interface Sale {
   id: string | number;
@@ -81,6 +82,10 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
 
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
   const paginatedSales = useMemo(() => filteredSales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [filteredSales, currentPage]);
+
+  if (isLoading && sales.length === 0) {
+    return <LoadingScreen page="sales" />;
+  }
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-stone-50 dark:bg-stone-950">

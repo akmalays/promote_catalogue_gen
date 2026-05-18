@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
+import LoadingScreen from '../components/LoadingScreen';
 import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../lib/promo';
 import { PromoCampaign } from '../types';
 
@@ -391,6 +392,10 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
       setIsDebitQRISModalOpen(false);
     }, 500);
   };
+
+  if (isLoading && products.length === 0) {
+    return <LoadingScreen page="pos" />;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-stone-50 dark:bg-stone-950 overflow-hidden">

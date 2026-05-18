@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
+import LoadingScreen from '../components/LoadingScreen';
 import { UserProfile } from '../types';
 
 interface Product { id: string; plu: string; name: string; brand: string; stock: number; unit: string; price: number; cost_price: number; image_url?: string; }
@@ -93,7 +94,7 @@ export default function Supply({ userProfile }: { userProfile: UserProfile }) {
   const paginatedHistory = groupedFullHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const recentHistory = history.slice(0, 8);
 
-  if (isLoading) return <div className="flex-1 flex items-center justify-center"><p className="text-sm text-stone-400 dark:text-stone-500">Memuat data...</p></div>;
+  if (isLoading) return <LoadingScreen page="supply" />;
 
   return (
     <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-stone-50 dark:bg-stone-950">

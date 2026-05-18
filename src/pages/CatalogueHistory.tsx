@@ -70,7 +70,7 @@ export default function CatalogueHistory({ onNavigate, userProfile, onContinueEd
       </div>
 
       {/* Content */}
-      {isLoading ? <LoadingScreen message="Memuat draft..." subMessage="Mengambil data katalog." /> : filtered.length === 0 ? (
+      {isLoading ? <LoadingScreen page="catalogue-history" /> : filtered.length === 0 ? (
         <div className="py-16 text-center"><FileText className="w-8 h-8 mx-auto mb-3 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-500 dark:text-stone-400">Belum ada draft katalog.</p><p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Buat katalog baru lalu simpan sebagai draft.</p></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

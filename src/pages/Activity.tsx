@@ -106,7 +106,7 @@ export default function Activity({ userProfile }: { userProfile: UserProfile }) 
   };
 
   if (isLoading) {
-    return <LoadingScreen message="Memuat aktivitas..." subMessage="Menyinkronkan riwayat promosi." />;
+    return <LoadingScreen page="activity" />;
   }
 
   return (

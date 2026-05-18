@@ -46,8 +46,8 @@ export default function Dashboard({ onNavigate, userProfile }: DashboardProps) {
   if (isLoading || !data) {
     return (
       <LoadingScreen 
+        page="dashboard"
         message={`Halo, ${userProfile.nickname || 'User'}`}
-        subMessage="Memuat data dashboard..."
       />
     );
   }

@@ -141,7 +141,7 @@ export default function ProductDatabase({ onNavigate, userProfile }: { onNavigat
         </div>
       </div>
 
-      {isLoading ? <LoadingScreen message="Memuat produk..." subMessage="Mengambil data inventori." /> : (
+      {isLoading ? <LoadingScreen page="inventory" /> : (
         <>
           {/* Low stock alert */}
           {lowStockItems.length > 0 && (
