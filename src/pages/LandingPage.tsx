@@ -83,10 +83,10 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <button
-              onClick={() => navigate('/hpp')}
+              onClick={() => navigate('/tools')}
               className="px-3 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors hidden sm:inline-flex items-center gap-1.5"
             >
-              Kalkulator HPP
+              Tools
               <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-semibold">Gratis</span>
             </button>
             <button
@@ -272,36 +272,35 @@ export default function LandingPage() {
       {/* Free Tools section */}
       <section className="py-16 md:py-20 bg-gradient-to-b from-amber-50/40 to-white border-y border-amber-100/60">
         <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-8">
+            <span className="inline-block text-[10px] font-bold tracking-wide text-amber-700 bg-amber-100 px-2 py-0.5 rounded mb-3">
+              GRATIS · TANPA LOGIN
+            </span>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">
+              Tools gratis untuk UMKM
+            </h2>
+            <p className="text-sm text-stone-500 max-w-md mx-auto">
+              Kumpulan kalkulator dan generator gratis untuk bantu kelola bisnis kamu — retail, kafe, warung, atau jasa.
+            </p>
+          </div>
+
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="bg-white border border-stone-200 rounded-2xl p-6 md:p-8 shadow-sm"
           >
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center shrink-0">
-                <Calculator className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <div className="inline-flex items-center gap-1.5 mb-2">
-                  <span className="text-[10px] font-bold tracking-wide text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
-                    GRATIS · TANPA LOGIN
-                  </span>
-                </div>
-                <h3 className="text-lg md:text-xl font-bold text-stone-900 mb-1">
-                  Kalkulator HPP & Harga Jual
-                </h3>
-                <p className="text-sm text-stone-500 leading-relaxed">
-                  Hitung modal produkmu, dapat saran harga jual dari AI, dan proyeksi target penjualan untuk capai laba yang kamu mau.
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/hpp')}
-                className="w-full md:w-auto px-5 py-3 bg-stone-900 text-white rounded-xl text-sm font-semibold hover:bg-stone-800 transition-colors inline-flex items-center justify-center gap-2 shrink-0"
-              >
-                Coba sekarang <ArrowRight className="w-4 h-4" />
-              </button>
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <ToolPreview label="Kalkulator HPP" />
+              <ToolPreview label="Margin & Markup" />
+              <ToolPreview label="Dampak Promo" />
             </div>
+            <button
+              onClick={() => navigate('/tools')}
+              className="w-full px-5 py-3 bg-stone-900 text-white rounded-xl text-sm font-semibold hover:bg-stone-800 transition-colors inline-flex items-center justify-center gap-2"
+            >
+              Buka tools hub <ArrowRight className="w-4 h-4" />
+            </button>
           </motion.div>
         </div>
       </section>
@@ -372,8 +371,8 @@ export default function LandingPage() {
             <span className="text-xs text-stone-400">© {new Date().getFullYear()} myStore</span>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/hpp')} className="text-xs text-stone-400 hover:text-stone-700 transition-colors">
-              Kalkulator HPP
+            <button onClick={() => navigate('/tools')} className="text-xs text-stone-400 hover:text-stone-700 transition-colors">
+              Tools Gratis
             </button>
             <button onClick={() => navigate('/login')} className="text-xs text-stone-400 hover:text-stone-700 transition-colors">
               Masuk
@@ -536,6 +535,14 @@ function AppScreenshot({
           )}
         />
       )}
+    </div>
+  );
+}
+
+function ToolPreview({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-center">
+      <p className="text-xs font-medium text-stone-700">{label}</p>
     </div>
   );
 }

@@ -7,6 +7,9 @@ import { SavedCatalogue, UserProfile } from './types';
 // Pages
 import LandingPage from './pages/LandingPage';
 import HPPCalculator from './pages/HPPCalculator';
+import ToolsHub from './pages/ToolsHub';
+import MarginCalculator from './pages/tools/MarginCalculator';
+import PromoImpactCalculator from './pages/tools/PromoImpactCalculator';
 import Dashboard from './pages/Dashboard';
 import Promotions from './pages/Promotions';
 import Login from './pages/Login';
@@ -39,7 +42,12 @@ export default function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/hpp" element={<HPPCalculator />} />
+        <Route path="/tools" element={<ToolsHub />} />
+        <Route path="/tools/hpp" element={<HPPCalculator />} />
+        <Route path="/tools/margin" element={<MarginCalculator />} />
+        <Route path="/tools/promo-impact" element={<PromoImpactCalculator />} />
+        {/* Legacy redirect */}
+        <Route path="/hpp" element={<Navigate to="/tools/hpp" replace />} />
         <Route path="/login" element={<AuthRoute view="login" />} />
         <Route path="/signup" element={<AuthRoute view="signup" />} />
         <Route path="/reset-password" element={<AuthRoute view="reset-password" />} />

@@ -191,3 +191,117 @@ export async function suggestPrice(input: {
     margin: standar.margin,
   };
 }
+
+/**
+ * Suggest recipe ingredients and quantities for a product
+ */
+export async function suggestRecipe(input: {
+  productName: string;
+  servings: number;
+  category?: string;
+}): Promise<Array<{
+  name: string;
+  usageQty: number;
+  usageUnit: string;
+  buyQty: number;
+  buyUnit: string;
+  estimatedPrice: number;
+}> | null> {
+  const client = getClient();
+  if (!client) return null;
+
+  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  const prompt = `Anda adalah chef dan konsultan UMKM Indonesia. Berikan resep lengkap untuk produk berikut:
+
+Produk: ${input.productName}
+${input.category ? `Kategori: ${input.category}` : ''}
+Untuk: ${input.servings} porsi
+
+Berikan daftar bahan dalam format JSON array:
+[
+  {
+    "name": "<nama bahan>",
+    "usageQty": <jumlah pakai untuk ${input.servings} porsi>,
+    "usageUnit": "<satuan: g/kg/ml/L/pcs/pack/box/porsi>",
+    "buyQty": <jumlah beli yang umum di pasar>,
+    "buyUnit": "<satuan beli>",
+    "estimatedPrice": <estimasi harga beli di Indonesia, dalam Rupiah>
+  }
+]
+
+Aturan:
+- Berikan bahan-bahan yang realistis dan umum di Indonesia
+- Takaran harus akurat untuk ${input.servings} porsi
+- Estimasi harga sesuai harga pasar Indonesia 2024
+- Gunakan satuan yang umum (g, kg, ml, L, pcs, pack, box, porsi)
+- Minimal 5-10 bahan utama
+- Jangan lupa bumbu, minyak, gas/listrik untuk masak (jika relevan)
+
+Hanya kembalikan JSON array, tanpa penjelasan tambahan.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return null;
+    return JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    console.error('AI recipe suggestion failed:', e);
+    return null;
+  }
+}
+
+/**
+ * Suggest fixed costs for a business type
+ */
+export async function suggestFixedCosts(input: {
+  businessType: string;
+  location?: string;
+  scale?: 'kecil' | 'menengah' | 'besar';
+}): Promise<Array<{
+  name: string;
+  amount: number;
+  reasoning: string;
+}> | null> {
+  const client = getClient();
+  if (!client) return null;
+
+  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  const prompt = `Anda adalah konsultan bisnis UMKM Indonesia. Berikan estimasi biaya tetap bulanan untuk usaha berikut:
+
+Jenis Usaha: ${input.businessType}
+${input.location ? `Lokasi: ${input.location}` : ''}
+Skala: ${input.scale || 'kecil'}
+
+Berikan daftar biaya tetap dalam format JSON array:
+[
+  {
+    "name": "<nama biaya>",
+    "amount": <estimasi biaya per bulan dalam Rupiah>,
+    "reasoning": "<penjelasan singkat 1 kalimat>"
+  }
+]
+
+Aturan:
+- Berikan 5-8 item biaya tetap yang realistis
+- Estimasi harga sesuai kondisi Indonesia 2024
+- Pertimbangkan skala usaha (kecil/menengah/besar)
+- Termasuk: sewa tempat, listrik, air, internet, gaji karyawan, dll
+- Jangan termasuk biaya variabel (bahan baku)
+- Reasoning dalam bahasa Indonesia santai
+
+Hanya kembalikan JSON array, tanpa penjelasan tambahan.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return null;
+    return JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    console.error('AI fixed costs suggestion failed:', e);
+    return null;
+  }
+}
