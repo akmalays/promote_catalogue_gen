@@ -43,12 +43,58 @@ export default function Select({
   ariaLabel,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+
+  // Update menu position when opened
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [isOpen]);
+
+  // Update position on scroll
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setMenuPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setIsOpen(false);
+      if (
+        wrapperRef.current && 
+        !wrapperRef.current.contains(e.target as Node) &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
     };
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsOpen(false);
@@ -66,52 +112,61 @@ export default function Select({
   const itemSizeClasses = size === 'sm' ? 'text-xs px-2 py-1.5' : 'text-sm px-2.5 py-1.5';
 
   return (
-    <div ref={wrapperRef} className={cn('relative inline-block', className)}>
-      <button
-        type="button"
-        disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-label={ariaLabel}
-        onClick={() => setIsOpen(o => !o)}
-        className={cn(
-          'w-full inline-flex items-center justify-between gap-2',
-          'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg',
-          'text-stone-700 dark:text-stone-200',
-          'hover:bg-stone-50 dark:hover:bg-stone-700/60',
-          'focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10',
-          'disabled:opacity-50 disabled:cursor-not-allowed transition-colors',
-          sizeClasses,
-          buttonClassName,
-        )}
-      >
-        <span className="flex items-center gap-1.5 min-w-0">
-          {leadingIcon ? <span className="shrink-0 text-stone-400 dark:text-stone-500">{leadingIcon}</span> : null}
-          <span className={cn('truncate', !selected && 'text-stone-400 dark:text-stone-500')}>
-            {selected ? selected.label : placeholder}
-          </span>
-        </span>
-        <ChevronDown
+    <>
+      <div ref={wrapperRef} className={cn('relative inline-block', className)}>
+        <button
+          ref={buttonRef}
+          type="button"
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-label={ariaLabel}
+          onClick={() => setIsOpen(o => !o)}
           className={cn(
-            'w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0 transition-transform',
-            isOpen && 'rotate-180',
+            'w-full inline-flex items-center justify-between gap-2',
+            'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg',
+            'text-stone-700 dark:text-stone-200',
+            'hover:bg-stone-50 dark:hover:bg-stone-700/60',
+            'focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10',
+            'disabled:opacity-50 disabled:cursor-not-allowed transition-colors',
+            sizeClasses,
+            buttonClassName,
           )}
-        />
-      </button>
+        >
+          <span className="flex items-center gap-1.5 min-w-0">
+            {leadingIcon ? <span className="shrink-0 text-stone-400 dark:text-stone-500">{leadingIcon}</span> : null}
+            <span className={cn('truncate', !selected && 'text-stone-400 dark:text-stone-500')}>
+              {selected ? selected.label : placeholder}
+            </span>
+          </span>
+          <ChevronDown
+            className={cn(
+              'w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0 transition-transform',
+              isOpen && 'rotate-180',
+            )}
+          />
+        </button>
+      </div>
 
       <AnimatePresence>
         {isOpen && (
           <motion.ul
+            ref={menuRef}
             role="listbox"
             initial={{ opacity: 0, y: -4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12 }}
+            style={{
+              position: 'fixed',
+              top: menuPosition.top,
+              left: menuPosition.left,
+              width: menuPosition.width,
+            }}
             className={cn(
-              'absolute z-[6500] mt-1 min-w-full max-h-60 overflow-y-auto',
+              'z-[9999] max-h-60 overflow-y-auto',
               'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800',
-              'rounded-lg shadow-lg p-1',
-              align === 'right' ? 'right-0' : 'left-0',
+              'rounded-lg shadow-xl p-1',
               menuClassName,
             )}
           >
@@ -148,6 +203,6 @@ export default function Select({
           </motion.ul>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

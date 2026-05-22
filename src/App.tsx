@@ -6,6 +6,7 @@ import { SavedCatalogue, UserProfile } from './types';
 
 // Pages
 import LandingPage from './pages/LandingPage';
+import HPPCalculator from './pages/HPPCalculator';
 import Dashboard from './pages/Dashboard';
 import Promotions from './pages/Promotions';
 import Login from './pages/Login';
@@ -38,6 +39,7 @@ export default function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/hpp" element={<HPPCalculator />} />
         <Route path="/login" element={<AuthRoute view="login" />} />
         <Route path="/signup" element={<AuthRoute view="signup" />} />
         <Route path="/reset-password" element={<AuthRoute view="reset-password" />} />
