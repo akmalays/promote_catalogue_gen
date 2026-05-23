@@ -884,7 +884,7 @@ export default function CatalogueEditor({ userProfile, editingCatalogue, onDraft
                           <p>Layanan Konsumen: halo@promosikita.id</p>
                           <div className="mt-1 flex flex-col leading-none">
                              <p className="font-sans font-black text-yellow-300 text-[11px]">WhatsApp: 0811 1500 280</p>
-                             <p className="text-[10px] uppercase font-bold text-white tracking-widest mt-1 opacity-90">{catalog.footerShopName}</p>
+                             <p className="text-[10px] uppercase font-bold text-white tracking-wide mt-1 opacity-90">{catalog.footerShopName}</p>
                           </div>
                         </div>
                         

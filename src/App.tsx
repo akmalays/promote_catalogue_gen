@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import toast, { Toaster } from 'react-hot-toast';
 import { SavedCatalogue, UserProfile } from './types';
 
 // Pages
+import LandingPage from './pages/LandingPage';
+import HPPCalculator from './pages/HPPCalculator';
+import ToolsHub from './pages/ToolsHub';
+import MarginCalculator from './pages/tools/MarginCalculator';
+import PromoImpactCalculator from './pages/tools/PromoImpactCalculator';
 import Dashboard from './pages/Dashboard';
 import Promotions from './pages/Promotions';
 import Login from './pages/Login';
@@ -29,55 +35,136 @@ import AppHeader from './components/AppHeader';
 
 type Page = 'dashboard' | 'catalogue' | 'promotions' | 'history' | 'settings' | 'activity' | 'products' | 'inventory' | 'supply' | 'pos' | 'revenue' | 'analytics' | 'notifications' | 'stock_opname' | 'campaigns' | 'reports';
 
-type AuthView = 'login' | 'signup' | 'reset-password';
-
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return !!localStorage.getItem('user_profile');
-  });
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
-  const [authView, setAuthView] = useState<AuthView>('login');
+  return (
+    <BrowserRouter>
+      <RecoveryRedirect />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/tools" element={<ToolsHub />} />
+        <Route path="/tools/hpp" element={<HPPCalculator />} />
+        <Route path="/tools/margin" element={<MarginCalculator />} />
+        <Route path="/tools/promo-impact" element={<PromoImpactCalculator />} />
+        {/* Legacy redirect */}
+        <Route path="/hpp" element={<Navigate to="/tools/hpp" replace />} />
+        <Route path="/login" element={<AuthRoute view="login" />} />
+        <Route path="/signup" element={<AuthRoute view="signup" />} />
+        <Route path="/reset-password" element={<AuthRoute view="reset-password" />} />
 
-  // Dark mode
+        {/* Protected app routes */}
+        <Route path="/app/*" element={<ProtectedApp />} />
+
+        {/* Catch-all: redirect to landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+// ============================================================
+// Recovery Redirect — detects Supabase recovery hash and redirects
+// ============================================================
+
+function RecoveryRedirect() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+      navigate('/reset-password', { replace: true });
+    }
+  }, [navigate]);
+
+  return null;
+}
+
+// ============================================================
+// Auth Route — handles login/signup/reset
+// ============================================================
+
+function AuthRoute({ view }: { view: 'login' | 'signup' | 'reset-password' }) {
+  const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem('user_profile');
+
+  // If already logged in, redirect to app
+  if (isLoggedIn) {
+    return <Navigate to="/app" replace />;
+  }
+
+  const handleAuthSuccess = (user: UserProfile) => {
+    localStorage.setItem('user_profile', JSON.stringify(user));
+    navigate('/app', { replace: true });
+  };
+
+  if (view === 'reset-password') {
+    return <ResetPassword onBackToLogin={() => navigate('/login')} />;
+  }
+
+  if (view === 'signup') {
+    return (
+      <Signup
+        onSignup={handleAuthSuccess}
+        onNavigateToLogin={() => navigate('/login')}
+      />
+    );
+  }
+
+  return (
+    <Login
+      onLogin={handleAuthSuccess}
+      onNavigateToSignup={() => navigate('/signup')}
+    />
+  );
+}
+
+// ============================================================
+// Protected App — the main application shell
+// ============================================================
+
+function ProtectedApp() {
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('user_profile'));
+
+  // Redirect to login if not authenticated
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <AppShell onLogout={() => { localStorage.removeItem('user_profile'); setIsLoggedIn(false); navigate('/login', { replace: true }); }} />;
+}
+
+// ============================================================
+// App Shell — sidebar + header + page content
+// ============================================================
+
+function AppShell({ onLogout }: { onLogout: () => void }) {
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
+
+  // Dark mode — read from unified `theme` key (with legacy `dark_mode` fallback)
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('dark_mode');
-    if (saved !== null) return saved === 'true';
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    const legacy = localStorage.getItem('dark_mode');
+    if (legacy !== null) return legacy === 'true';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     localStorage.setItem('dark_mode', String(isDarkMode));
   }, [isDarkMode]);
-
-  const handleAuthSuccess = (user: UserProfile) => {
-    setUserProfile(user);
-    localStorage.setItem('user_profile', JSON.stringify(user));
-    setIsLoggedIn(true);
-  };
-
-  const handleContinueEdit = (cat: SavedCatalogue) => {
-    setEditingCatalogue(cat);
-    setCurrentPage('catalogue');
-  };
 
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('user_profile');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Gagal memuat profil:', e);
-      }
+      try { return JSON.parse(saved); } catch {}
     }
-    return {
-      username: 'admin',
-      nickname: 'Master Curator',
-      role: 'admin',
-      password: 'password123'
-    };
+    return { username: 'admin', nickname: 'Master Curator', role: 'admin', password: 'password123' };
   });
 
   const handleUpdateProfile = (newProfile: UserProfile) => {
@@ -85,17 +172,22 @@ export default function App() {
     localStorage.setItem('user_profile', JSON.stringify(newProfile));
   };
 
+  const handleContinueEdit = (cat: SavedCatalogue) => {
+    setEditingCatalogue(cat);
+    setCurrentPage('catalogue');
+  };
+
   // RBAC: Redirect if unauthorized page access
   useEffect(() => {
     const role = userProfile.role?.toLowerCase() || 'kasir';
     const isAdmin = role.includes('admin');
     const isManager = role.includes('manager');
-    
+
     const allowed: Page[] = ['dashboard', 'settings', 'pos', 'revenue'];
-    if (isManager || isAdmin) { 
-       allowed.push('catalogue', 'promotions', 'campaigns', 'reports', 'history', 'products', 'supply', 'notifications', 'stock_opname', 'activity', 'analytics');
+    if (isManager || isAdmin) {
+      allowed.push('catalogue', 'promotions', 'campaigns', 'reports', 'history', 'products', 'supply', 'notifications', 'stock_opname', 'activity', 'analytics');
     }
-    
+
     if (!allowed.includes(currentPage)) {
       setCurrentPage('dashboard');
     }
@@ -107,48 +199,13 @@ export default function App() {
     }
   }, [currentPage]);
 
-  // Detect Reset Password (Recovery) Link
-  useEffect(() => {
-    const isRecovery = window.location.hash.includes('type=recovery') || 
-                       window.location.pathname.includes('reset-password');
-    
-    if (isRecovery) {
-      setAuthView('reset-password');
-      setIsLoggedIn(false);
-    }
-  }, []);
-
-  // Auth Gate
-  if (!isLoggedIn) {
-    if (authView === 'reset-password') {
-      return <ResetPassword onBackToLogin={() => setAuthView('login')} />;
-    }
-
-    return authView === 'login' ? (
-      <Login 
-        onLogin={handleAuthSuccess} 
-        onNavigateToSignup={() => setAuthView('signup')}
-      />
-    ) : (
-      <Signup 
-        onSignup={handleAuthSuccess} 
-        onNavigateToLogin={() => setAuthView('login')}
-      />
-    );
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('user_profile');
-    setIsLoggedIn(false);
-  };
-
   return (
     <div className="flex h-screen w-screen bg-stone-50 dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 antialiased overflow-hidden relative">
-      <Toaster 
-        position="bottom-right" 
-        reverseOrder={false} 
+      <Toaster
+        position="bottom-right"
+        reverseOrder={false}
         containerStyle={{ zIndex: 99999 }}
-        toastOptions={{ 
+        toastOptions={{
           duration: 4000,
           style: {
             borderRadius: '8px',
@@ -160,13 +217,13 @@ export default function App() {
           },
           success: { style: { background: '#059669' } },
           error: { style: { background: '#dc2626' } },
-        }} 
+        }}
       />
 
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {isSidebarExpanded && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -182,7 +239,7 @@ export default function App() {
         isSidebarExpanded={isSidebarExpanded}
         userProfile={userProfile}
         onNavigate={setCurrentPage}
-        onLogout={handleLogout}
+        onLogout={onLogout}
         onResetEditing={() => setEditingCatalogue(null)}
       />
 
@@ -213,9 +270,9 @@ export default function App() {
               {currentPage === 'activity' && <Activity userProfile={userProfile} />}
               {currentPage === 'analytics' && <Analytics userProfile={userProfile} />}
               {currentPage === 'catalogue' && (
-                <CatalogueEditor 
-                  userProfile={userProfile} 
-                  editingCatalogue={editingCatalogue || undefined} 
+                <CatalogueEditor
+                  userProfile={userProfile}
+                  editingCatalogue={editingCatalogue || undefined}
                   onDraftSaved={setEditingCatalogue}
                 />
               )}

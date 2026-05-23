@@ -167,9 +167,8 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
         {/* Campaign Impact */}
         {activeCampaign && campaignProducts.length > 0 && (
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Gift className="w-4 h-4 text-stone-400 dark:text-stone-500" />
-              <h2 className="text-sm font-medium text-stone-700 dark:text-stone-200">Kampanye aktif: {activeCampaign.name}</h2>
+            <div className="mb-3">
+              <h2 className="text-sm font-medium text-stone-700 dark:text-stone-200">Kampanye Aktif: {activeCampaign.name}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {campaignProducts.slice(0, 6).map((cp: any) => {
