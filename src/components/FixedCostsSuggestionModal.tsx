@@ -117,19 +117,19 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
           className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-1.5">
                 <h2 className="text-base font-semibold text-stone-900 dark:text-white">Saran Biaya Tetap</h2>
-                <span className="text-[10px] font-medium text-stone-500 inline-flex items-center gap-1 px-1.5 py-0.5 bg-stone-100 rounded">
+                <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 inline-flex items-center gap-1 px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">
                   <Sparkles className="w-2.5 h-2.5" /> AI
                 </span>
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">Estimasi biaya operasional bulanan</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Estimasi biaya operasional bulanan</p>
             </div>
             <button
               onClick={handleClose}
-              className="w-8 h-8 rounded-lg hover:bg-stone-100 flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center justify-center transition-colors"
             >
               <X className="w-4 h-4 text-stone-500 dark:text-stone-400" />
             </button>
@@ -140,7 +140,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
             {!suggestions ? (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-stone-600 block mb-1.5">
+                  <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">
                     Jenis usaha <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -148,13 +148,13 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                     value={businessType}
                     onChange={e => setBusinessType(e.target.value)}
                     placeholder="Contoh: Warung ayam geprek, kedai kopi, laundry"
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                     disabled={loading}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-stone-600 block mb-1.5">
+                  <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">
                     Lokasi (opsional)
                   </label>
                   <input
@@ -162,19 +162,19 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                     value={location}
                     onChange={e => setLocation(e.target.value)}
                     placeholder="Contoh: Jakarta Selatan, Bandung, Surabaya"
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                     disabled={loading}
                   />
-                  <p className="text-[11px] text-stone-500 mt-1">
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
                     Lokasi membantu estimasi sewa & gaji lebih akurat
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-stone-600 block mb-1.5">
+                  <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">
                     Skala usaha
                   </label>
-                  <div className="grid grid-cols-3 gap-1.5 p-1 bg-stone-100 rounded-lg">
+                  <div className="grid grid-cols-3 gap-1.5 p-1 bg-stone-100 dark:bg-stone-800 rounded-lg">
                     {(['kecil', 'menengah', 'besar'] as const).map(s => (
                       <button
                         key={s}
@@ -183,8 +183,8 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                         className={cn(
                           'px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize disabled:opacity-50',
                           scale === s
-                            ? 'bg-white text-stone-900 shadow-sm'
-                            : 'text-stone-600 hover:text-stone-900',
+                            ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
+                            : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white',
                         )}
                       >
                         {s}
@@ -194,8 +194,8 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                 </div>
 
                 <div className="flex items-start gap-2.5 p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg">
-                  <Lightbulb className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-stone-600 leading-relaxed">
+                  <Lightbulb className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
                     Estimasi mencakup sewa, listrik, gaji, dan biaya operasional rutin lainnya. Sesuaikan dengan kondisi aktual usaha kamu.
                   </p>
                 </div>
@@ -203,7 +203,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                 <button
                   onClick={handleGenerate}
                   disabled={loading || !businessType.trim()}
-                  className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-full py-2.5 bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-950 rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? (
                     <>
@@ -225,24 +225,24 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                     <h3 className="text-sm font-semibold text-stone-900 dark:text-white">
                       Estimasi biaya tetap bulanan
                     </h3>
-                    <p className="text-xs text-stone-500 mt-0.5">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                       Skala {scale} · {suggestions.length} item
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={toggleAll}
-                      className="text-xs font-medium text-stone-600 hover:text-stone-900 dark:text-white"
+                      className="text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
                     >
                       {selectedItems.size === suggestions.length ? 'Batal pilih' : 'Pilih semua'}
                     </button>
-                    <span className="text-stone-300">·</span>
+                    <span className="text-stone-300 dark:text-stone-600">·</span>
                     <button
                       onClick={() => {
                         setSuggestions(null);
                         setSelectedItems(new Set());
                       }}
-                      className="text-xs font-medium text-stone-600 hover:text-stone-900 dark:text-white"
+                      className="text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
                     >
                       Generate ulang
                     </button>
@@ -259,8 +259,8 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                         className={cn(
                           'w-full text-left p-3 rounded-lg border transition-colors',
                           isSelected
-                            ? 'border-stone-900 bg-stone-50'
-                            : 'border-stone-200 bg-white hover:border-stone-300',
+                            ? 'border-stone-900 dark:border-stone-100 bg-stone-50 dark:bg-stone-800/50'
+                            : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-700',
                         )}
                       >
                         <div className="flex items-start gap-3">
@@ -268,20 +268,20 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                             className={cn(
                               'w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors',
                               isSelected
-                                ? 'border-stone-900 bg-stone-900'
-                                : 'border-stone-300 bg-white',
+                                ? 'border-stone-900 dark:border-white bg-stone-900 dark:bg-white'
+                                : 'border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900',
                             )}
                           >
-                            {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white dark:text-stone-950" strokeWidth={3} />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <p className="text-sm font-medium text-stone-900 dark:text-white">{item.name}</p>
-                              <span className="text-xs font-semibold text-stone-700 tabular-nums whitespace-nowrap">
+                              <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 tabular-nums whitespace-nowrap">
                                 Rp {item.amount.toLocaleString('id-ID')}
                               </span>
                             </div>
-                            <p className="text-[11px] text-stone-500 leading-relaxed">{item.reasoning}</p>
+                            <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">{item.reasoning}</p>
                           </div>
                         </div>
                       </button>
@@ -289,16 +289,16 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                   })}
                 </div>
 
-                <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-900 leading-relaxed">
+                <div className="flex items-start gap-2.5 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
                     Estimasi adalah panduan umum. Sesuaikan dengan kondisi aktual usaha kamu sebelum disimpan.
                   </p>
                 </div>
 
                 {selectedItems.size > 0 && (
-                  <div className="flex items-center justify-between p-3 bg-stone-900 text-white rounded-lg">
-                    <span className="text-xs font-medium text-stone-300">Total terpilih / bulan</span>
+                  <div className="flex items-center justify-between p-3 bg-stone-900 dark:bg-stone-800 text-white rounded-lg border border-transparent dark:border-stone-700">
+                    <span className="text-xs font-medium text-stone-300 dark:text-stone-400">Total terpilih / bulan</span>
                     <span className="text-sm font-bold tabular-nums">
                       Rp {totalSelected.toLocaleString('id-ID')}
                     </span>
@@ -310,21 +310,21 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
 
           {/* Footer */}
           {suggestions && (
-            <div className="px-5 py-3 border-t border-stone-200 flex items-center justify-between gap-3 bg-stone-50">
-              <p className="text-xs text-stone-500 tabular-nums">
+            <div className="px-5 py-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between gap-3 bg-stone-50 dark:bg-stone-900/50">
+              <p className="text-xs text-stone-500 dark:text-stone-400 tabular-nums">
                 {selectedItems.size} dari {suggestions.length} terpilih
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleClose}
-                  className="px-3 py-1.5 text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleApply}
                   disabled={selectedItems.size === 0}
-                  className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-3.5 py-1.5 bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-950 rounded-lg text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Tambahkan{selectedItems.size > 0 && ` (${selectedItems.size})`}
                 </button>

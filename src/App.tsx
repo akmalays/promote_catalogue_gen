@@ -140,18 +140,22 @@ function ProtectedApp() {
 
 function AppShell({ onLogout }: { onLogout: () => void }) {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [editingCatalogue, setEditingCatalogue] = useState<SavedCatalogue | null>(null);
 
-  // Dark mode
+  // Dark mode — read from unified `theme` key (with legacy `dark_mode` fallback)
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('dark_mode');
-    if (saved !== null) return saved === 'true';
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    const legacy = localStorage.getItem('dark_mode');
+    if (legacy !== null) return legacy === 'true';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     localStorage.setItem('dark_mode', String(isDarkMode));
   }, [isDarkMode]);
 

@@ -5,13 +5,6 @@ import { cn } from '../../lib/utils';
 
 type PromoType = 'discount' | 'b1g1' | 'bundle';
 
-/**
- * Calculator: simulate the impact of a promo on margin & profit.
- *
- * - discount: % off
- * - b1g1: buy one get one (effectively 50% off)
- * - bundle: pay X get Y items (e.g. pay 2 get 3)
- */
 export default function PromoImpactCalculator() {
   const [type, setType] = useState<PromoType>('discount');
   const [hpp, setHpp] = useState(0);
@@ -37,13 +30,11 @@ export default function PromoImpactCalculator() {
       promoPrice = price * (1 - discountPct / 100);
       label = `Diskon ${discountPct}%`;
     } else if (type === 'b1g1') {
-      // customer pays for 1, gets 2 → effectively 50% off, but cost is 2× hpp
       promoPrice = price;
       promoCost = hpp * 2;
       unitsPerTransaction = 2;
       label = 'Buy 1 Get 1';
     } else {
-      // pay X, get Y
       promoPrice = price * bundlePay;
       promoCost = hpp * bundleGet;
       unitsPerTransaction = bundleGet;
@@ -52,19 +43,16 @@ export default function PromoImpactCalculator() {
 
     const promoProfit = promoPrice - promoCost;
     const promoMargin = promoPrice > 0 ? (promoProfit / promoPrice) * 100 : 0;
-    const profitDelta = promoProfit - (baseProfit * unitsPerTransaction);
 
-    // Volume scenario (without and with promo)
     const baselineProfit = baseProfit * baselineUnits;
     const promoUnits = baselineUnits * (1 + expectedSalesUplift / 100);
-    // Each "transaction" yields promoProfit and consumes unitsPerTransaction units
     const promoTransactions = promoUnits / unitsPerTransaction;
     const totalPromoProfit = promoProfit * promoTransactions;
     const profitImpact = totalPromoProfit - baselineProfit;
 
     return {
       label, baseProfit, baseMargin,
-      promoPrice, promoCost, promoProfit, promoMargin, profitDelta,
+      promoPrice, promoCost, promoProfit, promoMargin,
       unitsPerTransaction, baselineProfit, totalPromoProfit, profitImpact,
       isWorthIt: profitImpact > 0,
     };
@@ -80,21 +68,21 @@ export default function PromoImpactCalculator() {
       <div className="space-y-4">
         {/* Input */}
         <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
-          <h2 className="text-base md:text-lg font-semibold mb-4">Data produk</h2>
+          <h2 className="text-base md:text-lg font-semibold mb-4 text-stone-900 dark:text-white">Data produk</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
             <div>
-              <label className="text-xs font-medium text-stone-600 block mb-1.5">Modal / HPP</label>
+              <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Modal / HPP</label>
               <CurrencyInput value={hpp} onChange={setHpp} />
             </div>
             <div>
-              <label className="text-xs font-medium text-stone-600 block mb-1.5">Harga jual normal</label>
+              <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Harga jual normal</label>
               <CurrencyInput value={price} onChange={setPrice} />
             </div>
           </div>
 
-          <h3 className="text-sm font-semibold mb-2">Jenis promo</h3>
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-stone-100 rounded-lg mb-4">
+          <h3 className="text-sm font-semibold mb-2 text-stone-900 dark:text-white">Jenis promo</h3>
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-stone-100 dark:bg-stone-800/60 rounded-lg mb-4">
             <PromoTab label="Diskon %" active={type === 'discount'} onClick={() => setType('discount')} />
             <PromoTab label="Buy 1 Get 1" active={type === 'b1g1'} onClick={() => setType('b1g1')} />
             <PromoTab label="Bundle" active={type === 'bundle'} onClick={() => setType('bundle')} />
@@ -102,7 +90,7 @@ export default function PromoImpactCalculator() {
 
           {type === 'discount' && (
             <div>
-              <label className="text-xs font-medium text-stone-600 block mb-1.5">Persentase diskon</label>
+              <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Persentase diskon</label>
               <div className="flex items-center gap-3">
                 <input
                   type="range"
@@ -111,9 +99,9 @@ export default function PromoImpactCalculator() {
                   step={1}
                   value={discountPct}
                   onChange={e => setDiscountPct(parseInt(e.target.value))}
-                  className="flex-1 accent-stone-900"
+                  className="flex-1 accent-stone-900 dark:accent-amber-400"
                 />
-                <div className="px-2.5 py-1 bg-stone-100 rounded-md text-sm font-semibold tabular-nums w-14 text-center">
+                <div className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-md text-sm font-semibold tabular-nums w-14 text-center text-stone-900 dark:text-white">
                   {discountPct}%
                 </div>
               </div>
@@ -123,11 +111,11 @@ export default function PromoImpactCalculator() {
           {type === 'bundle' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-stone-600 block mb-1.5">Customer bayar</label>
+                <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Customer bayar</label>
                 <NumInput value={bundlePay} onChange={setBundlePay} min={1} max={10} suffix="item" />
               </div>
               <div>
-                <label className="text-xs font-medium text-stone-600 block mb-1.5">Customer dapat</label>
+                <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Customer dapat</label>
                 <NumInput value={bundleGet} onChange={setBundleGet} min={bundlePay} max={20} suffix="item" />
               </div>
             </div>
@@ -137,8 +125,8 @@ export default function PromoImpactCalculator() {
         {/* Per-transaction impact */}
         {result && (
           <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
-            <h2 className="text-base md:text-lg font-semibold mb-1">Dampak per transaksi</h2>
-            <p className="text-xs md:text-sm text-stone-500 mb-4">
+            <h2 className="text-base md:text-lg font-semibold mb-1 text-stone-900 dark:text-white">Dampak per transaksi</h2>
+            <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mb-4">
               Membandingkan: 1 transaksi normal vs 1 transaksi pakai promo "{result.label}"
             </p>
 
@@ -161,9 +149,9 @@ export default function PromoImpactCalculator() {
             </div>
 
             {result.promoProfit < 0 && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-red-600 mt-0.5 shrink-0" />
-                <p className="text-xs text-red-900 leading-relaxed">
+              <div className="mt-3 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-red-900 dark:text-red-300 leading-relaxed">
                   Promo ini menghasilkan rugi per transaksi. Perlu uplift volume signifikan untuk break-even, atau pertimbangkan promo yang lebih kecil.
                 </p>
               </div>
@@ -174,18 +162,18 @@ export default function PromoImpactCalculator() {
         {/* Volume scenario */}
         {result && (
           <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
-            <h2 className="text-base md:text-lg font-semibold mb-1">Dampak ke total profit</h2>
-            <p className="text-xs md:text-sm text-stone-500 mb-4">
+            <h2 className="text-base md:text-lg font-semibold mb-1 text-stone-900 dark:text-white">Dampak ke total profit</h2>
+            <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mb-4">
               Hitung total profit selama periode promo dengan estimasi kenaikan penjualan.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
               <div>
-                <label className="text-xs font-medium text-stone-600 block mb-1.5">Penjualan normal (unit)</label>
+                <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Penjualan normal (unit)</label>
                 <NumInput value={baselineUnits} onChange={setBaselineUnits} min={1} max={10000} suffix="unit" />
               </div>
               <div>
-                <label className="text-xs font-medium text-stone-600 block mb-1.5">Estimasi kenaikan penjualan</label>
+                <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Estimasi kenaikan penjualan</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
@@ -194,9 +182,9 @@ export default function PromoImpactCalculator() {
                     step={5}
                     value={expectedSalesUplift}
                     onChange={e => setExpectedSalesUplift(parseInt(e.target.value))}
-                    className="flex-1 accent-stone-900"
+                    className="flex-1 accent-stone-900 dark:accent-amber-400"
                   />
-                  <div className="px-2.5 py-1 bg-stone-100 rounded-md text-sm font-semibold tabular-nums w-16 text-center">
+                  <div className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-md text-sm font-semibold tabular-nums w-16 text-center text-stone-900 dark:text-white">
                     +{expectedSalesUplift}%
                   </div>
                 </div>
@@ -217,26 +205,28 @@ export default function PromoImpactCalculator() {
             </div>
 
             <div className={cn(
-              'mt-3 p-4 rounded-xl',
-              result.isWorthIt ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200',
+              'mt-3 p-4 rounded-xl border',
+              result.isWorthIt
+                ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30'
+                : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30',
             )}>
-              <p className="text-xs font-medium text-stone-700 mb-1">
+              <p className="text-xs font-medium text-stone-700 dark:text-stone-300 mb-1">
                 {result.isWorthIt ? 'Layak dijalankan' : 'Hati-hati'}
               </p>
               <p className={cn(
                 'text-2xl font-bold tabular-nums',
-                result.isWorthIt ? 'text-emerald-700' : 'text-red-700',
+                result.isWorthIt ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400',
               )}>
                 {result.profitImpact > 0 ? '+' : ''}Rp {Math.round(result.profitImpact).toLocaleString('id-ID')}
               </p>
-              <p className="text-[11px] text-stone-600 mt-1">
+              <p className="text-[11px] text-stone-600 dark:text-stone-400 mt-1">
                 {result.isWorthIt
                   ? `Promo ini menambah profit Rp ${Math.round(result.profitImpact).toLocaleString('id-ID')} dibanding tanpa promo. Selama uplift penjualan tercapai, ini menguntungkan.`
                   : `Promo ini mengurangi profit Rp ${Math.abs(Math.round(result.profitImpact)).toLocaleString('id-ID')}. Pertimbangkan: turunkan diskon, naikkan target uplift, atau cari cara lain.`}
               </p>
             </div>
 
-            <p className="text-[11px] text-stone-500 mt-3 leading-relaxed">
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-3 leading-relaxed">
               Catatan: Asumsi semua transaksi pakai promo. Kalau promo cuma untuk segmen tertentu, hitung manual proporsinya.
             </p>
           </div>
@@ -253,7 +243,7 @@ export default function PromoImpactCalculator() {
 function CurrencyInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium pointer-events-none">Rp</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-500 font-medium pointer-events-none">Rp</span>
       <input
         type="text"
         inputMode="numeric"
@@ -263,7 +253,7 @@ function CurrencyInput({ value, onChange }: { value: number; onChange: (v: numbe
           onChange(cleaned === '' ? 0 : parseInt(cleaned, 10));
         }}
         placeholder="0"
-        className="w-full pl-10 pr-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+        className="w-full pl-10 pr-3 py-2 bg-white dark:bg-stone-950/60 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-amber-400/30 placeholder:text-stone-400 dark:placeholder:text-stone-500"
       />
     </div>
   );
@@ -278,10 +268,10 @@ function NumInput({ value, onChange, min, max, suffix }: { value: number; onChan
         max={max}
         value={value || ''}
         onChange={e => onChange(Math.max(min, Math.min(max, parseInt(e.target.value) || 0)))}
-        className="w-full pl-3 pr-12 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+        className="w-full pl-3 pr-12 py-2 bg-white dark:bg-stone-950/60 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-amber-400/30"
       />
       {suffix && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium pointer-events-none">{suffix}</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-500 font-medium pointer-events-none">{suffix}</span>
       )}
     </div>
   );
@@ -293,7 +283,9 @@ function PromoTab({ label, active, onClick }: { label: string; active: boolean; 
       onClick={onClick}
       className={cn(
         'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-        active ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900',
+        active
+          ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-white shadow-sm'
+          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white',
       )}
     >
       {label}
@@ -311,17 +303,17 @@ function ScenarioCard({ title, price, cost, profit, margin, isPromoBoxNote }: {
 }) {
   return (
     <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl">
-      <p className="text-xs font-semibold text-stone-700 mb-3">{title}</p>
+      <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 mb-3">{title}</p>
       <div className="space-y-1.5 text-sm">
         <Row label="Harga" value={`Rp ${Math.round(price).toLocaleString('id-ID')}`} />
         <Row label="Modal" value={`Rp ${Math.round(cost).toLocaleString('id-ID')}`} muted />
-        <div className="pt-1.5 border-t border-stone-200 space-y-1.5">
+        <div className="pt-1.5 border-t border-stone-200 dark:border-stone-700 space-y-1.5">
           <Row label="Profit" value={`Rp ${Math.round(profit).toLocaleString('id-ID')}`} bold negative={profit < 0} />
           <Row label="Margin" value={`${margin.toFixed(1)}%`} muted />
         </div>
       </div>
       {isPromoBoxNote && (
-        <p className="text-[10px] text-stone-500 mt-2 italic">{isPromoBoxNote}</p>
+        <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-2 italic">{isPromoBoxNote}</p>
       )}
     </div>
   );
@@ -330,11 +322,14 @@ function ScenarioCard({ title, price, cost, profit, margin, isPromoBoxNote }: {
 function Row({ label, value, bold, muted, negative }: { label: string; value: string; bold?: boolean; muted?: boolean; negative?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className={cn(muted ? 'text-stone-500' : 'text-stone-600', bold && 'font-semibold text-stone-900')}>{label}</span>
+      <span className={cn(
+        muted ? 'text-stone-500 dark:text-stone-400' : 'text-stone-600 dark:text-stone-300',
+        bold && 'font-semibold text-stone-900 dark:text-white',
+      )}>{label}</span>
       <span className={cn(
         'tabular-nums',
         bold ? 'font-bold' : 'font-medium',
-        negative ? 'text-red-600' : 'text-stone-900',
+        negative ? 'text-red-600 dark:text-red-400' : 'text-stone-900 dark:text-white',
       )}>{value}</span>
     </div>
   );
@@ -343,9 +338,9 @@ function Row({ label, value, bold, muted, negative }: { label: string; value: st
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl">
-      <p className="text-[10px] text-stone-500 mb-1">{label}</p>
-      <p className="text-base font-bold tabular-nums">{value}</p>
-      {sub && <p className="text-[10px] text-stone-500 mt-0.5">{sub}</p>}
+      <p className="text-[10px] text-stone-500 dark:text-stone-400 mb-1">{label}</p>
+      <p className="text-base font-bold tabular-nums text-stone-900 dark:text-white">{value}</p>
+      {sub && <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">{sub}</p>}
     </div>
   );
 }

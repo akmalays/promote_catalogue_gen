@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
@@ -48,8 +49,8 @@ export default function Select({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLUListElement>(null);
 
-  // Update menu position when opened
-  useEffect(() => {
+  // Update menu position when opened (use layout effect to avoid first-frame flicker)
+  useLayoutEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setMenuPosition({
@@ -148,61 +149,64 @@ export default function Select({
         </button>
       </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.ul
-            ref={menuRef}
-            role="listbox"
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.12 }}
-            style={{
-              position: 'fixed',
-              top: menuPosition.top,
-              left: menuPosition.left,
-              width: menuPosition.width,
-            }}
-            className={cn(
-              'z-[9999] max-h-60 overflow-y-auto',
-              'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800',
-              'rounded-lg shadow-xl p-1',
-              menuClassName,
-            )}
-          >
-            {options.map(opt => {
-              const isSelected = opt.value === value;
-              return (
-                <li key={opt.value}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    disabled={opt.disabled}
-                    onClick={() => {
-                      onChange(opt.value);
-                      setIsOpen(false);
-                    }}
-                    className={cn(
-                      'w-full flex items-center justify-between gap-2 rounded-md text-left transition-colors',
-                      itemSizeClasses,
-                      opt.disabled && 'opacity-40 cursor-not-allowed',
-                      isSelected
-                        ? 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-medium'
-                        : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800/60',
-                    )}
-                  >
-                    <span className="truncate">{opt.label}</span>
-                    {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-stone-900 dark:text-stone-100 shrink-0" />
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </motion.ul>
-        )}
-      </AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.ul
+              ref={menuRef}
+              role="listbox"
+              initial={{ opacity: 0, y: -4, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: 0.12 }}
+              style={{
+                position: 'fixed',
+                top: menuPosition.top,
+                left: menuPosition.left,
+                width: menuPosition.width,
+              }}
+              className={cn(
+                'z-[9999] max-h-60 overflow-y-auto',
+                'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800',
+                'rounded-lg shadow-xl p-1',
+                menuClassName,
+              )}
+            >
+              {options.map(opt => {
+                const isSelected = opt.value === value;
+                return (
+                  <li key={opt.value}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      disabled={opt.disabled}
+                      onClick={() => {
+                        onChange(opt.value);
+                        setIsOpen(false);
+                      }}
+                      className={cn(
+                        'w-full flex items-center justify-between gap-2 rounded-md text-left transition-colors',
+                        itemSizeClasses,
+                        opt.disabled && 'opacity-40 cursor-not-allowed',
+                        isSelected
+                          ? 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-medium'
+                          : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800/60',
+                      )}
+                    >
+                      <span className="truncate">{opt.label}</span>
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-stone-900 dark:text-stone-100 shrink-0" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </motion.ul>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </>
   );
 }

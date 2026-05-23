@@ -165,7 +165,7 @@ export default function LandingPage() {
       <HeroCarousel />
 
       {/* Preview Gallery */}
-      <section className="py-16 md:py-24 relative bg-stone-50 dark:bg-transparent border-y border-stone-100 dark:border-stone-800/60">
+      <section className="py-16 md:py-24 relative bg-stone-50/70 dark:bg-transparent border-y border-stone-100 dark:border-stone-800/60">
         <div className="max-w-5xl mx-auto px-6 relative">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2 text-stone-900 dark:text-white">
@@ -275,7 +275,7 @@ export default function LandingPage() {
       </section>
 
       {/* Free Tools */}
-      <section className="py-16 md:py-20 relative bg-amber-50/40 dark:bg-transparent border-y border-amber-100/60 dark:border-stone-800/60">
+      <section className="py-16 md:py-20 relative bg-amber-50/30 dark:bg-transparent border-y border-amber-100/60 dark:border-stone-800/60">
         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[400px] bg-amber-500/[0.06] blur-3xl pointer-events-none hidden dark:block" />
 
         <div className="max-w-4xl mx-auto px-6 relative">
@@ -310,7 +310,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 md:py-28 relative bg-stone-50 dark:bg-transparent border-y border-stone-100 dark:border-stone-800/60">
+      <section className="py-20 md:py-28 relative bg-stone-50/70 dark:bg-transparent border-y border-stone-100 dark:border-stone-800/60">
         <div className="max-w-4xl mx-auto px-6 relative">
           <div className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2 text-stone-900 dark:text-white">
@@ -402,17 +402,32 @@ export default function LandingPage() {
 
 function BackgroundPattern() {
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden hidden dark:block">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Grid — light mode (warmer + more visible against white bg) */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 dark:hidden"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, rgb(120 113 108 / 0.18) 1px, transparent 1px), linear-gradient(to bottom, rgb(120 113 108 / 0.18) 1px, transparent 1px)',
+          backgroundSize: '56px 56px',
+          maskImage:
+            'radial-gradient(ellipse at 50% 30%, black 30%, transparent 80%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse at 50% 30%, black 30%, transparent 80%)',
+        }}
+      />
+      {/* Grid — dark mode */}
+      <div
+        className="absolute inset-0 hidden dark:block"
         style={{
           backgroundImage:
             'linear-gradient(to right, rgb(214 211 209 / 0.06) 1px, transparent 1px), linear-gradient(to bottom, rgb(214 211 209 / 0.06) 1px, transparent 1px)',
           backgroundSize: '56px 56px',
         }}
       />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-amber-500/[0.07] rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-stone-700/30 rounded-full blur-3xl" />
+      {/* Glows — only in dark mode */}
+      <div className="hidden dark:block absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-amber-500/[0.07] rounded-full blur-3xl" />
+      <div className="hidden dark:block absolute bottom-0 right-0 w-[400px] h-[400px] bg-stone-700/30 rounded-full blur-3xl" />
     </div>
   );
 }

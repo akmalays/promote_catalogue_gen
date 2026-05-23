@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Plus, Trash2, Calculator, Sparkles,
   Loader2, Lightbulb, AlertCircle, Save, History,
   Info, ChevronDown, FileSpreadsheet, ArrowRight,
-  Percent, TrendingUp, TrendingDown, ArrowLeft,
+  Percent, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { cn } from '../lib/utils';
@@ -90,8 +89,6 @@ const CATEGORY_MARGIN_GUIDE: Record<string, { min: number; max: number; note: st
 // ============================================================
 
 export default function HPPCalculator() {
-  const navigate = useNavigate();
-
   // Product info
   const [productName, setProductName] = useState('');
   const [category, setCategory] = useState('');
@@ -567,11 +564,11 @@ export default function HPPCalculator() {
       navbarRight={
         <button
           onClick={() => setShowHistory(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors"
         >
           <History className="w-4 h-4" /> Riwayat
           {history.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 bg-stone-900 text-white rounded font-semibold">
+            <span className="text-[10px] px-1.5 py-0.5 bg-stone-900 dark:bg-white text-white dark:text-stone-950 rounded font-semibold">
               {history.length}
             </span>
           )}
@@ -605,7 +602,7 @@ export default function HPPCalculator() {
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
               <h2 className="text-base md:text-lg font-semibold">Bahan Baku <span className="text-xs font-normal text-stone-400">(Variable Cost)</span></h2>
-              <p className="text-xs md:text-sm text-stone-500 mt-0.5">
+              <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
                 Rincikan semua bahan untuk membuat satu produk jadi.
               </p>
             </div>
@@ -613,7 +610,7 @@ export default function HPPCalculator() {
               {isAIAvailable() && (
                 <button
                   onClick={() => setShowRecipeModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors border border-stone-200 dark:border-stone-700"
                 >
                   <Sparkles className="w-3.5 h-3.5" /> Saran AI
                 </button>
@@ -712,7 +709,7 @@ export default function HPPCalculator() {
                       />
                     </td>
                     <td className="py-2 text-right">
-                      <span className="text-sm font-semibold text-stone-900 tabular-nums bg-stone-100 px-2.5 py-1 rounded-md whitespace-nowrap">
+                      <span className="text-sm font-semibold text-stone-900 tabular-nums bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-md whitespace-nowrap">
                         Rp {calcCostPerProduct(vc).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                       </span>
                     </td>
@@ -743,7 +740,7 @@ export default function HPPCalculator() {
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
                 <h3 className="text-sm font-semibold text-stone-900 dark:text-white">Susut bahan / Wastage</h3>
-                <p className="text-[11px] text-stone-500 mt-0.5">
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
                   Estimasi bahan terbuang (kulit, layu, takaran lebih). F&B umumnya 5–15%.
                 </p>
               </div>
@@ -759,16 +756,16 @@ export default function HPPCalculator() {
                 step={1}
                 value={wastagePct}
                 onChange={e => setWastagePct(parseInt(e.target.value))}
-                className="flex-1 accent-stone-900"
+                className="flex-1 accent-stone-900 dark:accent-amber-400"
               />
-              <div className="flex items-center gap-1 px-2.5 py-1 bg-stone-100 rounded-md tabular-nums">
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-md tabular-nums">
                 <input
                   type="number"
                   min={0}
                   max={50}
                   value={wastagePct}
                   onChange={e => setWastagePct(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
-                  className="w-10 bg-transparent text-sm font-semibold text-right focus:outline-none"
+                  className="w-10 bg-transparent text-sm font-semibold text-right text-stone-900 dark:text-white focus:outline-none"
                 />
                 <Percent className="w-3 h-3 text-stone-500 dark:text-stone-400" />
               </div>
@@ -801,7 +798,7 @@ export default function HPPCalculator() {
                 <button
                   onClick={() => removePackaging(pc.id)}
                   disabled={packagingCosts.length === 1}
-                  className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -825,7 +822,7 @@ export default function HPPCalculator() {
           </p>
 
           {laborCosts.length === 0 ? (
-            <p className="text-xs text-stone-500 italic mb-3">Belum ada. Tambah jika ada karyawan.</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 italic mb-3">Belum ada. Tambah jika ada karyawan.</p>
           ) : (
             <div className="space-y-2 mb-3">
               {laborCosts.map(lc => (
@@ -853,7 +850,7 @@ export default function HPPCalculator() {
                   />
                   <button
                     onClick={() => removeLabor(lc.id)}
-                    className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                    className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -875,18 +872,18 @@ export default function HPPCalculator() {
           <div className="flex items-start justify-between gap-3 mb-1">
             <div className="flex items-center gap-2">
               <h2 className="text-base md:text-lg font-semibold">Biaya Tetap & Kapasitas</h2>
-              <span className="text-[10px] font-medium text-stone-500 px-1.5 py-0.5 bg-stone-100 rounded">opsional</span>
+              <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">opsional</span>
             </div>
             {isAIAvailable() && includeFixedInHpp && (
               <button
                 onClick={() => setShowFixedCostsModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors border border-stone-200 dark:border-stone-700"
               >
                 <Sparkles className="w-3.5 h-3.5" /> Saran AI
               </button>
             )}
           </div>
-          <p className="text-xs md:text-sm text-stone-500 mb-4">
+          <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mb-4">
             Biaya bulanan tetap (sewa, listrik, internet, gaji tetap). Kalau kamu masih awal dan belum tahu volume produksi, lewati saja — biaya tetap tetap dipakai untuk hitung BEP & target penjualan di bawah.
           </p>
 
@@ -895,23 +892,27 @@ export default function HPPCalculator() {
             onClick={() => setIncludeFixedInHpp(!includeFixedInHpp)}
             className={cn(
               'w-full p-3.5 rounded-lg border text-left transition-colors mb-4',
-              includeFixedInHpp ? 'border-stone-900 bg-stone-50' : 'border-stone-200 bg-white hover:border-stone-300',
+              includeFixedInHpp
+                ? 'border-stone-900 dark:border-stone-100 bg-stone-50 dark:bg-stone-800/40'
+                : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/50 hover:border-stone-300 dark:hover:border-stone-700',
             )}
           >
             <div className="flex items-start gap-3">
               <div
                 className={cn(
                   'w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors',
-                  includeFixedInHpp ? 'border-stone-900 bg-stone-900' : 'border-stone-300 bg-white',
+                  includeFixedInHpp
+                    ? 'border-stone-900 dark:border-white bg-stone-900 dark:bg-white'
+                    : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900',
                 )}
               >
-                {includeFixedInHpp && <span className="text-white text-[10px] leading-none">✓</span>}
+                {includeFixedInHpp && <span className="text-white dark:text-stone-950 text-[10px] leading-none">✓</span>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-stone-900 dark:text-white">
                   Masukkan alokasi biaya tetap ke HPP
                 </p>
-                <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">
                   {includeFixedInHpp
                     ? 'HPP kamu akan termasuk porsi biaya tetap (fully-loaded). Butuh estimasi kapasitas produksi.'
                     : 'HPP cuma hitung biaya variabel (bahan + packaging + tenaga kerja per unit). Direkomendasikan untuk awal — lebih sederhana dan tidak butuh tebak-tebak kapasitas.'}
@@ -938,14 +939,14 @@ export default function HPPCalculator() {
                     onChange={setProductionCapacity}
                     className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                   />
-                  <p className="text-[11px] text-stone-500 mt-1.5">
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1.5">
                     Belum tahu? Mulai dengan target realistis (mis. 300–1.000 unit/bulan untuk warung makan), lalu review setelah 1–2 bulan jualan.
                   </p>
                 </div>
 
                 <div className="space-y-2 mb-3">
                   {fixedCosts.length === 0 && (
-                    <p className="text-xs text-stone-500 italic mb-2">Belum ada biaya tetap. Tambah satu di bawah, atau pakai saran AI.</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 italic mb-2">Belum ada biaya tetap. Tambah satu di bawah, atau pakai saran AI.</p>
                   )}
                   {fixedCosts.map(fc => (
                     <div key={fc.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2 items-center">
@@ -963,7 +964,7 @@ export default function HPPCalculator() {
                       />
                       <button
                         onClick={() => removeFixed(fc.id)}
-                        className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                        className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1024,7 +1025,7 @@ export default function HPPCalculator() {
             <button
               onClick={handleAnalyzeHPP}
               disabled={loadingHpp || totalHpp === 0}
-              className="mt-4 w-full inline-flex items-center justify-center gap-2 py-2 bg-stone-900 text-white rounded-lg text-xs font-medium hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 py-2 bg-stone-900 dark:bg-white text-white dark:text-stone-950 rounded-lg text-xs font-medium hover:bg-stone-800 dark:hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {loadingHpp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               {loadingHpp ? 'Menganalisis...' : 'Analisis HPP dengan AI'}
@@ -1039,8 +1040,8 @@ export default function HPPCalculator() {
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden mb-4"
               >
-                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5">
-                  <Lightbulb className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="p-3.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl flex items-start gap-2.5">
+                  <Lightbulb className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">{hppAnalysis}</p>
                 </div>
               </motion.div>
@@ -1051,7 +1052,7 @@ export default function HPPCalculator() {
         {/* Sales Channels & Tax */}
         <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold mb-1">Channel Penjualan & Pajak</h2>
-          <p className="text-xs md:text-sm text-stone-500 mb-4">
+          <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mb-4">
             Aktifkan channel yang dipakai. Komisi marketplace & pajak akan otomatis dipotong dari proyeksi laba.
           </p>
 
@@ -1059,21 +1060,25 @@ export default function HPPCalculator() {
             {channels.map(ch => (
               <div key={ch.id} className={cn(
                 'flex items-center gap-3 p-3 rounded-lg border transition-colors',
-                ch.enabled ? 'border-stone-900 bg-stone-50' : 'border-stone-200 bg-white',
+                ch.enabled
+                  ? 'border-stone-900 dark:border-stone-100 bg-stone-50 dark:bg-stone-800/40'
+                  : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/50',
               )}>
                 <button
                   onClick={() => updateChannel(ch.id, 'enabled', !ch.enabled)}
                   className={cn(
                     'w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors',
-                    ch.enabled ? 'border-stone-900 bg-stone-900' : 'border-stone-300 bg-white',
+                    ch.enabled
+                      ? 'border-stone-900 dark:border-white bg-stone-900 dark:bg-white'
+                      : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900',
                   )}
                 >
-                  {ch.enabled && <span className="text-white text-xs leading-none">✓</span>}
+                  {ch.enabled && <span className="text-white dark:text-stone-950 text-xs leading-none">✓</span>}
                 </button>
                 <input
                   value={ch.name}
                   onChange={e => updateChannel(ch.id, 'name', e.target.value)}
-                  className="flex-1 bg-transparent text-sm font-medium focus:outline-none"
+                  className="flex-1 bg-transparent text-sm font-medium text-stone-900 dark:text-white focus:outline-none"
                 />
                 <div className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md tabular-nums">
                   <input
@@ -1084,7 +1089,7 @@ export default function HPPCalculator() {
                     value={ch.commissionPct}
                     onChange={e => updateChannel(ch.id, 'commissionPct', Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
                     disabled={!ch.enabled}
-                    className="w-12 bg-transparent text-sm font-semibold text-right focus:outline-none disabled:text-stone-400"
+                    className="w-12 bg-transparent text-sm font-semibold text-right text-stone-900 dark:text-white focus:outline-none disabled:text-stone-400 dark:disabled:text-stone-500"
                   />
                   <Percent className="w-3 h-3 text-stone-500 dark:text-stone-400" />
                 </div>
@@ -1092,9 +1097,9 @@ export default function HPPCalculator() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-stone-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
             <div>
-              <label className="text-xs font-medium text-stone-600 block mb-1.5">Pajak (PPh Final / PB1)</label>
+              <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">Pajak (PPh Final / PB1)</label>
               <div className="flex items-center gap-3">
                 <input
                   type="range"
@@ -1103,9 +1108,9 @@ export default function HPPCalculator() {
                   step={0.5}
                   value={taxPct}
                   onChange={e => setTaxPct(parseFloat(e.target.value))}
-                  className="flex-1 accent-stone-900"
+                  className="flex-1 accent-stone-900 dark:accent-amber-400"
                 />
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-stone-100 rounded-md tabular-nums">
+                <div className="flex items-center gap-1 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-md tabular-nums">
                   <input
                     type="number"
                     min={0}
@@ -1113,21 +1118,21 @@ export default function HPPCalculator() {
                     step={0.5}
                     value={taxPct}
                     onChange={e => setTaxPct(Math.max(0, Math.min(20, parseFloat(e.target.value) || 0)))}
-                    className="w-10 bg-transparent text-sm font-semibold text-right focus:outline-none"
+                    className="w-10 bg-transparent text-sm font-semibold text-right text-stone-900 dark:text-white focus:outline-none"
                   />
                   <Percent className="w-3 h-3 text-stone-500 dark:text-stone-400" />
                 </div>
               </div>
-              <p className="text-[11px] text-stone-500 mt-1.5">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1.5">
                 UMKM omzet ≤ 4.8M/tahun: 0.5%. Restoran umumnya kena PB1 10%.
               </p>
             </div>
             <div className="bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg p-3">
-              <p className="text-[11px] text-stone-500 mb-1">Total potongan / unit</p>
-              <p className="text-sm font-bold tabular-nums">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mb-1">Total potongan / unit</p>
+              <p className="text-sm font-bold tabular-nums text-stone-900 dark:text-white">
                 {avgCommissionPct.toFixed(1)}% komisi + {taxPct}% pajak
               </p>
-              <p className="text-[11px] text-stone-500 mt-1">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
                 Net price kamu = harga × {((1 - avgCommissionPct / 100) * (1 - taxPct / 100) * 100).toFixed(1)}%
               </p>
             </div>
@@ -1141,12 +1146,12 @@ export default function HPPCalculator() {
               <div className="flex items-center gap-1.5">
                 <h2 className="text-base md:text-lg font-semibold">Saran Harga Jual</h2>
                 {isAIAvailable() && (
-                  <span className="text-[10px] font-medium text-stone-500 inline-flex items-center gap-1 px-1.5 py-0.5 bg-stone-100 rounded">
+                  <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 inline-flex items-center gap-1 px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 rounded">
                     <Sparkles className="w-2.5 h-2.5" /> AI
                   </span>
                 )}
               </div>
-              <p className="text-xs md:text-sm text-stone-500 mt-0.5">
+              <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
                 3 tier harga: kompetitif, standar, premium.
               </p>
             </div>
@@ -1170,7 +1175,7 @@ export default function HPPCalculator() {
             <button
               onClick={handleSuggestPrice}
               disabled={loadingPrice || !productName || totalHpp === 0}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-950 rounded-xl text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loadingPrice ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               {loadingPrice ? 'Menyusun saran...' : 'Minta saran harga'}
@@ -1199,7 +1204,7 @@ export default function HPPCalculator() {
           {selectedPrice > 0 && marginGuide && (
             <div className="mt-4 p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg">
               <div className="flex items-start gap-2.5">
-                <Info className="w-3.5 h-3.5 text-stone-500 mt-0.5 shrink-0" />
+                <Info className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-stone-700 dark:text-stone-200">
                     Margin {category}: <span className="font-semibold">{marginGuide.min}–{marginGuide.max}%</span>
@@ -1270,7 +1275,7 @@ export default function HPPCalculator() {
 
           {!projection ? (
             <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl flex items-center gap-2.5 mb-4">
-              <AlertCircle className="w-4 h-4 text-stone-500 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-stone-500 dark:text-stone-400 shrink-0" />
               <p className="text-xs text-stone-600 dark:text-stone-300">
                 Lengkapi target laba dan harga jual untuk lihat proyeksi.
                 {!includeFixedInHpp && totalFixedMonthly === 0 && ' Tambah biaya tetap di section di atas agar perhitungan BEP & target lebih akurat.'}
@@ -1298,8 +1303,8 @@ export default function HPPCalculator() {
 
               {/* BEP & Working Capital */}
               <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl mb-4">
-                <p className="text-sm font-semibold mb-1">Break Even Point & Modal Kerja</p>
-                <p className="text-[11px] text-stone-500 mb-3">Titik impas dan modal awal yang dibutuhkan</p>
+                <p className="text-sm font-semibold mb-1 text-stone-900 dark:text-white">Break Even Point & Modal Kerja</p>
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 mb-3">Titik impas dan modal awal yang dibutuhkan</p>
                 {projection.bepUnits > 0 ? (
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
@@ -1324,7 +1329,7 @@ export default function HPPCalculator() {
                       <p className="text-xs font-semibold text-stone-900 dark:text-white">
                         Modal kerja minimum: Rp {projection.workingCapital.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-[11px] text-stone-500 mt-0.5">
+                      <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
                         1 siklus produksi penuh + buffer biaya tetap sampai BEP tercapai.
                       </p>
                     </div>
@@ -1350,7 +1355,7 @@ export default function HPPCalculator() {
               <button
                 onClick={handleAnalyzeSales}
                 disabled={loadingSales}
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 mt-4 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 disabled:opacity-40 transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 py-2.5 mt-4 bg-stone-900 dark:bg-white text-white dark:text-stone-950 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-100 disabled:opacity-40 transition-colors"
               >
                 {loadingSales ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {loadingSales ? 'Menyusun strategi...' : 'Analisis strategi dengan AI'}
@@ -1364,8 +1369,8 @@ export default function HPPCalculator() {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="mt-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5">
-                      <Sparkles className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                    <div className="mt-3 p-3.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl flex items-start gap-2.5">
+                      <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
                       <p className="text-sm text-stone-700 leading-relaxed">{salesAnalysis}</p>
                     </div>
                   </motion.div>
@@ -1379,7 +1384,7 @@ export default function HPPCalculator() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           <button
             onClick={saveCalculation}
-            className="inline-flex items-center justify-center gap-2 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-sm font-semibold transition-colors"
+            className="inline-flex items-center justify-center gap-2 py-3 bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-950 rounded-xl text-sm font-semibold transition-colors"
           >
             <Save className="w-4 h-4" /> Simpan perhitungan
           </button>
@@ -1394,7 +1399,7 @@ export default function HPPCalculator() {
         {/* CTA already provided by ToolsLayout */}
 
         {!isAIAvailable() && (
-          <div className="mt-6 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2.5 text-xs text-amber-800">
+          <div className="mt-6 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>Fitur AI butuh API key. Tetap bisa pakai kalkulator manual & export.</span>
           </div>
@@ -1438,13 +1443,13 @@ function HPPGuide() {
     <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl mb-4 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors"
+        className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors"
       >
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-stone-900 dark:text-white">Belum tahu cara hitung HPP yang benar?</p>
-          <p className="text-xs text-stone-500 mt-0.5">Klik untuk baca panduan singkat 2 menit.</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Klik untuk baca panduan singkat 2 menit.</p>
         </div>
-        <ChevronDown className={cn('w-4 h-4 text-stone-500 transition-transform shrink-0', open && 'rotate-180')} />
+        <ChevronDown className={cn('w-4 h-4 text-stone-500 dark:text-stone-400 transition-transform shrink-0', open && 'rotate-180')} />
       </button>
 
       <AnimatePresence>
@@ -1456,16 +1461,16 @@ function HPPGuide() {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 pt-1 space-y-4 text-sm text-stone-700 leading-relaxed border-t border-stone-100">
+            <div className="px-5 pb-5 pt-1 space-y-4 text-sm text-stone-700 dark:text-stone-300 leading-relaxed border-t border-stone-100 dark:border-stone-800">
               <div>
-                <p className="font-semibold text-stone-900 mb-1">1. Apa itu HPP?</p>
+                <p className="font-semibold text-stone-900 dark:text-white mb-1">1. Apa itu HPP?</p>
                 <p className="text-xs md:text-sm">
                   HPP (Harga Pokok Produksi) adalah total biaya untuk membuat <strong>satu unit produk siap jual</strong>. Terdiri dari biaya variabel (bahan, packaging, tenaga kerja per unit) dan alokasi biaya tetap.
                 </p>
               </div>
 
               <div>
-                <p className="font-semibold text-stone-900 mb-1">2. Hitung biaya bahan baku</p>
+                <p className="font-semibold text-stone-900 dark:text-white mb-1">2. Hitung biaya bahan baku</p>
                 <p className="text-xs md:text-sm mb-2">
                   Biaya bahan yang berubah-ubah tergantung volume produksi. Contoh untuk Ayam Penyet:
                 </p>
@@ -1477,7 +1482,7 @@ function HPPGuide() {
               </div>
 
               <div>
-                <p className="font-semibold text-stone-900 mb-1">3. Tambah susut, packaging, tenaga kerja</p>
+                <p className="font-semibold text-stone-900 dark:text-white mb-1">3. Tambah susut, packaging, tenaga kerja</p>
                 <ul className="text-xs md:text-sm space-y-1 list-disc pl-4 text-stone-600 dark:text-stone-300">
                   <li><strong>Susut bahan</strong>: 5–15% bahan terbuang/layu/takaran lebih</li>
                   <li><strong>Packaging</strong>: box, plastik, sticker yang dipakai per unit</li>
@@ -1486,7 +1491,7 @@ function HPPGuide() {
               </div>
 
               <div>
-                <p className="font-semibold text-stone-900 mb-1">4. Alokasi biaya tetap (opsional untuk awal)</p>
+                <p className="font-semibold text-stone-900 dark:text-white mb-1">4. Alokasi biaya tetap (opsional untuk awal)</p>
                 <p className="text-xs md:text-sm mb-2">
                   Kalau kamu masih awal dan belum tahu volume produksi, <strong>skip dulu</strong>. HPP variabel sudah cukup untuk memulai. Begitu sudah jualan 1–2 bulan dan tahu kapasitas, baru aktifkan alokasi biaya tetap untuk HPP yang lebih akurat.
                 </p>
@@ -1495,19 +1500,19 @@ function HPPGuide() {
                   <p>Kapasitas produksi: <strong>5.000 unit / bulan</strong></p>
                   <p className="text-stone-900 dark:text-white">→ Alokasi per unit = Rp 830</p>
                 </div>
-                <p className="text-[11px] text-stone-500 mt-2">
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-2">
                   Catatan: biaya tetap tetap dipakai untuk hitung BEP & target penjualan, walau tidak masuk HPP.
                 </p>
               </div>
 
               <div>
-                <p className="font-semibold text-stone-900 mb-1">5. Jangan lupa komisi & pajak</p>
+                <p className="font-semibold text-stone-900 dark:text-white mb-1">5. Jangan lupa komisi & pajak</p>
                 <p className="text-xs md:text-sm text-stone-600 dark:text-stone-300">
                   Kalau jualan via GoFood/GrabFood, komisi 20–25% kepotong langsung. Restoran kena PB1 10%, UMKM kecil PPh Final 0.5%. Aktifkan di section "Channel Penjualan & Pajak" agar proyeksi laba akurat.
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-stone-200">
+              <div className="pt-2 border-t border-stone-200 dark:border-stone-800">
                 <p className="text-[11px] text-stone-500 dark:text-stone-400">
                   Sudah paham? Mulai isi data di bawah. AI bisa bantu kasih saran resep & estimasi biaya kalau ragu.
                 </p>
@@ -1647,7 +1652,7 @@ function PriceTierCard({ tier, selected, onSelect }: { tier: PriceTier; selected
           <div className="flex items-center gap-2 mb-0.5">
             <span className={cn(
               'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded',
-              selected ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700',
+              selected ? 'bg-stone-900 dark:bg-white text-white dark:text-stone-950' : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300',
             )}>
               {labelMap[tier.tier]}
             </span>
@@ -1693,11 +1698,11 @@ function CompetitorCompare({ myPrice, competitorPrice }: { myPrice: number; comp
       </div>
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <p className="text-[10px] text-stone-500 mb-0.5">Kamu</p>
+          <p className="text-[10px] text-stone-500 dark:text-stone-400 mb-0.5">Kamu</p>
           <p className="text-sm font-bold tabular-nums text-stone-900 dark:text-white">Rp {myPrice.toLocaleString('id-ID')}</p>
         </div>
         <div className="flex-1 text-right">
-          <p className="text-[10px] text-stone-500 mb-0.5">Kompetitor</p>
+          <p className="text-[10px] text-stone-500 dark:text-stone-400 mb-0.5">Kompetitor</p>
           <p className="text-sm font-bold tabular-nums text-stone-700 dark:text-stone-200">Rp {competitorPrice.toLocaleString('id-ID')}</p>
         </div>
       </div>
@@ -1733,7 +1738,7 @@ function PricingScenarios({
   return (
     <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
       <h2 className="text-base md:text-lg font-semibold mb-1">Skenario Harga</h2>
-      <p className="text-xs md:text-sm text-stone-500 mb-4">
+      <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mb-4">
         Profit di berbagai skenario harga (sudah dipotong komisi & pajak).
       </p>
 
@@ -1779,7 +1784,7 @@ function PricingScenarios({
       </div>
 
       {avgCommission === 0 && taxPct === 0 && (
-        <p className="text-[11px] text-stone-500 mt-3 italic">
+        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-3 italic">
           Aktifkan channel marketplace di atas untuk lihat dampak komisi pada profit.
         </p>
       )}
@@ -1866,9 +1871,9 @@ function BEPChart({
           strokeDasharray="0.5,0.5"
         />
       </svg>
-      <div className="flex items-center justify-between text-[10px] text-stone-500 mt-1">
+      <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 mt-1">
         <span>0 unit</span>
-        <span className="text-emerald-700 font-semibold">BEP: {bepUnits.toLocaleString('id-ID')} unit</span>
+        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">BEP: {bepUnits.toLocaleString('id-ID')} unit</span>
         <span>{Math.round(xMax).toLocaleString('id-ID')} unit</span>
       </div>
     </div>
@@ -1895,8 +1900,8 @@ function SensitivitySection({
 
   return (
     <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl">
-      <p className="text-sm font-semibold mb-1">Sensitivity / Stress Test</p>
-      <p className="text-[11px] text-stone-500 mb-3">Lihat dampak kalau harga bahan naik atau volume jualan turun</p>
+      <p className="text-sm font-semibold mb-1 text-stone-900 dark:text-white">Sensitivity / Stress Test</p>
+      <p className="text-[11px] text-stone-500 dark:text-stone-400 mb-3">Lihat dampak kalau harga bahan naik atau volume jualan turun</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
         <div>
@@ -1916,7 +1921,7 @@ function SensitivitySection({
             step={1}
             value={stressMaterialPct}
             onChange={e => onMaterialChange(parseInt(e.target.value))}
-            className="w-full accent-stone-900"
+            className="w-full accent-stone-900 dark:accent-amber-400"
           />
         </div>
         <div>
@@ -1936,35 +1941,35 @@ function SensitivitySection({
             step={1}
             value={stressVolumePct}
             onChange={e => onVolumeChange(parseInt(e.target.value))}
-            className="w-full accent-stone-900"
+            className="w-full accent-stone-900 dark:accent-amber-400"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5">
-          <p className="text-[10px] text-stone-500 mb-0.5">HPP setelah stress</p>
+          <p className="text-[10px] text-stone-500 dark:text-stone-400 mb-0.5">HPP setelah stress</p>
           <p className="text-sm font-bold tabular-nums">Rp {Math.round(stressScenario.stressedHpp).toLocaleString('id-ID')}</p>
           {hppDiff !== 0 && (
-            <p className="text-[10px] text-stone-500 mt-0.5">
+            <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
               {hppDiff > 0 ? '+' : ''}Rp {Math.round(hppDiff).toLocaleString('id-ID')}
             </p>
           )}
         </div>
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5">
-          <p className="text-[10px] text-stone-500 mb-0.5">Profit/unit baru</p>
+          <p className="text-[10px] text-stone-500 dark:text-stone-400 mb-0.5">Profit/unit baru</p>
           <p className={cn(
             'text-sm font-bold tabular-nums',
             stressScenario.stressedProfit < 0 ? 'text-red-600' : '',
           )}>
             Rp {Math.round(stressScenario.stressedProfit).toLocaleString('id-ID')}
           </p>
-          <p className="text-[10px] text-stone-500 mt-0.5">
+          <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
             margin {stressScenario.stressedMargin.toFixed(1)}%
           </p>
         </div>
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5 col-span-2 md:col-span-1">
-          <p className="text-[10px] text-stone-500 mb-0.5">Laba bersih / bulan</p>
+          <p className="text-[10px] text-stone-500 dark:text-stone-400 mb-0.5">Laba bersih / bulan</p>
           <p className={cn(
             'text-sm font-bold tabular-nums',
             stressScenario.stressedNetProfit < 0 ? 'text-red-600' : isWorse ? 'text-amber-600' : 'text-emerald-600',
@@ -1983,9 +1988,9 @@ function SensitivitySection({
       </div>
 
       {stressScenario.stressedNetProfit < 0 && (stressMaterialPct > 0 || stressVolumePct < 0) && (
-        <div className="mt-3 p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+        <div className="mt-3 p-2.5 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg flex items-start gap-2">
           <AlertCircle className="w-3.5 h-3.5 text-red-600 mt-0.5 shrink-0" />
-          <p className="text-[11px] text-red-900 leading-relaxed">
+          <p className="text-[11px] text-red-900 dark:text-red-300 leading-relaxed">
             Skenario ini menghasilkan kerugian. Pertimbangkan kontrak supplier, lock harga bahan, atau diversifikasi channel.
           </p>
         </div>
@@ -2016,51 +2021,63 @@ function HistoryDrawer({
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'tween', duration: 0.3 }}
-        className="fixed right-0 top-0 bottom-0 w-full md:w-96 bg-white z-50 shadow-xl flex flex-col"
+        className="fixed right-0 top-0 bottom-0 w-full md:w-96 bg-white dark:bg-stone-900 z-50 shadow-xl flex flex-col border-l border-stone-200 dark:border-stone-800"
       >
-        <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold">Riwayat Perhitungan</h3>
-            <p className="text-xs text-stone-500 dark:text-stone-400">{history.length} tersimpan</p>
+            <h3 className="text-base font-semibold text-stone-900 dark:text-white">Riwayat perhitungan</h3>
+            <p className="text-xs text-stone-500 dark:text-stone-400">{history.length} perhitungan tersimpan</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-stone-100">
+          <button
+            onClick={onClose}
+            aria-label="Tutup"
+            className="p-1.5 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white transition-colors"
+          >
             <ArrowRight className="w-4 h-4 rotate-180" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-3">
           {history.length === 0 ? (
             <div className="text-center py-12">
-              <History className="w-8 h-8 mx-auto text-stone-300 mb-2" />
+              <History className="w-8 h-8 mx-auto text-stone-300 dark:text-stone-600 mb-2" />
               <p className="text-sm text-stone-500 dark:text-stone-400">Belum ada perhitungan tersimpan</p>
+              <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">Simpan perhitungan agar bisa dimuat ulang nanti</p>
             </div>
           ) : (
             <div className="space-y-2">
               {history.map(calc => (
-                <div key={calc.id} className="border border-stone-200 rounded-xl p-3 hover:border-stone-300 transition-colors">
+                <div
+                  key={calc.id}
+                  className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/60 rounded-xl p-3 hover:border-stone-300 dark:hover:border-stone-700 transition-colors"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-stone-900 truncate">{calc.productName}</p>
-                      <p className="text-[11px] text-stone-400">{new Date(calc.savedAt).toLocaleString('id-ID')}</p>
+                      <p className="text-sm font-semibold text-stone-900 dark:text-white truncate">{calc.productName}</p>
+                      <p className="text-[11px] text-stone-400 dark:text-stone-500">{new Date(calc.savedAt).toLocaleString('id-ID')}</p>
                     </div>
-                    <button onClick={() => onDelete(calc.id)} className="text-stone-400 hover:text-red-500 shrink-0">
+                    <button
+                      onClick={() => onDelete(calc.id)}
+                      aria-label="Hapus"
+                      className="text-stone-400 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400 shrink-0 transition-colors"
+                    >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs mb-2">
                     <div>
-                      <p className="text-stone-400">HPP</p>
-                      <p className="font-semibold tabular-nums">Rp {calc.totalHpp.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p>
+                      <p className="text-stone-400 dark:text-stone-500">HPP / unit</p>
+                      <p className="font-semibold tabular-nums text-stone-900 dark:text-stone-100">Rp {calc.totalHpp.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p>
                     </div>
                     <div>
-                      <p className="text-stone-400">Harga jual</p>
-                      <p className="font-semibold tabular-nums">Rp {calc.selectedPrice.toLocaleString('id-ID')}</p>
+                      <p className="text-stone-400 dark:text-stone-500">Harga jual</p>
+                      <p className="font-semibold tabular-nums text-stone-900 dark:text-stone-100">Rp {calc.selectedPrice.toLocaleString('id-ID')}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => onLoad(calc)}
-                    className="w-full py-1.5 bg-stone-900 text-white rounded-md text-xs font-medium hover:bg-stone-800"
+                    className="w-full py-1.5 bg-stone-900 dark:bg-white text-white dark:text-stone-950 rounded-md text-xs font-medium hover:bg-stone-800 dark:hover:bg-stone-100 transition-colors"
                   >
-                    Muat
+                    Muat perhitungan
                   </button>
                 </div>
               ))}
@@ -2199,7 +2216,7 @@ function Stat({ label, value, sub, accent, positive }: { label: string; value: s
 function BEPStat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'good' | 'warn' | 'bad' }) {
   return (
     <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5">
-      <p className="text-[10px] text-stone-500 mb-0.5">{label}</p>
+      <p className="text-[10px] text-stone-500 dark:text-stone-400 mb-0.5">{label}</p>
       <p className="text-sm font-bold tabular-nums">{value}</p>
       {sub && (
         <p className={cn(
