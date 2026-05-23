@@ -117,23 +117,16 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 bg-white/70 dark:bg-stone-900/70 backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-full text-xs font-medium text-stone-500 dark:text-stone-400">
-              <span className="relative flex w-1.5 h-1.5">
-                <span className="absolute inline-flex w-full h-full bg-amber-400 rounded-full opacity-75 animate-ping" />
-                <span className="relative inline-flex w-1.5 h-1.5 bg-amber-400 rounded-full" />
-              </span>
-              Untuk UMKM Indonesia
-            </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.15] mb-5 text-stone-900 dark:text-white">
-              Satu aplikasi untuk
+              Completed App
               <br />
               <span className="text-stone-400 dark:bg-gradient-to-r dark:from-stone-400 dark:via-stone-200 dark:to-stone-400 dark:bg-clip-text dark:text-transparent">
-                seluruh operasional toko.
+                untuk Bisnis Retail kamu
               </span>
             </h1>
             <p className="text-base md:text-lg text-stone-500 dark:text-stone-400 max-w-lg mx-auto leading-relaxed mb-9">
-              Kasir, stok, promo, laporan — tidak perlu banyak tools. Cukup buka browser, semua sudah siap.
+             POS, Inventory Control, Whatsapp blast, Buat Katalog? semua bisa dalam satu platform.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
@@ -169,7 +162,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 relative">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2 text-stone-900 dark:text-white">
-              Lihat langsung tampilannya
+              Preview Apps MyStore
             </h2>
             <p className="text-stone-500 dark:text-stone-400 text-sm md:text-base">
               Klik menu untuk melihat fitur di setiap halaman.
@@ -249,7 +242,7 @@ export default function LandingPage() {
               Apa saja yang bisa dilakukan?
             </h2>
             <p className="text-stone-500 dark:text-stone-400 text-sm md:text-base max-w-md mx-auto">
-              Fitur yang memang dibutuhkan toko sehari-hari, tanpa yang berlebihan.
+              Seluruh fitur ini ada di platform kami
             </p>
           </div>
 
@@ -359,7 +352,7 @@ export default function LandingPage() {
                 Mau coba?
               </h2>
               <p className="text-stone-400 text-sm md:text-base mb-8 max-w-sm mx-auto">
-                Gratis, tanpa batas waktu. Kalau cocok, terus pakai. Kalau tidak, tidak ada yang rugi.
+                Trial Mystore studio untuk kebutuhan bisnis kamu.
               </p>
               <button
                 onClick={() => navigate('/signup')}
