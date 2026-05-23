@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Loader2, Check, Lightbulb, AlertCircle } from 'lucide-react';
 import { suggestRecipe } from '../lib/ai';
+import { QUOTA_EXCEEDED } from '../lib/ai';
+import { formatResetIn, getResetMs } from '../lib/ai-quota';
 import { cn } from '../lib/utils';
 import toast from 'react-hot-toast';
 
@@ -51,7 +53,9 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
       category: category.trim() || undefined,
     });
 
-    if (result && result.length > 0) {
+    if (result === QUOTA_EXCEEDED) {
+      toast.error(`Kuota AI harian habis. Reset dalam ${formatResetIn(getResetMs())}.`, { duration: 5000 });
+    } else if (result && result.length > 0) {
       setSuggestions(result);
       setSelectedItems(new Set(result.map((_, idx) => idx)));
     } else {

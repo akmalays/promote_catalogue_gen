@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { cn } from '../lib/utils';
-import { suggestPriceTiers, analyzeHPP, projectSalesTarget, isAIAvailable, type PriceTier } from '../lib/ai';
+import { suggestPriceTiers, analyzeHPP, projectSalesTarget, isAIAvailable, QUOTA_EXCEEDED, type PriceTier } from '../lib/ai';
+import { AI_DAILY_LIMIT, formatResetIn, getRemainingQuota, getResetMs } from '../lib/ai-quota';
 import toast from 'react-hot-toast';
 import Select from '../components/ui/Select';
 import RecipeSuggestionModal from '../components/RecipeSuggestionModal';
@@ -154,6 +155,14 @@ export default function HPPCalculator() {
   // Modals
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [showFixedCostsModal, setShowFixedCostsModal] = useState(false);
+
+  // AI quota (tracks remaining calls per browser per 24h)
+  const [aiQuota, setAiQuota] = useState<number>(() => (isAIAvailable() ? getRemainingQuota() : 0));
+  const refreshQuota = () => setAiQuota(getRemainingQuota());
+  const showQuotaExceeded = () => {
+    const reset = formatResetIn(getResetMs());
+    toast.error(`Kuota AI harian habis. Reset dalam ${reset}.`, { duration: 5000 });
+  };
 
   // Load history on mount
   useEffect(() => {
@@ -382,6 +391,7 @@ export default function HPPCalculator() {
   const handleAnalyzeHPP = async () => {
     if (!isAIAvailable()) { toast.error('Fitur AI belum tersedia'); return; }
     if (totalHpp === 0) { toast.error('Lengkapi data biaya dulu'); return; }
+    if (aiQuota <= 0) { showQuotaExceeded(); return; }
     setLoadingHpp(true);
     setHppAnalysis(null);
     const items = variableCosts.filter(v => v.name && v.buyPrice > 0).map(v => ({
@@ -389,33 +399,40 @@ export default function HPPCalculator() {
       qty: v.usageQty, unit: v.usageUnit,
     }));
     const result = await analyzeHPP(items);
-    if (result) setHppAnalysis(result);
+    if (result === QUOTA_EXCEEDED) showQuotaExceeded();
+    else if (result) setHppAnalysis(result);
     else toast.error('Gagal menganalisis');
+    refreshQuota();
     setLoadingHpp(false);
   };
 
   const handleSuggestPrice = async () => {
     if (!isAIAvailable()) { toast.error('Fitur AI belum tersedia'); return; }
     if (!productName || totalHpp === 0) { toast.error('Isi nama produk dan HPP dulu'); return; }
+    if (aiQuota <= 0) { showQuotaExceeded(); return; }
     setLoadingPrice(true);
     setPriceTiers(null);
     const tiers = await suggestPriceTiers({
       productName, hpp: totalHpp, category,
       competitorPrice: competitorPrice || undefined,
     });
-    if (tiers) {
+    if (tiers === QUOTA_EXCEEDED) {
+      showQuotaExceeded();
+    } else if (tiers) {
       setPriceTiers(tiers);
       const standar = tiers.find(t => t.tier === 'standar');
       if (standar) setSelectedPrice(standar.price);
     } else {
       toast.error('Gagal mendapat saran');
     }
+    refreshQuota();
     setLoadingPrice(false);
   };
 
   const handleAnalyzeSales = async () => {
     if (!isAIAvailable()) { toast.error('Fitur AI belum tersedia'); return; }
     if (!projection || !netProfitTarget) { toast.error('Lengkapi data target dulu'); return; }
+    if (aiQuota <= 0) { showQuotaExceeded(); return; }
     setLoadingSales(true);
     setSalesAnalysis(null);
     const result = await projectSalesTarget({
@@ -423,8 +440,10 @@ export default function HPPCalculator() {
       netProfitTarget: typeof netProfitTarget === 'number' ? netProfitTarget : 0,
       fixedCostPerMonth: totalFixedMonthly,
     });
-    if (result) setSalesAnalysis(result.reasoning);
+    if (result === QUOTA_EXCEEDED) showQuotaExceeded();
+    else if (result) setSalesAnalysis(result.reasoning);
     else toast.error('Gagal menganalisis');
+    refreshQuota();
     setLoadingSales(false);
   };
 
@@ -1402,6 +1421,30 @@ export default function HPPCalculator() {
           <div className="mt-6 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>Fitur AI butuh API key. Tetap bisa pakai kalkulator manual & export.</span>
+          </div>
+        )}
+
+        {isAIAvailable() && (
+          <div
+            className={cn(
+              'mt-6 p-3 rounded-lg flex items-center gap-2.5 text-xs',
+              aiQuota > 0
+                ? 'bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300'
+                : 'bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300',
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            {aiQuota > 0 ? (
+              <span>
+                Sisa kuota AI: <span className="font-semibold tabular-nums">{aiQuota} dari {AI_DAILY_LIMIT}</span> per 24 jam.
+                Pakai sisa pertanyaan untuk yang penting saja.
+              </span>
+            ) : (
+              <span>
+                Kuota AI harian habis. Reset dalam <span className="font-semibold">{formatResetIn(getResetMs())}</span>.
+                Kalkulator manual & export tetap bisa dipakai.
+              </span>
+            )}
           </div>
         )}
       </div>

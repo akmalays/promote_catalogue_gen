@@ -1,8 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { consumeQuota, refundQuota } from './ai-quota';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 export const isAIAvailable = () => !!API_KEY;
+
+/** Sentinel value returned when client-side quota is exhausted. */
+export const QUOTA_EXCEEDED = 'QUOTA_EXCEEDED' as const;
+export type QuotaExceeded = typeof QUOTA_EXCEEDED;
 
 let genAI: GoogleGenerativeAI | null = null;
 
@@ -10,6 +15,20 @@ function getClient() {
   if (!API_KEY) return null;
   if (!genAI) genAI = new GoogleGenerativeAI(API_KEY);
   return genAI;
+}
+
+/** Run an AI task while consuming the user's daily quota. Returns
+ *  QUOTA_EXCEEDED if the user has hit the cap; refunds on failure. */
+async function withQuota<T>(task: () => Promise<T | null>): Promise<T | null | QuotaExceeded> {
+  if (!consumeQuota()) return QUOTA_EXCEEDED;
+  try {
+    const result = await task();
+    if (result === null) refundQuota();
+    return result;
+  } catch (e) {
+    refundQuota();
+    throw e;
+  }
 }
 
 export interface PriceTier {
@@ -28,13 +47,14 @@ export async function suggestPriceTiers(input: {
   hpp: number;
   category?: string;
   competitorPrice?: number;
-}): Promise<PriceTier[] | null> {
+}): Promise<PriceTier[] | null | QuotaExceeded> {
   const client = getClient();
   if (!client) return null;
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return withQuota(async () => {
+    const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const prompt = `Anda adalah konsultan bisnis UMKM Indonesia. Berikan 3 tingkatan saran harga jual untuk produk berikut:
+    const prompt = `Anda adalah konsultan bisnis UMKM Indonesia. Berikan 3 tingkatan saran harga jual untuk produk berikut:
 
 Produk: ${input.productName}
 HPP per unit: Rp ${input.hpp.toLocaleString('id-ID')}
@@ -77,31 +97,33 @@ Aturan:
 
 Hanya kembalikan JSON array, tanpa penjelasan tambahan.`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    console.error('AI price suggestion failed:', e);
-    return null;
-  }
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return null;
+      return JSON.parse(jsonMatch[0]) as PriceTier[];
+    } catch (e) {
+      console.error('AI price suggestion failed:', e);
+      return null;
+    }
+  });
 }
 
 /**
  * Analyze HPP breakdown and suggest cost optimization
  */
-export async function analyzeHPP(items: Array<{ name: string; cost: number; qty: number; unit: string }>): Promise<string | null> {
+export async function analyzeHPP(items: Array<{ name: string; cost: number; qty: number; unit: string }>): Promise<string | null | QuotaExceeded> {
   const client = getClient();
   if (!client) return null;
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return withQuota(async () => {
+    const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const itemsList = items.map(i => `- ${i.name}: ${i.qty} ${i.unit} = Rp ${(i.qty * i.cost).toLocaleString('id-ID')}`).join('\n');
-  const total = items.reduce((sum, i) => sum + i.cost * i.qty, 0);
+    const itemsList = items.map(i => `- ${i.name}: ${i.qty} ${i.unit} = Rp ${(i.qty * i.cost).toLocaleString('id-ID')}`).join('\n');
+    const total = items.reduce((sum, i) => sum + i.cost * i.qty, 0);
 
-  const prompt = `Anda adalah konsultan UMKM Indonesia. Analisis breakdown biaya berikut:
+    const prompt = `Anda adalah konsultan UMKM Indonesia. Analisis breakdown biaya berikut:
 
 ${itemsList}
 
@@ -114,13 +136,14 @@ Berikan analisis singkat (maksimal 3 paragraf, 1 paragraf 2-3 kalimat) dalam bah
 
 Tulis dalam format text biasa, tanpa heading, tanpa bullet points. Jangan terlalu formal.`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    return result.response.text();
-  } catch (e) {
-    console.error('AI HPP analysis failed:', e);
-    return null;
-  }
+    try {
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (e) {
+      console.error('AI HPP analysis failed:', e);
+      return null;
+    }
+  });
 }
 
 /**
@@ -137,13 +160,14 @@ export async function projectSalesTarget(input: {
   revenueTarget: number;
   dailyTarget: number;
   reasoning: string;
-} | null> {
+} | null | QuotaExceeded> {
   const client = getClient();
   if (!client) return null;
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return withQuota(async () => {
+    const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const prompt = `Anda adalah konsultan bisnis UMKM Indonesia. Hitung target penjualan:
+    const prompt = `Anda adalah konsultan bisnis UMKM Indonesia. Hitung target penjualan:
 
 Produk: ${input.productName}
 HPP per unit: Rp ${input.hpp.toLocaleString('id-ID')}
@@ -161,16 +185,17 @@ JSON format:
 
 Hanya kembalikan JSON.`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    console.error('AI sales projection failed:', e);
-    return null;
-  }
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+      return JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.error('AI sales projection failed:', e);
+      return null;
+    }
+  });
 }
 
 /**
@@ -181,8 +206,9 @@ export async function suggestPrice(input: {
   hpp: number;
   category?: string;
   competitorPrice?: number;
-}): Promise<{ suggestedPrice: number; reasoning: string; margin: number } | null> {
+}): Promise<{ suggestedPrice: number; reasoning: string; margin: number } | null | QuotaExceeded> {
   const tiers = await suggestPriceTiers(input);
+  if (tiers === QUOTA_EXCEEDED) return QUOTA_EXCEEDED;
   if (!tiers || tiers.length === 0) return null;
   const standar = tiers.find(t => t.tier === 'standar') || tiers[0];
   return {
@@ -206,13 +232,14 @@ export async function suggestRecipe(input: {
   buyQty: number;
   buyUnit: string;
   estimatedPrice: number;
-}> | null> {
+}> | null | QuotaExceeded> {
   const client = getClient();
   if (!client) return null;
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return withQuota(async () => {
+    const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const prompt = `Anda adalah chef dan konsultan UMKM Indonesia. Berikan resep lengkap untuk produk berikut:
+    const prompt = `Anda adalah chef dan konsultan UMKM Indonesia. Berikan resep lengkap untuk produk berikut:
 
 Produk: ${input.productName}
 ${input.category ? `Kategori: ${input.category}` : ''}
@@ -240,16 +267,17 @@ Aturan:
 
 Hanya kembalikan JSON array, tanpa penjelasan tambahan.`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    console.error('AI recipe suggestion failed:', e);
-    return null;
-  }
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return null;
+      return JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.error('AI recipe suggestion failed:', e);
+      return null;
+    }
+  });
 }
 
 /**
@@ -263,13 +291,14 @@ export async function suggestFixedCosts(input: {
   name: string;
   amount: number;
   reasoning: string;
-}> | null> {
+}> | null | QuotaExceeded> {
   const client = getClient();
   if (!client) return null;
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return withQuota(async () => {
+    const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const prompt = `Anda adalah konsultan bisnis UMKM Indonesia. Berikan estimasi biaya tetap bulanan untuk usaha berikut:
+    const prompt = `Anda adalah konsultan bisnis UMKM Indonesia. Berikan estimasi biaya tetap bulanan untuk usaha berikut:
 
 Jenis Usaha: ${input.businessType}
 ${input.location ? `Lokasi: ${input.location}` : ''}
@@ -294,14 +323,15 @@ Aturan:
 
 Hanya kembalikan JSON array, tanpa penjelasan tambahan.`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    console.error('AI fixed costs suggestion failed:', e);
-    return null;
-  }
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return null;
+      return JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.error('AI fixed costs suggestion failed:', e);
+      return null;
+    }
+  });
 }
