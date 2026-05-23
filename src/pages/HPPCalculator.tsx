@@ -33,7 +33,16 @@ interface VariableCost {
 interface PackagingCost {
   id: string;
   name: string;
-  costPerUnit: number;
+  /** How much of this packaging is used per 1 product (often 1, but could be 2 for double-pack) */
+  usageQty: number;
+  /** Unit of usageQty (pcs/pack/box/lusin/etc.) */
+  usageUnit: string;
+  /** Total purchase price for buyQty units */
+  buyPrice: number;
+  /** Quantity bought together at buyPrice (e.g. 1 lusin = 12, 1 pack = 50, etc.) */
+  buyQty: number;
+  /** Unit of buyQty */
+  buyUnit: string;
 }
 
 interface FixedCost {
@@ -45,8 +54,13 @@ interface FixedCost {
 interface LaborCost {
   id: string;
   name: string;
+  /**
+   * The amount entered by the user.
+   * - When perUnit=false: this is the monthly fixed salary.
+   * - When perUnit=true: this is the direct piece-rate cost per 1 product (borongan).
+   */
   monthlyAmount: number;
-  /** If true, treated as variable per unit (allocated to production capacity); if false, treated as fixed (allocated regardless of capacity utilization) */
+  /** True = piece-rate (borongan), value is per-product. False = fixed monthly salary. */
   perUnit: boolean;
 }
 
@@ -73,7 +87,7 @@ interface SavedCalculation {
   savedAt: string;
 }
 
-const UNITS = ['g', 'kg', 'ml', 'L', 'pcs', 'pack', 'box', 'porsi'];
+const UNITS = ['g', 'kg', 'ml', 'L', 'pcs', 'lusin', 'pack', 'box', 'porsi'];
 const STORAGE_KEY = 'hpp_history';
 
 const CATEGORY_MARGIN_GUIDE: Record<string, { min: number; max: number; note: string }> = {
@@ -101,7 +115,7 @@ export default function HPPCalculator() {
 
   // Packaging
   const [packagingCosts, setPackagingCosts] = useState<PackagingCost[]>([
-    { id: '1', name: 'Box / Kemasan', costPerUnit: 0 },
+    { id: '1', name: 'Box / Kemasan', usageQty: 1, usageUnit: 'pcs', buyPrice: 0, buyQty: 1, buyUnit: 'pcs' },
   ]);
 
   // Wastage (%)
@@ -185,6 +199,14 @@ export default function HPPCalculator() {
     return (vc.usageQty * ratio / vc.buyQty) * vc.buyPrice;
   };
 
+  /** How many products can be made from 1 buy-pack (e.g. 1 kg flour → ? products) */
+  const calcYieldPerBuy = (item: { usageQty: number; usageUnit: string; buyQty: number; buyUnit: string }): number | null => {
+    if (item.usageQty === 0) return null;
+    const ratio = convertUnitRatio(item.usageUnit, item.buyUnit);
+    if (ratio === null) return item.buyQty / item.usageQty;
+    return item.buyQty / (item.usageQty * ratio);
+  };
+
   // Variable: bahan baku
   const rawMaterialCost = useMemo(
     () => variableCosts.reduce((sum, vc) => sum + calcCostPerProduct(vc), 0),
@@ -197,19 +219,28 @@ export default function HPPCalculator() {
     [rawMaterialCost, wastagePct],
   );
 
+  // Packaging cost per product (uses same unit conversion as raw material)
+  const calcPackagingCost = (pc: PackagingCost): number => {
+    if (pc.buyQty === 0 || pc.buyPrice === 0) return 0;
+    const ratio = convertUnitRatio(pc.usageUnit, pc.buyUnit);
+    if (ratio === null) {
+      return (pc.usageQty / pc.buyQty) * pc.buyPrice;
+    }
+    return (pc.usageQty * ratio / pc.buyQty) * pc.buyPrice;
+  };
+
   // Packaging per unit
   const packagingPerUnit = useMemo(
-    () => packagingCosts.reduce((sum, p) => sum + p.costPerUnit, 0),
+    () => packagingCosts.reduce((sum, p) => sum + calcPackagingCost(p), 0),
     [packagingCosts],
   );
 
-  // Labor: split into variable & fixed
-  const laborVariablePerUnit = useMemo(() => {
-    if (productionCapacity === 0) return 0;
-    return laborCosts
-      .filter(l => l.perUnit)
-      .reduce((sum, l) => sum + l.monthlyAmount, 0) / productionCapacity;
-  }, [laborCosts, productionCapacity]);
+  // Labor: split into per-unit (piece-rate) & fixed monthly salary
+  // For perUnit=true: amount IS the per-product cost directly (e.g. borongan Rp 5.000/produk)
+  const laborVariablePerUnit = useMemo(
+    () => laborCosts.filter(l => l.perUnit).reduce((sum, l) => sum + l.monthlyAmount, 0),
+    [laborCosts],
+  );
 
   const laborFixedMonthly = useMemo(
     () => laborCosts.filter(l => !l.perUnit).reduce((sum, l) => sum + l.monthlyAmount, 0),
@@ -332,7 +363,10 @@ export default function HPPCalculator() {
   };
 
   const addPackaging = () => {
-    setPackagingCosts([...packagingCosts, { id: Date.now().toString(), name: '', costPerUnit: 0 }]);
+    setPackagingCosts([...packagingCosts, {
+      id: Date.now().toString(), name: '', usageQty: 1, usageUnit: 'pcs',
+      buyPrice: 0, buyQty: 1, buyUnit: 'pcs',
+    }]);
   };
   const removePackaging = (id: string) => {
     if (packagingCosts.length === 1) return;
@@ -464,7 +498,23 @@ export default function HPPCalculator() {
   const loadCalculation = (calc: SavedCalculation) => {
     setProductName(calc.productName);
     setVariableCosts(calc.variableCosts);
-    setPackagingCosts(calc.packagingCosts ?? [{ id: '1', name: 'Box / Kemasan', costPerUnit: 0 }]);
+    // Migrate legacy packaging shape ({ name, costPerUnit }) to new shape
+    const migratedPackaging: PackagingCost[] = (calc.packagingCosts ?? []).map((p: any, i: number) => {
+      if (p.usageUnit && p.buyUnit) return p as PackagingCost;
+      return {
+        id: p.id ?? String(i + 1),
+        name: p.name ?? '',
+        usageQty: 1,
+        usageUnit: 'pcs',
+        buyPrice: typeof p.costPerUnit === 'number' ? p.costPerUnit : 0,
+        buyQty: 1,
+        buyUnit: 'pcs',
+      };
+    });
+    setPackagingCosts(migratedPackaging.length > 0 ? migratedPackaging : [{
+      id: '1', name: 'Box / Kemasan', usageQty: 1, usageUnit: 'pcs',
+      buyPrice: 0, buyQty: 1, buyUnit: 'pcs',
+    }]);
     setFixedCosts(calc.fixedCosts);
     setLaborCosts(calc.laborCosts ?? []);
     setProductionCapacity(calc.productionCapacity);
@@ -496,7 +546,7 @@ export default function HPPCalculator() {
       ['Bahan Baku per Produk', rawMaterialCost],
       [`+ Susut (${wastagePct}%)`, materialWithWastage - rawMaterialCost],
       ['+ Packaging per Produk', packagingPerUnit],
-      ['+ Tenaga Kerja Variabel', laborVariablePerUnit],
+      ['+ Tenaga Kerja Borongan / per unit', laborVariablePerUnit],
       ['Total Biaya Variabel', totalVariablePerUnit],
       ['+ Alokasi Biaya Tetap', allocatedFixedPerProduct],
       ['= Total HPP per Produk', totalHpp],
@@ -516,15 +566,21 @@ export default function HPPCalculator() {
     ]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([varHeader, ...varRows]), 'Bahan Baku');
 
-    if (packagingCosts.some(p => p.costPerUnit > 0)) {
-      const pkgHeader = ['Item', 'Biaya per Unit'];
-      const pkgRows = packagingCosts.map(p => [p.name, p.costPerUnit]);
+    if (packagingCosts.some(p => p.buyPrice > 0)) {
+      const pkgHeader = ['Item', 'Jml Pakai', 'Satuan', 'Total Harga', 'Jml Beli', 'Satuan Beli', 'Biaya / Produk'];
+      const pkgRows = packagingCosts.map(p => [
+        p.name, p.usageQty, p.usageUnit, p.buyPrice, p.buyQty, p.buyUnit, calcPackagingCost(p),
+      ]);
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([pkgHeader, ...pkgRows]), 'Packaging');
     }
 
     if (laborCosts.length > 0) {
-      const lbHeader = ['Nama', 'Jenis', 'Total / Bulan'];
-      const lbRows = laborCosts.map(l => [l.name, l.perUnit ? 'Variabel (alokasi per unit)' : 'Tetap', l.monthlyAmount]);
+      const lbHeader = ['Nama', 'Jenis', 'Nilai'];
+      const lbRows = laborCosts.map(l => [
+        l.name,
+        l.perUnit ? 'Borongan / per unit' : 'Tetap (per bulan)',
+        l.monthlyAmount,
+      ]);
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([lbHeader, ...lbRows]), 'Tenaga Kerja');
     }
 
@@ -648,6 +704,7 @@ export default function HPPCalculator() {
                 onRemove={() => removeVariable(vc.id)}
                 canRemove={variableCosts.length > 1}
                 cost={calcCostPerProduct(vc)}
+                yieldPerBuy={calcYieldPerBuy(vc)}
               />
             ))}
           </div>
@@ -728,9 +785,20 @@ export default function HPPCalculator() {
                       />
                     </td>
                     <td className="py-2 text-right">
-                      <span className="text-sm font-semibold text-stone-900 tabular-nums bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-md whitespace-nowrap">
-                        Rp {calcCostPerProduct(vc).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
-                      </span>
+                      <div className="inline-flex flex-col items-end gap-0.5">
+                        <span className="text-sm font-semibold text-stone-900 dark:text-stone-100 tabular-nums bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-md whitespace-nowrap">
+                          Rp {calcCostPerProduct(vc).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+                        </span>
+                        {(() => {
+                          const yld = calcYieldPerBuy(vc);
+                          if (!yld || !isFinite(yld)) return null;
+                          return (
+                            <span className="text-[10px] text-stone-400 dark:text-stone-500 tabular-nums whitespace-nowrap">
+                              cukup ±{Math.floor(yld).toLocaleString('id-ID')} produk
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </td>
                     <td className="py-2 pl-2">
                       <button
@@ -795,39 +863,135 @@ export default function HPPCalculator() {
         {/* Packaging */}
         <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold">Kemasan & Packaging</h2>
-          <p className="text-xs md:text-sm text-stone-500 mt-0.5 mb-4">
-            Box, plastik, sticker, sendok — biaya per unit yang selalu dipakai.
+          <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mt-0.5 mb-4">
+            Box, plastik, sticker, sendok. Isi harga per kemasan beli (1 lusin / 1 pack isi 50 / dst.) — biaya per produk dihitung otomatis.
           </p>
 
-          <div className="space-y-2 mb-3">
-            {packagingCosts.map(pc => (
-              <div key={pc.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                <input
-                  value={pc.name}
-                  onChange={e => updatePackaging(pc.id, 'name', e.target.value)}
-                  placeholder="Box / Plastik / Sticker"
-                  className="px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
-                />
-                <CurrencyInput
-                  value={pc.costPerUnit}
-                  onChange={v => updatePackaging(pc.id, 'costPerUnit', v)}
-                  placeholder="0"
-                  className="w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
-                />
-                <button
-                  onClick={() => removePackaging(pc.id)}
-                  disabled={packagingCosts.length === 1}
-                  className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3 mb-3">
+            {packagingCosts.map((pc, idx) => (
+              <PackagingCostCard
+                key={pc.id}
+                index={idx}
+                pc={pc}
+                onUpdate={(field, val) => updatePackaging(pc.id, field, val)}
+                onRemove={() => removePackaging(pc.id)}
+                canRemove={packagingCosts.length > 1}
+                cost={calcPackagingCost(pc)}
+                yieldPerBuy={calcYieldPerBuy(pc)}
+              />
             ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto mb-3">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-stone-200 dark:border-stone-800">
+                  <th className="text-left text-[11px] font-medium text-stone-500 dark:text-stone-400 pb-2 pr-2">Item</th>
+                  <th colSpan={2} className="text-left text-[11px] font-medium text-stone-500 dark:text-stone-400 pb-2 pr-2">Pemakaian per Produk</th>
+                  <th colSpan={3} className="text-left text-[11px] font-medium text-stone-500 dark:text-stone-400 pb-2 pr-2">Info Pembelian</th>
+                  <th className="text-right text-[11px] font-medium text-stone-500 dark:text-stone-400 pb-2">Biaya / Produk</th>
+                  <th className="w-8" />
+                </tr>
+                <tr className="border-b border-stone-200 dark:border-stone-800">
+                  <th />
+                  <th className="text-left text-[10px] text-stone-400 dark:text-stone-500 font-normal pb-2 pr-2">Jml Pakai</th>
+                  <th className="text-left text-[10px] text-stone-400 dark:text-stone-500 font-normal pb-2 pr-2">Satuan</th>
+                  <th className="text-right text-[10px] text-stone-400 dark:text-stone-500 font-normal pb-2 pr-2">Total Harga</th>
+                  <th className="text-left text-[10px] text-stone-400 dark:text-stone-500 font-normal pb-2 pr-2">Jml Beli</th>
+                  <th className="text-left text-[10px] text-stone-400 dark:text-stone-500 font-normal pb-2 pr-2">Satuan</th>
+                  <th />
+                  <th />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                {packagingCosts.map(pc => (
+                  <tr key={pc.id} className="align-middle">
+                    <td className="py-2 pr-2">
+                      <input
+                        value={pc.name}
+                        onChange={e => updatePackaging(pc.id, 'name', e.target.value)}
+                        placeholder="Box / Plastik / Sticker"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                      />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <NumInput
+                        value={pc.usageQty}
+                        onChange={v => updatePackaging(pc.id, 'usageQty', v)}
+                        allowDecimal
+                        className="w-20 px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                      />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <Select
+                        value={pc.usageUnit}
+                        onChange={v => updatePackaging(pc.id, 'usageUnit', v)}
+                        options={UNITS.map(u => ({ value: u, label: u }))}
+                        size="sm"
+                        buttonClassName="text-sm"
+                      />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <CurrencyInput
+                        value={pc.buyPrice}
+                        onChange={v => updatePackaging(pc.id, 'buyPrice', v)}
+                        placeholder="0"
+                        className="w-32 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                      />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <NumInput
+                        value={pc.buyQty}
+                        onChange={v => updatePackaging(pc.id, 'buyQty', v)}
+                        allowDecimal
+                        className="w-16 px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                      />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <Select
+                        value={pc.buyUnit}
+                        onChange={v => updatePackaging(pc.id, 'buyUnit', v)}
+                        options={UNITS.map(u => ({ value: u, label: u }))}
+                        size="sm"
+                        buttonClassName="text-sm"
+                      />
+                    </td>
+                    <td className="py-2 text-right">
+                      <div className="inline-flex flex-col items-end gap-0.5">
+                        <span className="text-sm font-semibold text-stone-900 dark:text-stone-100 tabular-nums bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-md whitespace-nowrap">
+                          Rp {calcPackagingCost(pc).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+                        </span>
+                        {(() => {
+                          const yld = calcYieldPerBuy(pc);
+                          if (!yld || !isFinite(yld)) return null;
+                          return (
+                            <span className="text-[10px] text-stone-400 dark:text-stone-500 tabular-nums whitespace-nowrap">
+                              cukup ±{Math.floor(yld).toLocaleString('id-ID')} produk
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </td>
+                    <td className="py-2 pl-2">
+                      <button
+                        onClick={() => removePackaging(pc.id)}
+                        disabled={packagingCosts.length === 1}
+                        className="text-stone-400 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           <button
             onClick={addPackaging}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900 dark:text-white"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /> Tambah item
           </button>
@@ -836,43 +1000,62 @@ export default function HPPCalculator() {
         {/* Labor */}
         <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold">Tenaga Kerja</h2>
-          <p className="text-xs md:text-sm text-stone-500 mt-0.5 mb-4">
-            Gaji karyawan. Pilih "per unit" jika gajinya tergantung volume produksi.
+          <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mt-0.5 mb-4">
+            Gaji karyawan, atau upah waktu kerja kamu sendiri. Pilih "per unit" jika gajinya tergantung volume produksi.
           </p>
 
+          {/* Reference guide */}
+          <LaborReferenceGuide
+            onApply={(items) => {
+              const newItems = items.map(i => ({
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                ...i,
+              }));
+              setLaborCosts([...laborCosts, ...newItems]);
+              toast.success(`${items.length} item ditambahkan`);
+            }}
+          />
+
           {laborCosts.length === 0 ? (
-            <p className="text-xs text-stone-500 dark:text-stone-400 italic mb-3">Belum ada. Tambah jika ada karyawan.</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 italic mb-3">Belum ada. Tambah manual atau pakai template di atas.</p>
           ) : (
             <div className="space-y-2 mb-3">
               {laborCosts.map(lc => (
-                <div key={lc.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto] gap-2 items-center">
-                  <input
-                    value={lc.name}
-                    onChange={e => updateLabor(lc.id, 'name', e.target.value)}
-                    placeholder="Koki, kasir, dll"
-                    className="px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
-                  />
-                  <CurrencyInput
-                    value={lc.monthlyAmount}
-                    onChange={v => updateLabor(lc.id, 'monthlyAmount', v)}
-                    placeholder="Gaji / bulan"
-                    className="w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
-                  />
-                  <Select
-                    value={lc.perUnit ? 'variable' : 'fixed'}
-                    onChange={v => updateLabor(lc.id, 'perUnit', v === 'variable')}
-                    options={[
-                      { value: 'fixed', label: 'Tetap' },
-                      { value: 'variable', label: 'Per unit' },
-                    ]}
-                    size="sm"
-                  />
-                  <button
-                    onClick={() => removeLabor(lc.id)}
-                    className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div key={lc.id} className="space-y-1">
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto] gap-2 items-center">
+                    <input
+                      value={lc.name}
+                      onChange={e => updateLabor(lc.id, 'name', e.target.value)}
+                      placeholder={lc.perUnit ? 'Upah borongan / nama' : 'Koki, kasir, dll'}
+                      className="px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    />
+                    <CurrencyInput
+                      value={lc.monthlyAmount}
+                      onChange={v => updateLabor(lc.id, 'monthlyAmount', v)}
+                      placeholder={lc.perUnit ? 'Per produk' : 'Gaji / bulan'}
+                      className="w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    />
+                    <Select
+                      value={lc.perUnit ? 'variable' : 'fixed'}
+                      onChange={v => updateLabor(lc.id, 'perUnit', v === 'variable')}
+                      options={[
+                        { value: 'fixed', label: 'Tetap' },
+                        { value: 'variable', label: 'Per unit' },
+                      ]}
+                      size="sm"
+                    />
+                    <button
+                      onClick={() => removeLabor(lc.id)}
+                      className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-relaxed pl-0.5">
+                    {lc.perUnit
+                      ? 'Mode borongan: nilai ini langsung jadi biaya tenaga kerja untuk 1 produk (mis. Rp 5.000 per pcs).'
+                      : 'Mode tetap: gaji bulanan, dialokasi ke biaya tetap (butuh estimasi kapasitas untuk masuk ke HPP).'}
+                  </p>
                 </div>
               ))}
             </div>
@@ -880,7 +1063,7 @@ export default function HPPCalculator() {
 
           <button
             onClick={addLabor}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900 dark:text-white"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /> Tambah karyawan
           </button>
@@ -1015,7 +1198,7 @@ export default function HPPCalculator() {
                 <BreakdownRow label="Packaging" value={packagingPerUnit} />
               )}
               {laborVariablePerUnit > 0 && (
-                <BreakdownRow label="Tenaga kerja (per unit)" value={laborVariablePerUnit} />
+                <BreakdownRow label="Tenaga kerja (borongan / per unit)" value={laborVariablePerUnit} />
               )}
               <div className="pt-1.5 border-t border-stone-200">
                 <BreakdownRow label="Total biaya variabel" value={totalVariablePerUnit} bold />
@@ -1569,7 +1752,7 @@ function HPPGuide() {
 }
 
 function VariableCostCard({
-  index, vc, onUpdate, onRemove, canRemove, cost,
+  index, vc, onUpdate, onRemove, canRemove, cost, yieldPerBuy,
 }: {
   index: number;
   vc: VariableCost;
@@ -1577,15 +1760,23 @@ function VariableCostCard({
   onRemove: () => void;
   canRemove: boolean;
   cost: number;
+  yieldPerBuy: number | null;
 }) {
   return (
-    <div className="border border-stone-200 rounded-xl p-3 bg-stone-50">
+    <div className="border border-stone-200 dark:border-stone-800 rounded-xl p-3 bg-stone-50 dark:bg-stone-900/40">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400">Bahan #{index + 1}</span>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-stone-900 tabular-nums bg-white px-2 py-0.5 rounded">
-            Rp {cost.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-bold text-stone-900 dark:text-stone-100 tabular-nums bg-white dark:bg-stone-800 px-2 py-0.5 rounded">
+              Rp {cost.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+            </span>
+            {yieldPerBuy && isFinite(yieldPerBuy) && (
+              <span className="text-[10px] text-stone-400 dark:text-stone-500 tabular-nums mt-0.5">
+                cukup ±{Math.floor(yieldPerBuy).toLocaleString('id-ID')} produk
+              </span>
+            )}
+          </div>
           <button
             onClick={onRemove}
             disabled={!canRemove}
@@ -1651,6 +1842,294 @@ function VariableCostCard({
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function PackagingCostCard({
+  index, pc, onUpdate, onRemove, canRemove, cost, yieldPerBuy,
+}: {
+  index: number;
+  pc: PackagingCost;
+  onUpdate: (field: keyof PackagingCost, val: any) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+  cost: number;
+  yieldPerBuy: number | null;
+}) {
+  return (
+    <div className="border border-stone-200 dark:border-stone-800 rounded-xl p-3 bg-stone-50 dark:bg-stone-900/40">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400">Item #{index + 1}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-bold text-stone-900 dark:text-stone-100 tabular-nums bg-white dark:bg-stone-800 px-2 py-0.5 rounded">
+              Rp {cost.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+            </span>
+            {yieldPerBuy && isFinite(yieldPerBuy) && (
+              <span className="text-[10px] text-stone-400 dark:text-stone-500 tabular-nums mt-0.5">
+                cukup ±{Math.floor(yieldPerBuy).toLocaleString('id-ID')} produk
+              </span>
+            )}
+          </div>
+          <button
+            onClick={onRemove}
+            disabled={!canRemove}
+            className="text-stone-400 hover:text-red-500 disabled:opacity-30"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      <input
+        value={pc.name}
+        onChange={e => onUpdate('name', e.target.value)}
+        placeholder="Box / Plastik / Sticker"
+        className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+      />
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <div>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Jml pakai</label>
+          <NumInput
+            value={pc.usageQty}
+            onChange={v => onUpdate('usageQty', v)}
+            allowDecimal
+            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Satuan</label>
+          <Select
+            value={pc.usageUnit}
+            onChange={v => onUpdate('usageUnit', v)}
+            options={UNITS.map(u => ({ value: u, label: u }))}
+            size="sm"
+            buttonClassName="text-sm"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Total harga</label>
+          <CurrencyInput
+            value={pc.buyPrice}
+            onChange={v => onUpdate('buyPrice', v)}
+            className="w-full py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Jml beli</label>
+          <NumInput
+            value={pc.buyQty}
+            onChange={v => onUpdate('buyQty', v)}
+            allowDecimal
+            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Satuan</label>
+          <Select
+            value={pc.buyUnit}
+            onChange={v => onUpdate('buyUnit', v)}
+            options={UNITS.map(u => ({ value: u, label: u }))}
+            size="sm"
+            buttonClassName="text-sm"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Labor reference guide
+// ============================================================
+
+interface LaborTemplate {
+  name: string;
+  monthlyAmount: number;
+  perUnit: boolean;
+  desc: string;
+}
+
+interface LaborScenario {
+  id: string;
+  title: string;
+  subtitle: string;
+  emoji: string;
+  items: LaborTemplate[];
+  note: string;
+}
+
+const LABOR_SCENARIOS: LaborScenario[] = [
+  {
+    id: 'pribadi-solo',
+    title: 'Usaha pribadi (solo)',
+    subtitle: 'Kerja sendiri, belum ada karyawan',
+    emoji: '👤',
+    note: 'Kalau kamu kerja sendiri, "gaji" = upah waktu kamu sendiri. Jangan diskip — kamu juga butuh dibayar. Pakai angka yang setara dengan gaji yang akan kamu kasih ke orang lain untuk pekerjaan sama.',
+    items: [
+      { name: 'Upah waktu sendiri', monthlyAmount: 2500000, perUnit: false, desc: 'Estimasi gaji yang pantas untuk waktu kerja kamu' },
+    ],
+  },
+  {
+    id: 'pribadi-side',
+    title: 'Side hustle / sampingan',
+    subtitle: 'Bisnis sambilan di luar pekerjaan utama',
+    emoji: '🌙',
+    note: 'Karena waktu terbatas, hitung berdasarkan jam yang benar-benar kepakai. Misal 2 jam/hari × 26 hari × Rp 25.000/jam = ±Rp 1.300.000.',
+    items: [
+      { name: 'Upah waktu sendiri (paruh waktu)', monthlyAmount: 1500000, perUnit: false, desc: '2-3 jam/hari, dihargai realistis' },
+    ],
+  },
+  {
+    id: 'umkm-kecil',
+    title: 'UMKM kecil',
+    subtitle: 'Warung / kedai dengan 1-2 karyawan',
+    emoji: '🏪',
+    note: 'Gaji UMR daerah. UMR Jakarta 2024 ±Rp 5.067.000, Bandung ±Rp 4.209.000, Yogya ±Rp 2.492.000. Sesuaikan dengan kota kamu.',
+    items: [
+      { name: 'Pemilik (kerja sendiri)', monthlyAmount: 3500000, perUnit: false, desc: 'Gaji setara untuk kerja owner' },
+      { name: 'Karyawan / pelayan', monthlyAmount: 2500000, perUnit: false, desc: 'Tergantung UMR daerah' },
+    ],
+  },
+  {
+    id: 'umkm-menengah',
+    title: 'UMKM menengah',
+    subtitle: 'Restoran / toko dengan 3-5 karyawan',
+    emoji: '🏬',
+    note: 'Tim sudah lebih spesialis. Tambahkan koki khusus jika produknya makanan, atau admin/kasir kalau retail.',
+    items: [
+      { name: 'Pemilik / manajer', monthlyAmount: 5000000, perUnit: false, desc: 'Gaji owner / orang yang manage harian' },
+      { name: 'Koki / produksi', monthlyAmount: 3500000, perUnit: false, desc: 'Bagian produksi utama' },
+      { name: 'Pelayan / kasir', monthlyAmount: 2500000, perUnit: false, desc: 'Front-of-house' },
+      { name: 'Asisten / cuci piring', monthlyAmount: 2000000, perUnit: false, desc: 'Helper part-time' },
+    ],
+  },
+  {
+    id: 'borongan',
+    title: 'Sistem borongan / per unit',
+    subtitle: 'Bayar per produk yang berhasil dibuat',
+    emoji: '📦',
+    note: 'Cocok untuk produk handmade atau pesanan custom. Isi harga upah untuk membuat 1 produk (mis. Rp 5.000 per pcs untuk handmade kerajinan, Rp 2.000 per porsi makanan). Nilai ini langsung jadi biaya tenaga kerja per produk.',
+    items: [
+      { name: 'Upah produksi (borongan)', monthlyAmount: 5000, perUnit: true, desc: 'Per 1 produk yang dihasilkan' },
+    ],
+  },
+];
+
+function LaborReferenceGuide({ onApply }: { onApply: (items: LaborTemplate[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const active = LABOR_SCENARIOS.find(s => s.id === activeId);
+
+  return (
+    <div className="mb-4 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-stone-50 dark:bg-stone-900/60 hover:bg-stone-100 dark:hover:bg-stone-800/60 transition-colors"
+      >
+        <span className="flex items-center gap-2 text-xs font-medium text-stone-700 dark:text-stone-200">
+          <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+          Referensi gaji per skala usaha
+        </span>
+        <ChevronDown
+          className={cn(
+            'w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-stone-200 dark:border-stone-800"
+          >
+            <div className="p-3.5 space-y-3 bg-white dark:bg-stone-900/30">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {LABOR_SCENARIOS.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setActiveId(activeId === s.id ? null : s.id)}
+                    className={cn(
+                      'text-left p-3 rounded-lg border transition-colors',
+                      activeId === s.id
+                        ? 'border-stone-900 dark:border-stone-100 bg-stone-50 dark:bg-stone-800/50'
+                        : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-700',
+                    )}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg leading-none mt-0.5">{s.emoji}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-stone-900 dark:text-white">{s.title}</p>
+                        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">{s.subtitle}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {active && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg space-y-2.5"
+                >
+                  <div className="flex items-start gap-2">
+                    <Info className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-stone-600 dark:text-stone-300 leading-relaxed">{active.note}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {active.items.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between gap-2 px-2.5 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-stone-900 dark:text-stone-100 truncate">{item.name}</p>
+                          <p className="text-[10px] text-stone-500 dark:text-stone-400 truncate">{item.desc}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-semibold text-stone-900 dark:text-stone-100 tabular-nums">
+                            Rp {item.monthlyAmount.toLocaleString('id-ID')}
+                          </p>
+                          <p className="text-[10px] text-stone-500 dark:text-stone-400">
+                            {item.perUnit ? 'per unit' : 'per bulan'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onApply(active.items);
+                      setActiveId(null);
+                      setOpen(false);
+                    }}
+                    className="w-full py-2 bg-stone-900 dark:bg-white text-white dark:text-stone-950 rounded-md text-xs font-medium hover:bg-stone-800 dark:hover:bg-stone-100 transition-colors inline-flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3 h-3" /> Tambahkan {active.items.length} item ke daftar
+                  </button>
+                </motion.div>
+              )}
+
+              <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-relaxed">
+                Angka di atas adalah estimasi UMR & rata-rata pasar Indonesia. Sesuaikan dengan kota & kondisi usaha kamu setelah ditambahkan.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -2281,7 +2760,7 @@ function BEPStat({ label, value, sub, tone }: { label: string; value: string; su
 const UNIT_TO_BASE: Record<string, number> = {
   g: 1, kg: 1000,
   ml: 1, L: 1000,
-  pcs: 1, pack: 1, box: 1, porsi: 1,
+  pcs: 1, lusin: 12, pack: 1, box: 1, porsi: 1,
 };
 
 function convertUnitRatio(usageUnit: string, buyUnit: string): number | null {
@@ -2290,10 +2769,15 @@ function convertUnitRatio(usageUnit: string, buyUnit: string): number | null {
   if (!usageBase || !buyBase) return null;
   const isMass = (u: string) => u === 'g' || u === 'kg';
   const isVolume = (u: string) => u === 'ml' || u === 'L';
-  const isCount = (u: string) => u === 'pcs' || u === 'pack' || u === 'box' || u === 'porsi';
+  // pcs and lusin are interchangeable (lusin = 12 pcs)
+  const isPiece = (u: string) => u === 'pcs' || u === 'lusin';
+  const isCount = (u: string) => isPiece(u) || u === 'pack' || u === 'box' || u === 'porsi';
 
-  if (isMass(usageUnit) !== isMass(buyUnit) && isVolume(usageUnit) !== isVolume(buyUnit) && isCount(usageUnit) !== isCount(buyUnit)) {
-    return null;
-  }
+  // pcs/lusin convert freely; other "count" units (pack, box, porsi) only with same unit
+  if (isMass(usageUnit) !== isMass(buyUnit)) return null;
+  if (isVolume(usageUnit) !== isVolume(buyUnit)) return null;
+  if (isCount(usageUnit) !== isCount(buyUnit)) return null;
+  if (isCount(usageUnit) && !isPiece(usageUnit) && usageUnit !== buyUnit) return null;
+
   return usageBase / buyBase;
 }

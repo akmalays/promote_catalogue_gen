@@ -243,27 +243,29 @@ export async function suggestRecipe(input: {
 
 Produk: ${input.productName}
 ${input.category ? `Kategori: ${input.category}` : ''}
-Untuk: ${input.servings} porsi
+Untuk: ${input.servings} porsi (sekali masak)
 
 Berikan daftar bahan dalam format JSON array:
 [
   {
     "name": "<nama bahan>",
-    "usageQty": <jumlah pakai untuk ${input.servings} porsi>,
+    "usageQty": <TOTAL jumlah pakai untuk ${input.servings} porsi sekali masak>,
     "usageUnit": "<satuan: g/kg/ml/L/pcs/pack/box/porsi>",
-    "buyQty": <jumlah beli yang umum di pasar>,
-    "buyUnit": "<satuan beli>",
-    "estimatedPrice": <estimasi harga beli di Indonesia, dalam Rupiah>
+    "buyQty": <jumlah dalam kemasan beli yang umum di pasar>,
+    "buyUnit": "<satuan beli, sebaiknya sama dimensi dengan usageUnit (massa-massa, volume-volume)>",
+    "estimatedPrice": <harga total kemasan beli di Indonesia, dalam Rupiah>
   }
 ]
 
 Aturan:
-- Berikan bahan-bahan yang realistis dan umum di Indonesia
-- Takaran harus akurat untuk ${input.servings} porsi
+- usageQty adalah TOTAL untuk ${input.servings} porsi (bukan per porsi)
+- Konsistenkan dimensi satuan: kalau usageUnit "g", buyUnit harus dalam massa (g/kg). Kalau "ml", buyUnit volume (ml/L). Hindari campur dimensi.
+- estimatedPrice adalah harga TOTAL kemasan (harga beli buyQty satuan), bukan harga per gram/ml
+- Contoh benar: tepung 500 g, buyQty 1, buyUnit "kg", estimatedPrice 12000 (artinya 1 kg = Rp 12.000)
+- Contoh salah: tepung 500 g, buyQty 500, buyUnit "g", estimatedPrice 12000 (overestimate harga)
+- Berikan bahan yang realistis dan umum di Indonesia
 - Estimasi harga sesuai harga pasar Indonesia 2024
-- Gunakan satuan yang umum (g, kg, ml, L, pcs, pack, box, porsi)
-- Minimal 5-10 bahan utama
-- Jangan lupa bumbu, minyak, gas/listrik untuk masak (jika relevan)
+- Minimal 5-10 bahan utama, jangan lupa bumbu dan minyak
 
 Hanya kembalikan JSON array, tanpa penjelasan tambahan.`;
 

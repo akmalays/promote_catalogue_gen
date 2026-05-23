@@ -87,11 +87,14 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
       return;
     }
 
+    // AI returns usageQty as total for `servings` portions, but the HPP
+    // table expects usage per 1 product. Normalize by dividing.
+    const divisor = Math.max(1, servings);
     const selected = suggestions
       .filter((_, idx) => selectedItems.has(idx))
       .map(item => ({
         name: item.name,
-        usageQty: item.usageQty,
+        usageQty: +(item.usageQty / divisor).toFixed(4),
         usageUnit: item.usageUnit,
         buyPrice: item.estimatedPrice,
         buyQty: item.buyQty,
@@ -99,7 +102,7 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
       }));
 
     onApply(selected);
-    toast.success(`${selected.length} bahan ditambahkan`);
+    toast.success(`${selected.length} bahan ditambahkan (per ${servings === 1 ? '1 produk' : `1 dari ${servings} produk`})`);
     handleClose();
   };
 
@@ -111,6 +114,15 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
     setSuggestions(null);
     setSelectedItems(new Set());
   };
+
+  /** Trim trailing zeros while keeping precision for sub-1 values. */
+  function formatQty(n: number): string {
+    if (!isFinite(n)) return '0';
+    if (n === 0) return '0';
+    if (Math.abs(n) >= 10) return n.toFixed(0);
+    if (Math.abs(n) >= 1) return n.toFixed(1).replace(/\.0$/, '');
+    return n.toFixed(3).replace(/\.?0+$/, '');
+  }
 
   if (!isOpen) return null;
 
@@ -171,7 +183,7 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-stone-600 dark:text-stone-400 block mb-1.5">
-                      Jumlah porsi
+                      Jumlah porsi sekali masak
                     </label>
                     <input
                       type="number"
@@ -181,6 +193,9 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
                       className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10"
                       disabled={loading}
                     />
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
+                      Resep AI akan otomatis dibagi ke pemakaian per 1 produk
+                    </p>
                   </div>
 
                   <div>
@@ -231,7 +246,7 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
                       Resep untuk {servings} porsi
                     </h3>
                     <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      {suggestions.length} bahan ditemukan
+                      {suggestions.length} bahan ditemukan · otomatis dibagi {servings} saat ditambahkan
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -257,6 +272,7 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
                 <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
                   {suggestions.map((item, idx) => {
                     const isSelected = selectedItems.has(idx);
+                    const perUnitQty = item.usageQty / Math.max(1, servings);
                     return (
                       <button
                         key={idx}
@@ -286,8 +302,10 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
                                 Rp {item.estimatedPrice.toLocaleString('id-ID')}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-stone-500 dark:text-stone-400 tabular-nums">
-                              <span>Pakai {item.usageQty} {item.usageUnit}</span>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-stone-500 dark:text-stone-400 tabular-nums">
+                              <span>Untuk {servings} porsi: <span className="text-stone-700 dark:text-stone-300 font-medium">{formatQty(item.usageQty)} {item.usageUnit}</span></span>
+                              <span className="text-stone-300 dark:text-stone-600">·</span>
+                              <span>Per produk: <span className="text-stone-700 dark:text-stone-300 font-medium">{formatQty(perUnitQty)} {item.usageUnit}</span></span>
                               <span className="text-stone-300 dark:text-stone-600">·</span>
                               <span>Beli {item.buyQty} {item.buyUnit}</span>
                             </div>
@@ -301,7 +319,7 @@ export default function RecipeSuggestionModal({ isOpen, onClose, onApply }: Reci
                 <div className="flex items-start gap-2.5 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg">
                   <AlertCircle className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
-                    Harga estimasi mengikuti pasar umum di Indonesia. Sesuaikan dengan supplier & daerah kamu.
+                    Takaran akan otomatis dibagi {servings} agar sesuai pemakaian per 1 produk. Harga & ukuran tetap mengikuti supplier — sesuaikan jika perlu.
                   </p>
                 </div>
               </div>

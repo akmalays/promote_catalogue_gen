@@ -61,6 +61,17 @@ export default function Select({
     }
   }, [isOpen]);
 
+  // After the menu renders, clamp it inside the viewport horizontally
+  useLayoutEffect(() => {
+    if (!isOpen || !menuRef.current) return;
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const margin = 8;
+    const overflowRight = menuRect.right - (window.innerWidth - margin);
+    if (overflowRight > 0) {
+      setMenuPosition(p => ({ ...p, left: Math.max(margin, p.left - overflowRight) }));
+    }
+  }, [isOpen]);
+
   // Update position on scroll
   useEffect(() => {
     if (!isOpen) return;
@@ -163,10 +174,11 @@ export default function Select({
                 position: 'fixed',
                 top: menuPosition.top,
                 left: menuPosition.left,
-                width: menuPosition.width,
+                minWidth: menuPosition.width,
+                maxWidth: 'min(320px, calc(100vw - 16px))',
               }}
               className={cn(
-                'z-[9999] max-h-60 overflow-y-auto',
+                'z-[9999] max-h-60 overflow-y-auto w-max',
                 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800',
                 'rounded-lg shadow-xl p-1',
                 menuClassName,
@@ -186,7 +198,7 @@ export default function Select({
                         setIsOpen(false);
                       }}
                       className={cn(
-                        'w-full flex items-center justify-between gap-2 rounded-md text-left transition-colors',
+                        'w-full flex items-center justify-between gap-2 rounded-md text-left transition-colors whitespace-nowrap',
                         itemSizeClasses,
                         opt.disabled && 'opacity-40 cursor-not-allowed',
                         isSelected
