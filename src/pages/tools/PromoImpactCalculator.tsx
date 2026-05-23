@@ -79,7 +79,7 @@ export default function PromoImpactCalculator() {
     >
       <div className="space-y-4">
         {/* Input */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
           <h2 className="text-base md:text-lg font-semibold mb-4">Data produk</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
@@ -136,7 +136,7 @@ export default function PromoImpactCalculator() {
 
         {/* Per-transaction impact */}
         {result && (
-          <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6">
+          <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
             <h2 className="text-base md:text-lg font-semibold mb-1">Dampak per transaksi</h2>
             <p className="text-xs md:text-sm text-stone-500 mb-4">
               Membandingkan: 1 transaksi normal vs 1 transaksi pakai promo "{result.label}"
@@ -173,7 +173,7 @@ export default function PromoImpactCalculator() {
 
         {/* Volume scenario */}
         {result && (
-          <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6">
+          <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
             <h2 className="text-base md:text-lg font-semibold mb-1">Dampak ke total profit</h2>
             <p className="text-xs md:text-sm text-stone-500 mb-4">
               Hitung total profit selama periode promo dengan estimasi kenaikan penjualan.
@@ -263,7 +263,7 @@ function CurrencyInput({ value, onChange }: { value: number; onChange: (v: numbe
           onChange(cleaned === '' ? 0 : parseInt(cleaned, 10));
         }}
         placeholder="0"
-        className="w-full pl-10 pr-3 py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+        className="w-full pl-10 pr-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
       />
     </div>
   );
@@ -278,7 +278,7 @@ function NumInput({ value, onChange, min, max, suffix }: { value: number; onChan
         max={max}
         value={value || ''}
         onChange={e => onChange(Math.max(min, Math.min(max, parseInt(e.target.value) || 0)))}
-        className="w-full pl-3 pr-12 py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+        className="w-full pl-3 pr-12 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
       />
       {suffix && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium pointer-events-none">{suffix}</span>
@@ -310,7 +310,7 @@ function ScenarioCard({ title, price, cost, profit, margin, isPromoBoxNote }: {
   isPromoBoxNote?: string;
 }) {
   return (
-    <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl">
+    <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl">
       <p className="text-xs font-semibold text-stone-700 mb-3">{title}</p>
       <div className="space-y-1.5 text-sm">
         <Row label="Harga" value={`Rp ${Math.round(price).toLocaleString('id-ID')}`} />
@@ -342,7 +342,7 @@ function Row({ label, value, bold, muted, negative }: { label: string; value: st
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl">
+    <div className="p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl">
       <p className="text-[10px] text-stone-500 mb-1">{label}</p>
       <p className="text-base font-bold tabular-nums">{value}</p>
       {sub && <p className="text-[10px] text-stone-500 mt-0.5">{sub}</p>}

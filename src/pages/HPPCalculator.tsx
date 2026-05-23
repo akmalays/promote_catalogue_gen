@@ -582,7 +582,7 @@ export default function HPPCalculator() {
         <HPPGuide />
 
         {/* Product Info */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <FieldInput label="Nama produk" value={productName} onChange={setProductName} placeholder="Contoh: Ayam penyet cabe ijo" />
             <div>
@@ -601,7 +601,7 @@ export default function HPPCalculator() {
         </div>
 
         {/* Variable Costs */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
               <h2 className="text-base md:text-lg font-semibold">Bahan Baku <span className="text-xs font-normal text-stone-400">(Variable Cost)</span></h2>
@@ -666,7 +666,7 @@ export default function HPPCalculator() {
                         value={vc.name}
                         onChange={e => updateVariable(vc.id, 'name', e.target.value)}
                         placeholder="Nama bahan"
-                        className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                     </td>
                     <td className="py-2 pr-2">
@@ -674,7 +674,7 @@ export default function HPPCalculator() {
                         value={vc.usageQty}
                         onChange={v => updateVariable(vc.id, 'usageQty', v)}
                         allowDecimal
-                        className="w-20 px-2.5 py-1.5 bg-white border border-stone-200 rounded-md text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                        className="w-20 px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                     </td>
                     <td className="py-2 pr-2">
@@ -691,7 +691,7 @@ export default function HPPCalculator() {
                         value={vc.buyPrice}
                         onChange={v => updateVariable(vc.id, 'buyPrice', v)}
                         placeholder="0"
-                        className="w-32 py-1.5 bg-white border border-stone-200 rounded-md text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                        className="w-32 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                     </td>
                     <td className="py-2 pr-2">
@@ -699,7 +699,7 @@ export default function HPPCalculator() {
                         value={vc.buyQty}
                         onChange={v => updateVariable(vc.id, 'buyQty', v)}
                         allowDecimal
-                        className="w-16 px-2.5 py-1.5 bg-white border border-stone-200 rounded-md text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                        className="w-16 px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                     </td>
                     <td className="py-2 pr-2">
@@ -742,7 +742,7 @@ export default function HPPCalculator() {
           <div className="mt-5 pt-5 border-t border-stone-100">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-stone-900">Susut bahan / Wastage</h3>
+                <h3 className="text-sm font-semibold text-stone-900 dark:text-white">Susut bahan / Wastage</h3>
                 <p className="text-[11px] text-stone-500 mt-0.5">
                   Estimasi bahan terbuang (kulit, layu, takaran lebih). F&B umumnya 5–15%.
                 </p>
@@ -770,14 +770,14 @@ export default function HPPCalculator() {
                   onChange={e => setWastagePct(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
                   className="w-10 bg-transparent text-sm font-semibold text-right focus:outline-none"
                 />
-                <Percent className="w-3 h-3 text-stone-500" />
+                <Percent className="w-3 h-3 text-stone-500 dark:text-stone-400" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Packaging */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold">Kemasan & Packaging</h2>
           <p className="text-xs md:text-sm text-stone-500 mt-0.5 mb-4">
             Box, plastik, sticker, sendok — biaya per unit yang selalu dipakai.
@@ -790,13 +790,13 @@ export default function HPPCalculator() {
                   value={pc.name}
                   onChange={e => updatePackaging(pc.id, 'name', e.target.value)}
                   placeholder="Box / Plastik / Sticker"
-                  className="px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                  className="px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                 />
                 <CurrencyInput
                   value={pc.costPerUnit}
                   onChange={v => updatePackaging(pc.id, 'costPerUnit', v)}
                   placeholder="0"
-                  className="w-full py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                  className="w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                 />
                 <button
                   onClick={() => removePackaging(pc.id)}
@@ -811,14 +811,14 @@ export default function HPPCalculator() {
 
           <button
             onClick={addPackaging}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900 dark:text-white"
           >
             <Plus className="w-3.5 h-3.5" /> Tambah item
           </button>
         </div>
 
         {/* Labor */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold">Tenaga Kerja</h2>
           <p className="text-xs md:text-sm text-stone-500 mt-0.5 mb-4">
             Gaji karyawan. Pilih "per unit" jika gajinya tergantung volume produksi.
@@ -834,13 +834,13 @@ export default function HPPCalculator() {
                     value={lc.name}
                     onChange={e => updateLabor(lc.id, 'name', e.target.value)}
                     placeholder="Koki, kasir, dll"
-                    className="px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    className="px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                   />
                   <CurrencyInput
                     value={lc.monthlyAmount}
                     onChange={v => updateLabor(lc.id, 'monthlyAmount', v)}
                     placeholder="Gaji / bulan"
-                    className="w-full py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    className="w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                   />
                   <Select
                     value={lc.perUnit ? 'variable' : 'fixed'}
@@ -864,14 +864,14 @@ export default function HPPCalculator() {
 
           <button
             onClick={addLabor}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900 dark:text-white"
           >
             <Plus className="w-3.5 h-3.5" /> Tambah karyawan
           </button>
         </div>
 
         {/* Fixed Cost & Capacity (optional) */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <div className="flex items-start justify-between gap-3 mb-1">
             <div className="flex items-center gap-2">
               <h2 className="text-base md:text-lg font-semibold">Biaya Tetap & Kapasitas</h2>
@@ -908,7 +908,7 @@ export default function HPPCalculator() {
                 {includeFixedInHpp && <span className="text-white text-[10px] leading-none">✓</span>}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-stone-900">
+                <p className="text-sm font-medium text-stone-900 dark:text-white">
                   Masukkan alokasi biaya tetap ke HPP
                 </p>
                 <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
@@ -929,14 +929,14 @@ export default function HPPCalculator() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="bg-stone-50 border border-stone-200 rounded-lg p-3.5 mb-4">
+                <div className="bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg p-3.5 mb-4">
                   <label className="text-xs font-medium text-stone-700 block mb-1.5">
                     Kapasitas produksi per bulan (unit)
                   </label>
                   <NumInput
                     value={productionCapacity}
                     onChange={setProductionCapacity}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                   />
                   <p className="text-[11px] text-stone-500 mt-1.5">
                     Belum tahu? Mulai dengan target realistis (mis. 300–1.000 unit/bulan untuk warung makan), lalu review setelah 1–2 bulan jualan.
@@ -953,13 +953,13 @@ export default function HPPCalculator() {
                         value={fc.name}
                         onChange={e => updateFixed(fc.id, 'name', e.target.value)}
                         placeholder="Sewa Tempat (per bulan)"
-                        className="px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                        className="px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                       <CurrencyInput
                         value={fc.amount}
                         onChange={v => updateFixed(fc.id, 'amount', v)}
                         placeholder="0"
-                        className="w-full py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                        className="w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                       />
                       <button
                         onClick={() => removeFixed(fc.id)}
@@ -972,7 +972,7 @@ export default function HPPCalculator() {
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <button onClick={addFixed} className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900">
+                  <button onClick={addFixed} className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-700 hover:text-stone-900 dark:text-white">
                     <Plus className="w-3.5 h-3.5" /> Tambah biaya
                   </button>
                 </div>
@@ -982,10 +982,10 @@ export default function HPPCalculator() {
         </div>
 
         {/* HPP Result */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold mb-4">Rincian HPP per Produk</h2>
 
-          <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 mb-4">
+          <div className="bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl p-4 mb-4">
             <div className="space-y-1.5 text-sm">
               <BreakdownRow label="Bahan baku" value={rawMaterialCost} />
               {wastagePct > 0 && (
@@ -1011,11 +1011,11 @@ export default function HPPCalculator() {
                 </>
               )}
               <div className="pt-2 mt-2 border-t-2 border-stone-300 flex items-center justify-between">
-                <span className="font-semibold text-stone-900">
+                <span className="font-semibold text-stone-900 dark:text-white">
                   Total HPP per Produk
-                  {!includeFixedInHpp && <span className="ml-1.5 text-[10px] font-medium text-stone-500">variabel saja</span>}
+                  {!includeFixedInHpp && <span className="ml-1.5 text-[10px] font-medium text-stone-500 dark:text-stone-400">variabel saja</span>}
                 </span>
-                <span className="font-bold text-base tabular-nums text-stone-900">
+                <span className="font-bold text-base tabular-nums text-stone-900 dark:text-white">
                   Rp {totalHpp.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                 </span>
               </div>
@@ -1049,7 +1049,7 @@ export default function HPPCalculator() {
         </div>
 
         {/* Sales Channels & Tax */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold mb-1">Channel Penjualan & Pajak</h2>
           <p className="text-xs md:text-sm text-stone-500 mb-4">
             Aktifkan channel yang dipakai. Komisi marketplace & pajak akan otomatis dipotong dari proyeksi laba.
@@ -1075,7 +1075,7 @@ export default function HPPCalculator() {
                   onChange={e => updateChannel(ch.id, 'name', e.target.value)}
                   className="flex-1 bg-transparent text-sm font-medium focus:outline-none"
                 />
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-white border border-stone-200 rounded-md tabular-nums">
+                <div className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md tabular-nums">
                   <input
                     type="number"
                     min={0}
@@ -1086,7 +1086,7 @@ export default function HPPCalculator() {
                     disabled={!ch.enabled}
                     className="w-12 bg-transparent text-sm font-semibold text-right focus:outline-none disabled:text-stone-400"
                   />
-                  <Percent className="w-3 h-3 text-stone-500" />
+                  <Percent className="w-3 h-3 text-stone-500 dark:text-stone-400" />
                 </div>
               </div>
             ))}
@@ -1115,14 +1115,14 @@ export default function HPPCalculator() {
                     onChange={e => setTaxPct(Math.max(0, Math.min(20, parseFloat(e.target.value) || 0)))}
                     className="w-10 bg-transparent text-sm font-semibold text-right focus:outline-none"
                   />
-                  <Percent className="w-3 h-3 text-stone-500" />
+                  <Percent className="w-3 h-3 text-stone-500 dark:text-stone-400" />
                 </div>
               </div>
               <p className="text-[11px] text-stone-500 mt-1.5">
                 UMKM omzet ≤ 4.8M/tahun: 0.5%. Restoran umumnya kena PB1 10%.
               </p>
             </div>
-            <div className="bg-stone-50 border border-stone-200 rounded-lg p-3">
+            <div className="bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg p-3">
               <p className="text-[11px] text-stone-500 mb-1">Total potongan / unit</p>
               <p className="text-sm font-bold tabular-nums">
                 {avgCommissionPct.toFixed(1)}% komisi + {taxPct}% pajak
@@ -1135,7 +1135,7 @@ export default function HPPCalculator() {
         </div>
 
         {/* AI Price Suggestions */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <div className="flex items-start justify-between mb-4 gap-3">
             <div>
               <div className="flex items-center gap-1.5">
@@ -1197,13 +1197,13 @@ export default function HPPCalculator() {
 
           {/* Margin guideline */}
           {selectedPrice > 0 && marginGuide && (
-            <div className="mt-4 p-3 bg-stone-50 border border-stone-200 rounded-lg">
+            <div className="mt-4 p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg">
               <div className="flex items-start gap-2.5">
                 <Info className="w-3.5 h-3.5 text-stone-500 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-stone-700">
+                  <p className="text-xs text-stone-700 dark:text-stone-200">
                     Margin {category}: <span className="font-semibold">{marginGuide.min}–{marginGuide.max}%</span>
-                    <span className="text-stone-500"> · {marginGuide.note}</span>
+                    <span className="text-stone-500 dark:text-stone-400"> · {marginGuide.note}</span>
                   </p>
                   <div className="mt-2 flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-stone-200 rounded-full overflow-hidden">
@@ -1243,7 +1243,7 @@ export default function HPPCalculator() {
         )}
 
         {/* Sales Projection */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
           <h2 className="text-base md:text-lg font-semibold">Target & Proyeksi Penjualan</h2>
           <p className="text-xs md:text-sm text-stone-500 mt-0.5 mb-4">
             Hitung berapa unit harus terjual untuk capai target laba bersih.
@@ -1263,15 +1263,15 @@ export default function HPPCalculator() {
                 value={selectedPrice}
                 onChange={setSelectedPrice}
                 placeholder="Pilih dari saran AI"
-                className="w-full py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
               />
             </div>
           </div>
 
           {!projection ? (
-            <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl flex items-center gap-2.5 mb-4">
+            <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl flex items-center gap-2.5 mb-4">
               <AlertCircle className="w-4 h-4 text-stone-500 shrink-0" />
-              <p className="text-xs text-stone-600">
+              <p className="text-xs text-stone-600 dark:text-stone-300">
                 Lengkapi target laba dan harga jual untuk lihat proyeksi.
                 {!includeFixedInHpp && totalFixedMonthly === 0 && ' Tambah biaya tetap di section di atas agar perhitungan BEP & target lebih akurat.'}
               </p>
@@ -1297,7 +1297,7 @@ export default function HPPCalculator() {
               </div>
 
               {/* BEP & Working Capital */}
-              <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl mb-4">
+              <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl mb-4">
                 <p className="text-sm font-semibold mb-1">Break Even Point & Modal Kerja</p>
                 <p className="text-[11px] text-stone-500 mb-3">Titik impas dan modal awal yang dibutuhkan</p>
                 {projection.bepUnits > 0 ? (
@@ -1320,8 +1320,8 @@ export default function HPPCalculator() {
                       variableCostPerUnit={totalVariablePerUnit}
                       fixedCost={totalFixedMonthly}
                     />
-                    <div className="mt-3 p-3 bg-white border border-stone-200 rounded-lg">
-                      <p className="text-xs font-semibold text-stone-900">
+                    <div className="mt-3 p-3 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg">
+                      <p className="text-xs font-semibold text-stone-900 dark:text-white">
                         Modal kerja minimum: Rp {projection.workingCapital.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                       </p>
                       <p className="text-[11px] text-stone-500 mt-0.5">
@@ -1330,7 +1330,7 @@ export default function HPPCalculator() {
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-stone-500">
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
                     Tidak ada biaya tetap — setiap unit terjual sudah menghasilkan laba.
                   </p>
                 )}
@@ -1435,13 +1435,13 @@ function HPPGuide() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl mb-4 overflow-hidden">
+    <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl mb-4 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-stone-900">Belum tahu cara hitung HPP yang benar?</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-white">Belum tahu cara hitung HPP yang benar?</p>
           <p className="text-xs text-stone-500 mt-0.5">Klik untuk baca panduan singkat 2 menit.</p>
         </div>
         <ChevronDown className={cn('w-4 h-4 text-stone-500 transition-transform shrink-0', open && 'rotate-180')} />
@@ -1469,16 +1469,16 @@ function HPPGuide() {
                 <p className="text-xs md:text-sm mb-2">
                   Biaya bahan yang berubah-ubah tergantung volume produksi. Contoh untuk Ayam Penyet:
                 </p>
-                <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs space-y-1 font-mono">
+                <div className="bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg p-3 text-xs space-y-1 font-mono">
                   <p>Beli ayam: <strong>1 kg = Rp 35.000</strong></p>
                   <p>Pakai per porsi: <strong>150 gram</strong></p>
-                  <p className="text-stone-900">→ Biaya per produk = (150 / 1000) × 35.000 = Rp 5.250</p>
+                  <p className="text-stone-900 dark:text-white">→ Biaya per produk = (150 / 1000) × 35.000 = Rp 5.250</p>
                 </div>
               </div>
 
               <div>
                 <p className="font-semibold text-stone-900 mb-1">3. Tambah susut, packaging, tenaga kerja</p>
-                <ul className="text-xs md:text-sm space-y-1 list-disc pl-4 text-stone-600">
+                <ul className="text-xs md:text-sm space-y-1 list-disc pl-4 text-stone-600 dark:text-stone-300">
                   <li><strong>Susut bahan</strong>: 5–15% bahan terbuang/layu/takaran lebih</li>
                   <li><strong>Packaging</strong>: box, plastik, sticker yang dipakai per unit</li>
                   <li><strong>Tenaga kerja per unit</strong>: gaji koki kalau gajinya by-output</li>
@@ -1490,10 +1490,10 @@ function HPPGuide() {
                 <p className="text-xs md:text-sm mb-2">
                   Kalau kamu masih awal dan belum tahu volume produksi, <strong>skip dulu</strong>. HPP variabel sudah cukup untuk memulai. Begitu sudah jualan 1–2 bulan dan tahu kapasitas, baru aktifkan alokasi biaya tetap untuk HPP yang lebih akurat.
                 </p>
-                <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs space-y-1 font-mono">
+                <div className="bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg p-3 text-xs space-y-1 font-mono">
                   <p>Total biaya tetap: <strong>Rp 4.150.000 / bulan</strong></p>
                   <p>Kapasitas produksi: <strong>5.000 unit / bulan</strong></p>
-                  <p className="text-stone-900">→ Alokasi per unit = Rp 830</p>
+                  <p className="text-stone-900 dark:text-white">→ Alokasi per unit = Rp 830</p>
                 </div>
                 <p className="text-[11px] text-stone-500 mt-2">
                   Catatan: biaya tetap tetap dipakai untuk hitung BEP & target penjualan, walau tidak masuk HPP.
@@ -1502,13 +1502,13 @@ function HPPGuide() {
 
               <div>
                 <p className="font-semibold text-stone-900 mb-1">5. Jangan lupa komisi & pajak</p>
-                <p className="text-xs md:text-sm text-stone-600">
+                <p className="text-xs md:text-sm text-stone-600 dark:text-stone-300">
                   Kalau jualan via GoFood/GrabFood, komisi 20–25% kepotong langsung. Restoran kena PB1 10%, UMKM kecil PPh Final 0.5%. Aktifkan di section "Channel Penjualan & Pajak" agar proyeksi laba akurat.
                 </p>
               </div>
 
               <div className="pt-2 border-t border-stone-200">
-                <p className="text-[11px] text-stone-500">
+                <p className="text-[11px] text-stone-500 dark:text-stone-400">
                   Sudah paham? Mulai isi data di bawah. AI bisa bantu kasih saran resep & estimasi biaya kalau ragu.
                 </p>
               </div>
@@ -1533,7 +1533,7 @@ function VariableCostCard({
   return (
     <div className="border border-stone-200 rounded-xl p-3 bg-stone-50">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-medium text-stone-500">Bahan #{index + 1}</span>
+        <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400">Bahan #{index + 1}</span>
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-stone-900 tabular-nums bg-white px-2 py-0.5 rounded">
             Rp {cost.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
@@ -1551,20 +1551,20 @@ function VariableCostCard({
         value={vc.name}
         onChange={e => onUpdate('name', e.target.value)}
         placeholder="Nama bahan"
-        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+        className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
       />
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
-          <label className="text-[10px] text-stone-500">Jml pakai</label>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Jml pakai</label>
           <NumInput
             value={vc.usageQty}
             onChange={v => onUpdate('usageQty', v)}
             allowDecimal
-            className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-md text-sm tabular-nums"
+            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums"
           />
         </div>
         <div>
-          <label className="text-[10px] text-stone-500">Satuan</label>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Satuan</label>
           <Select
             value={vc.usageUnit}
             onChange={v => onUpdate('usageUnit', v)}
@@ -1576,24 +1576,24 @@ function VariableCostCard({
       </div>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="text-[10px] text-stone-500">Total harga</label>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Total harga</label>
           <CurrencyInput
             value={vc.buyPrice}
             onChange={v => onUpdate('buyPrice', v)}
-            className="w-full py-1.5 bg-white border border-stone-200 rounded-md text-sm tabular-nums"
+            className="w-full py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums"
           />
         </div>
         <div>
-          <label className="text-[10px] text-stone-500">Jml beli</label>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Jml beli</label>
           <NumInput
             value={vc.buyQty}
             onChange={v => onUpdate('buyQty', v)}
             allowDecimal
-            className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-md text-sm tabular-nums"
+            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-sm tabular-nums"
           />
         </div>
         <div>
-          <label className="text-[10px] text-stone-500">Satuan</label>
+          <label className="text-[10px] text-stone-500 dark:text-stone-400">Satuan</label>
           <Select
             value={vc.buyUnit}
             onChange={v => onUpdate('buyUnit', v)}
@@ -1651,9 +1651,9 @@ function PriceTierCard({ tier, selected, onSelect }: { tier: PriceTier; selected
             )}>
               {labelMap[tier.tier]}
             </span>
-            {selected && <span className="text-[10px] font-medium text-stone-500">Terpilih</span>}
+            {selected && <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400">Terpilih</span>}
           </div>
-          <p className="text-[11px] text-stone-500">{subMap[tier.tier]}</p>
+          <p className="text-[11px] text-stone-500 dark:text-stone-400">{subMap[tier.tier]}</p>
         </div>
         <span className="text-xl font-bold text-stone-900 tabular-nums">
           Rp {tier.price.toLocaleString('id-ID')}
@@ -1661,11 +1661,11 @@ function PriceTierCard({ tier, selected, onSelect }: { tier: PriceTier; selected
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs mb-2 pt-2 border-t border-stone-100">
         <div>
-          <span className="text-stone-500">Profit/unit</span>
+          <span className="text-stone-500 dark:text-stone-400">Profit/unit</span>
           <p className="font-semibold text-stone-900 tabular-nums">Rp {tier.profit.toLocaleString('id-ID')}</p>
         </div>
         <div>
-          <span className="text-stone-500">Margin</span>
+          <span className="text-stone-500 dark:text-stone-400">Margin</span>
           <p className="font-semibold text-stone-900 tabular-nums">{tier.margin}%</p>
         </div>
       </div>
@@ -1680,9 +1680,9 @@ function CompetitorCompare({ myPrice, competitorPrice }: { myPrice: number; comp
   const cheaper = diff < 0;
 
   return (
-    <div className="mb-4 p-3.5 bg-stone-50 border border-stone-200 rounded-lg">
+    <div className="mb-4 p-3.5 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-medium text-stone-700">Perbandingan dengan kompetitor</p>
+        <p className="text-xs font-medium text-stone-700 dark:text-stone-200">Perbandingan dengan kompetitor</p>
         <span className={cn(
           'text-xs font-semibold inline-flex items-center gap-1',
           cheaper ? 'text-emerald-600' : diff > 0 ? 'text-amber-600' : 'text-stone-500',
@@ -1694,11 +1694,11 @@ function CompetitorCompare({ myPrice, competitorPrice }: { myPrice: number; comp
       <div className="flex items-end gap-3">
         <div className="flex-1">
           <p className="text-[10px] text-stone-500 mb-0.5">Kamu</p>
-          <p className="text-sm font-bold tabular-nums text-stone-900">Rp {myPrice.toLocaleString('id-ID')}</p>
+          <p className="text-sm font-bold tabular-nums text-stone-900 dark:text-white">Rp {myPrice.toLocaleString('id-ID')}</p>
         </div>
         <div className="flex-1 text-right">
           <p className="text-[10px] text-stone-500 mb-0.5">Kompetitor</p>
-          <p className="text-sm font-bold tabular-nums text-stone-700">Rp {competitorPrice.toLocaleString('id-ID')}</p>
+          <p className="text-sm font-bold tabular-nums text-stone-700 dark:text-stone-200">Rp {competitorPrice.toLocaleString('id-ID')}</p>
         </div>
       </div>
       <div className="relative h-1.5 mt-3 bg-stone-200 rounded-full overflow-hidden">
@@ -1731,7 +1731,7 @@ function PricingScenarios({
     : 0;
 
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 mb-4">
+    <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 mb-4">
       <h2 className="text-base md:text-lg font-semibold mb-1">Skenario Harga</h2>
       <p className="text-xs md:text-sm text-stone-500 mb-4">
         Profit di berbagai skenario harga (sudah dipotong komisi & pajak).
@@ -1756,9 +1756,9 @@ function PricingScenarios({
               const isLoss = profit < 0;
               return (
                 <tr key={s.name}>
-                  <td className="py-2.5 pr-2 text-stone-700">{s.name}</td>
+                  <td className="py-2.5 pr-2 text-stone-700 dark:text-stone-200">{s.name}</td>
                   <td className="py-2.5 px-2 text-right tabular-nums font-medium">Rp {s.price.toLocaleString('id-ID')}</td>
-                  <td className="py-2.5 px-2 text-right tabular-nums text-stone-500">Rp {Math.round(netPrice).toLocaleString('id-ID')}</td>
+                  <td className="py-2.5 px-2 text-right tabular-nums text-stone-500 dark:text-stone-400">Rp {Math.round(netPrice).toLocaleString('id-ID')}</td>
                   <td className={cn(
                     'py-2.5 px-2 text-right tabular-nums font-semibold',
                     isLoss ? 'text-red-600' : 'text-stone-900',
@@ -1815,10 +1815,10 @@ function BEPChart({
   const bepY = yScale(pricePerUnit * bepUnits);
 
   return (
-    <div className="bg-white border border-stone-200 rounded-lg p-3">
+    <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-semibold text-stone-700">Grafik BEP</p>
-        <div className="flex items-center gap-3 text-[10px] text-stone-500">
+        <p className="text-[11px] font-semibold text-stone-700 dark:text-stone-200">Grafik BEP</p>
+        <div className="flex items-center gap-3 text-[10px] text-stone-500 dark:text-stone-400">
           <span className="inline-flex items-center gap-1"><span className="w-2 h-0.5 bg-stone-900" /> Pendapatan</span>
           <span className="inline-flex items-center gap-1"><span className="w-2 h-0.5 bg-stone-400" /> Biaya total</span>
           <span className="inline-flex items-center gap-1"><span className="w-2 h-0.5 bg-stone-300 border-dashed" /> Biaya tetap</span>
@@ -1894,14 +1894,14 @@ function SensitivitySection({
   const isWorse = profitDiff < 0;
 
   return (
-    <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl">
+    <div className="p-4 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl">
       <p className="text-sm font-semibold mb-1">Sensitivity / Stress Test</p>
       <p className="text-[11px] text-stone-500 mb-3">Lihat dampak kalau harga bahan naik atau volume jualan turun</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-stone-600">Harga bahan naik</label>
+            <label className="text-xs font-medium text-stone-600 dark:text-stone-300">Harga bahan naik</label>
             <span className={cn(
               'text-xs font-semibold tabular-nums',
               stressMaterialPct > 0 ? 'text-red-600' : 'text-stone-500',
@@ -1921,7 +1921,7 @@ function SensitivitySection({
         </div>
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-stone-600">Volume jualan</label>
+            <label className="text-xs font-medium text-stone-600 dark:text-stone-300">Volume jualan</label>
             <span className={cn(
               'text-xs font-semibold tabular-nums',
               stressVolumePct < 0 ? 'text-red-600' : stressVolumePct > 0 ? 'text-emerald-600' : 'text-stone-500',
@@ -1942,7 +1942,7 @@ function SensitivitySection({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        <div className="bg-white border border-stone-200 rounded-lg p-2.5">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5">
           <p className="text-[10px] text-stone-500 mb-0.5">HPP setelah stress</p>
           <p className="text-sm font-bold tabular-nums">Rp {Math.round(stressScenario.stressedHpp).toLocaleString('id-ID')}</p>
           {hppDiff !== 0 && (
@@ -1951,7 +1951,7 @@ function SensitivitySection({
             </p>
           )}
         </div>
-        <div className="bg-white border border-stone-200 rounded-lg p-2.5">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5">
           <p className="text-[10px] text-stone-500 mb-0.5">Profit/unit baru</p>
           <p className={cn(
             'text-sm font-bold tabular-nums',
@@ -1963,7 +1963,7 @@ function SensitivitySection({
             margin {stressScenario.stressedMargin.toFixed(1)}%
           </p>
         </div>
-        <div className="bg-white border border-stone-200 rounded-lg p-2.5 col-span-2 md:col-span-1">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5 col-span-2 md:col-span-1">
           <p className="text-[10px] text-stone-500 mb-0.5">Laba bersih / bulan</p>
           <p className={cn(
             'text-sm font-bold tabular-nums',
@@ -2021,7 +2021,7 @@ function HistoryDrawer({
         <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold">Riwayat Perhitungan</h3>
-            <p className="text-xs text-stone-500">{history.length} tersimpan</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400">{history.length} tersimpan</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-stone-100">
             <ArrowRight className="w-4 h-4 rotate-180" />
@@ -2031,7 +2031,7 @@ function HistoryDrawer({
           {history.length === 0 ? (
             <div className="text-center py-12">
               <History className="w-8 h-8 mx-auto text-stone-300 mb-2" />
-              <p className="text-sm text-stone-500">Belum ada perhitungan tersimpan</p>
+              <p className="text-sm text-stone-500 dark:text-stone-400">Belum ada perhitungan tersimpan</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -2080,7 +2080,7 @@ function FieldInput({ label, value, onChange, placeholder }: { label: string; va
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+        className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
       />
     </div>
   );
@@ -2113,7 +2113,7 @@ function FieldInputNumber({
           }}
           placeholder={placeholder}
           className={cn(
-            'w-full py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10',
+            'w-full py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10',
             prefix ? 'pl-9 pr-3' : 'px-3',
           )}
         />
@@ -2198,7 +2198,7 @@ function Stat({ label, value, sub, accent, positive }: { label: string; value: s
 
 function BEPStat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'good' | 'warn' | 'bad' }) {
   return (
-    <div className="bg-white border border-stone-200 rounded-lg p-2.5">
+    <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2.5">
       <p className="text-[10px] text-stone-500 mb-0.5">{label}</p>
       <p className="text-sm font-bold tabular-nums">{value}</p>
       {sub && (

@@ -48,7 +48,7 @@ export default function MarginCalculator() {
     >
       <div className="space-y-4">
         {/* Mode tabs */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
           <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-100 rounded-lg mb-5">
             <button
               onClick={() => setMode('markup')}
@@ -70,7 +70,7 @@ export default function MarginCalculator() {
             </button>
           </div>
 
-          <div className="flex items-start gap-2.5 p-3 bg-stone-50 border border-stone-200 rounded-lg mb-5">
+          <div className="flex items-start gap-2.5 p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg mb-5">
             <Info className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
             <p className="text-xs text-stone-600 leading-relaxed">
               {mode === 'markup'
@@ -110,7 +110,7 @@ export default function MarginCalculator() {
                     onChange={e => setPercent(Math.max(0, Math.min(mode === 'markup' ? 500 : 99, parseInt(e.target.value) || 0)))}
                     className="w-12 bg-transparent text-sm font-semibold text-right focus:outline-none"
                   />
-                  <Percent className="w-3 h-3 text-stone-500" />
+                  <Percent className="w-3 h-3 text-stone-500 dark:text-stone-400" />
                 </div>
               </div>
             </div>
@@ -133,7 +133,7 @@ export default function MarginCalculator() {
         </div>
 
         {/* Reverse: cek margin dari harga jual */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
           <h2 className="text-base md:text-lg font-semibold mb-1">Atau cek margin dari harga jual yang sudah ada</h2>
           <p className="text-xs md:text-sm text-stone-500 mb-4">
             Punya harga jual yang sudah jalan? Masukkan modal & harga jualnya untuk lihat margin & markup-nya.
@@ -162,7 +162,7 @@ export default function MarginCalculator() {
         </div>
 
         {/* Tips */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6">
+        <div className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6">
           <h2 className="text-base md:text-lg font-semibold mb-3">Panduan margin per kategori</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <GuideRow category="Retail / Sembako" range="15–30%" note="Margin tipis, andalkan volume" />
@@ -195,7 +195,7 @@ function CurrencyInput({ value, onChange, placeholder }: { value: number; onChan
           onChange(cleaned === '' ? 0 : parseInt(cleaned, 10));
         }}
         placeholder={placeholder}
-        className="w-full pl-10 pr-3 py-2 bg-white border border-stone-200 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+        className="w-full pl-10 pr-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-stone-900/10"
       />
     </div>
   );
@@ -212,7 +212,7 @@ function ResultStat({ label, value }: { label: string; value: string }) {
 
 function Stat({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
   return (
-    <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl">
+    <div className="p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-xl">
       <p className="text-[10px] text-stone-500 mb-1">{label}</p>
       <p className={cn(
         'text-base font-bold tabular-nums',
@@ -225,7 +225,7 @@ function Stat({ label, value, positive }: { label: string; value: string; positi
 
 function GuideRow({ category, range, note }: { category: string; range: string; note: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 p-3 bg-stone-50 border border-stone-200 rounded-lg">
+    <div className="flex items-center justify-between gap-3 p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg">
       <div className="min-w-0">
         <p className="text-xs font-semibold text-stone-900 truncate">{category}</p>
         <p className="text-[11px] text-stone-500 truncate">{note}</p>

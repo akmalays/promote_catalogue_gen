@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Lock, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import logoAsset from '../assets/img/pcs_logo.png';
+import AuthLayout from '../components/auth/AuthLayout';
 
 interface ResetPasswordProps {
   onBackToLogin: () => void;
 }
 
+const TAGLINES = [
+  'Atur ulang kata sandi',
+  'Akses akun kamu kembali',
+  'Aman & terenkripsi',
+];
+
+const INPUT_CLASS =
+  'w-full px-3.5 py-2.5 bg-white dark:bg-stone-950/60 border border-stone-300 dark:border-stone-700/80 rounded-lg text-sm text-stone-900 dark:text-stone-100 ' +
+  'focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-amber-400/30 focus:border-stone-900 dark:focus:border-amber-400/60 ' +
+  'transition-shadow placeholder:text-stone-400 dark:placeholder:text-stone-500';
+
 export default function ResetPassword({ onBackToLogin }: ResetPasswordProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -18,10 +29,10 @@ export default function ResetPassword({ onBackToLogin }: ResetPasswordProps) {
   // Check if we are really in a recovery session
   useEffect(() => {
     const checkSession = async () => {
-       const { data } = await supabase.auth.getSession();
-       if (!data.session) {
-         setError('Sesi reset kata sandi tidak valid atau telah kedaluwarsa.');
-       }
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        setError('Sesi reset kata sandi tidak valid atau telah kedaluwarsa.');
+      }
     };
     checkSession();
   }, []);
@@ -42,14 +53,9 @@ export default function ResetPassword({ onBackToLogin }: ResetPasswordProps) {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
-
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      
       setSuccess(true);
-      // Optional: auto login or stay here
     } catch (err: any) {
       setError(err.message || 'Gagal memperbarui kata sandi.');
     } finally {
@@ -58,97 +64,94 @@ export default function ResetPassword({ onBackToLogin }: ResetPasswordProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6 bg-slate-50">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-[400px] bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100"
-      >
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 mb-4">
-            <img src={logoAsset} alt="Logo" className="w-full h-full object-contain" />
-          </div>
-          <h2 className="text-2xl font-display font-bold text-slate-800">Ubah Kata Sandi</h2>
-          <p className="text-slate-500 text-sm text-center mt-2">Silakan masukkan kata sandi baru untuk akun Anda</p>
+    <AuthLayout taglines={TAGLINES}>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-stone-900 dark:text-white mb-1">Ubah kata sandi</h2>
+        <p className="text-stone-500 dark:text-stone-400 text-sm">
+          Masukkan kata sandi baru untuk akun kamu.
+        </p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 p-3 rounded-lg flex items-start gap-2.5 mb-5 text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
+      )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3 mb-6">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <p className="text-sm font-medium">{error}</p>
+      {success ? (
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 p-5 rounded-lg text-center space-y-3">
+          <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mx-auto" />
+          <div>
+            <p className="font-semibold text-base text-stone-900 dark:text-white mb-1">Berhasil</p>
+            <p className="text-stone-700 dark:text-stone-300 text-sm">Kata sandi telah diperbarui. Silakan login kembali.</p>
           </div>
-        )}
-
-        {success ? (
-          <div className="text-center space-y-6">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+          <button
+            onClick={onBackToLogin}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-stone-900 dark:bg-white text-white dark:text-stone-950 rounded-lg text-sm font-medium hover:bg-stone-800 dark:hover:bg-stone-100 transition-colors"
+          >
+            Kembali ke login <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleReset} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Kata sandi baru</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={INPUT_CLASS + ' pr-10'}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-slate-800">Berhasil!</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">Kata sandi Anda telah diperbarui. Silakan login kembali.</p>
-            </div>
-            <button 
-              onClick={onBackToLogin}
-              className="w-full bg-[#8b7365] hover:bg-[#7a6458] text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
-            >
-              Kembali ke Login <ArrowRight className="w-4 h-4" />
-            </button>
           </div>
-        ) : (
-          <form onSubmit={handleReset} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 block">Kata Sandi Baru</label>
-              <div className="relative">
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all text-sm"
-                  required
-                />
-                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 block">Konfirmasi Kata Sandi</label>
-              <div className="relative">
-                <input 
-                  type="password" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#8b7365]/20 focus:border-[#8b7365] outline-none transition-all text-sm"
-                  required
-                />
-                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              </div>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">Konfirmasi kata sandi</label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              className={INPUT_CLASS}
+              required
+            />
+          </div>
 
-            <button 
-              type="submit" 
-              disabled={isLoading}
-              className="w-full bg-[#8b7365] hover:bg-[#7a6458] text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-[#8b7365]/20 disabled:opacity-70 flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                'Simpan Kata Sandi Baru'
-              )}
-            </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-100 text-white dark:text-stone-950 font-medium py-2.5 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 mt-2 dark:shadow-lg dark:shadow-amber-500/10"
+          >
+            {isLoading ? (
+              <span className="w-4 h-4 border-2 border-white/30 dark:border-stone-300 border-t-white dark:border-t-stone-900 rounded-full animate-spin" />
+            ) : (
+              <>
+                Simpan kata sandi baru
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </button>
 
-            <button 
-              type="button"
-              onClick={onBackToLogin}
-              className="w-full text-slate-500 text-sm font-bold hover:text-slate-700"
-            >
-              Batal
-            </button>
-          </form>
-        )}
-      </motion.div>
-    </div>
+          <button
+            type="button"
+            onClick={onBackToLogin}
+            className="w-full text-stone-500 dark:text-stone-400 text-sm hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
+          >
+            Batal
+          </button>
+        </form>
+      )}
+    </AuthLayout>
   );
 }

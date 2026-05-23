@@ -114,13 +114,13 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
           exit={{ scale: 0.97, opacity: 0 }}
           transition={{ duration: 0.15 }}
           onClick={e => e.stopPropagation()}
-          className="bg-white rounded-2xl border border-stone-200 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
           <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-1.5">
-                <h2 className="text-base font-semibold text-stone-900">Saran Biaya Tetap</h2>
+                <h2 className="text-base font-semibold text-stone-900 dark:text-white">Saran Biaya Tetap</h2>
                 <span className="text-[10px] font-medium text-stone-500 inline-flex items-center gap-1 px-1.5 py-0.5 bg-stone-100 rounded">
                   <Sparkles className="w-2.5 h-2.5" /> AI
                 </span>
@@ -131,7 +131,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
               onClick={handleClose}
               className="w-8 h-8 rounded-lg hover:bg-stone-100 flex items-center justify-center transition-colors"
             >
-              <X className="w-4 h-4 text-stone-500" />
+              <X className="w-4 h-4 text-stone-500 dark:text-stone-400" />
             </button>
           </div>
 
@@ -148,7 +148,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                     value={businessType}
                     onChange={e => setBusinessType(e.target.value)}
                     placeholder="Contoh: Warung ayam geprek, kedai kopi, laundry"
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                     disabled={loading}
                   />
                 </div>
@@ -162,7 +162,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                     value={location}
                     onChange={e => setLocation(e.target.value)}
                     placeholder="Contoh: Jakarta Selatan, Bandung, Surabaya"
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    className="w-full px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                     disabled={loading}
                   />
                   <p className="text-[11px] text-stone-500 mt-1">
@@ -193,7 +193,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2.5 p-3 bg-stone-50 border border-stone-200 rounded-lg">
+                <div className="flex items-start gap-2.5 p-3 bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 rounded-lg">
                   <Lightbulb className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-stone-600 leading-relaxed">
                     Estimasi mencakup sewa, listrik, gaji, dan biaya operasional rutin lainnya. Sesuaikan dengan kondisi aktual usaha kamu.
@@ -222,7 +222,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-stone-900">
+                    <h3 className="text-sm font-semibold text-stone-900 dark:text-white">
                       Estimasi biaya tetap bulanan
                     </h3>
                     <p className="text-xs text-stone-500 mt-0.5">
@@ -232,7 +232,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={toggleAll}
-                      className="text-xs font-medium text-stone-600 hover:text-stone-900"
+                      className="text-xs font-medium text-stone-600 hover:text-stone-900 dark:text-white"
                     >
                       {selectedItems.size === suggestions.length ? 'Batal pilih' : 'Pilih semua'}
                     </button>
@@ -242,7 +242,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                         setSuggestions(null);
                         setSelectedItems(new Set());
                       }}
-                      className="text-xs font-medium text-stone-600 hover:text-stone-900"
+                      className="text-xs font-medium text-stone-600 hover:text-stone-900 dark:text-white"
                     >
                       Generate ulang
                     </button>
@@ -276,7 +276,7 @@ export default function FixedCostsSuggestionModal({ isOpen, onClose, onApply }: 
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-1">
-                              <p className="text-sm font-medium text-stone-900">{item.name}</p>
+                              <p className="text-sm font-medium text-stone-900 dark:text-white">{item.name}</p>
                               <span className="text-xs font-semibold text-stone-700 tabular-nums whitespace-nowrap">
                                 Rp {item.amount.toLocaleString('id-ID')}
                               </span>
