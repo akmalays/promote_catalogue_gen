@@ -69,20 +69,20 @@ export default function Reports({ userProfile }: { userProfile: UserProfile }) {
     <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-stone-50 dark:bg-stone-950">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Promo Reports</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Campaign performance, effective margin, and top movers from POS transactions.</p>
+          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Laporan Promo</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Kinerja kampanye, margin efektif, dan pergerakan tertinggi dari transaksi POS.</p>
         </div>
       </div>
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
-        <KpiCard icon={<Activity className="w-3.5 h-3.5" />} label="Total transactions" value={totals.trx.toLocaleString()} />
-        <KpiCard icon={<Layers className="w-3.5 h-3.5" />} label="Units sold" value={totals.units.toLocaleString()} />
-        <KpiCard icon={<Tag className="w-3.5 h-3.5" />} label="Discount given" value={`Rp ${Math.round(totals.discount).toLocaleString()}`} />
-        <KpiCard icon={<TrendingUp className="w-3.5 h-3.5" />} label="Promo revenue" value={`Rp ${Math.round(totals.revenue).toLocaleString()}`} />
+        <KpiCard icon={<Activity className="w-3.5 h-3.5" />} label="Total Transaksi" value={totals.trx.toLocaleString()} />
+        <KpiCard icon={<Layers className="w-3.5 h-3.5" />} label="Unit Terjual" value={totals.units.toLocaleString()} />
+        <KpiCard icon={<Tag className="w-3.5 h-3.5" />} label="Diskon Diberikan" value={`Rp ${Math.round(totals.discount).toLocaleString()}`} />
+        <KpiCard icon={<TrendingUp className="w-3.5 h-3.5" />} label="Pendapatan Promo" value={`Rp ${Math.round(totals.revenue).toLocaleString()}`} />
         <KpiCard
           icon={<TrendingUp className="w-3.5 h-3.5" />}
-          label="Effective margin"
+          label="Margin Efektif"
           value={`${overallMargin.toFixed(1)}%`}
           tone={totals.revenue > 0 && overallMargin < 10 ? 'danger' : 'ok'}
         />
@@ -92,33 +92,33 @@ export default function Reports({ userProfile }: { userProfile: UserProfile }) {
       {!isLoading && rows.length === 0 && (
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl py-16 text-center">
           <Inbox className="w-8 h-8 mx-auto mb-3 text-stone-300 dark:text-stone-600" />
-          <p className="text-sm text-stone-600 dark:text-stone-300 font-medium mb-1">No promo data yet</p>
-          <p className="text-xs text-stone-500 dark:text-stone-400">Reports will populate once POS transactions apply an active campaign.</p>
+          <p className="text-sm text-stone-600 dark:text-stone-300 font-medium mb-1">Belum ada data promo</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Laporan akan terisi setelah transaksi POS menerapkan kampanye aktif.</p>
         </div>
       )}
 
       {rows.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <RankCard
-            title="Top revenue"
-            subtitle="Campaigns generating the most revenue"
+            title="Pendapatan Tertinggi"
+            subtitle="Kampanye yang menghasilkan pendapatan terbanyak"
             rows={topRevenue}
             primary={r => `Rp ${Math.round(r.revenue).toLocaleString()}`}
-            secondary={r => `${r.trx} trx · ${r.units} units`}
+            secondary={r => `${r.trx} trx · ${r.units} unit`}
           />
           <RankCard
-            title="Top volume"
-            subtitle="Campaigns moving the most units"
+            title="Volume Tertinggi"
+            subtitle="Kampanye dengan penjualan unit terbanyak"
             rows={topUnits}
-            primary={r => `${r.units.toLocaleString()} units`}
+            primary={r => `${r.units.toLocaleString()} unit`}
             secondary={r => `Rp ${Math.round(r.revenue).toLocaleString()} · ${r.trx} trx`}
           />
           <RankCard
-            title="Lowest margin"
-            subtitle="Review pricing on these campaigns"
+            title="Margin Terendah"
+            subtitle="Tinjau penetapan harga pada kampanye ini"
             rows={lowMargin}
             primary={r => `${r.margin.toFixed(1)}%`}
-            secondary={r => `Rp ${Math.round(r.discount).toLocaleString()} discount`}
+            secondary={r => `Rp ${Math.round(r.discount).toLocaleString()} diskon`}
             tone={r => r.margin < 10 ? 'danger' : 'ok'}
           />
         </div>
@@ -128,17 +128,17 @@ export default function Reports({ userProfile }: { userProfile: UserProfile }) {
       {rows.length > 0 && (
         <div className="mt-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b border-stone-200 dark:border-stone-800">
-            <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Per-campaign breakdown</h2>
+            <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Rincian per Kampanye</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800">
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Campaign</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Kampanye</th>
                   <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Trx</th>
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Units</th>
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Discount</th>
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Revenue</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Unit</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Diskon</th>
+                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Pendapatan</th>
                   <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Margin</th>
                 </tr>
               </thead>
@@ -148,9 +148,9 @@ export default function Reports({ userProfile }: { userProfile: UserProfile }) {
                     <td className="px-5 py-3.5">
                       <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{r.name}</p>
                       <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                        {r.meta?.is_active ? 'Active' : 'Inactive'}
-                        {r.start_date && ` · ${new Date(r.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}
-                        {r.end_date && ` – ${new Date(r.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}
+                        {r.meta?.is_active ? 'Aktif' : 'Tidak Aktif'}
+                        {r.start_date && ` · ${new Date(r.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}`}
+                        {r.end_date && ` – ${new Date(r.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}`}
                       </p>
                     </td>
                     <td className="px-5 py-3.5 text-right text-sm tabular-nums text-stone-700 dark:text-stone-300">{r.trx.toLocaleString()}</td>
@@ -221,7 +221,7 @@ function RankCard({ title, subtitle, rows, primary, secondary, tone }: RankCardP
       <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</h3>
       <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 mb-3">{subtitle}</p>
       {rows.length === 0 ? (
-        <p className="text-xs text-stone-400 dark:text-stone-500 text-center py-6">No data</p>
+        <p className="text-xs text-stone-400 dark:text-stone-500 text-center py-6">Tidak ada data</p>
       ) : (
         <ol className="space-y-2">
           {rows.map((r, idx) => {

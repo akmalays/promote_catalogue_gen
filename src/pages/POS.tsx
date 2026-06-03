@@ -72,11 +72,173 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
   const [pendingPickProduct, setPendingPickProduct] = useState<Product | null>(null);
   const [showActivePromoDrawer, setShowActivePromoDrawer] = useState(false);
   
+  // Cashier Shift & Settlement state
+  const [activeShift, setActiveShift] = useState<any>(null);
+  const [isOpeningShiftModalOpen, setIsOpeningShiftModalOpen] = useState(false);
+  const [startingCashInput, setStartingCashInput] = useState<string>('');
+  const [isClosingShiftModalOpen, setIsClosingShiftModalOpen] = useState(false);
+  const [actualCashInput, setActualCashInput] = useState<string>('');
+  const [shiftNotes, setShiftNotes] = useState<string>('');
+  const [shiftSummary, setShiftSummary] = useState<any>(null);
+  const [printedShiftReceipt, setPrintedShiftReceipt] = useState<any>(null);
+  const [allRecentSales, setAllRecentSales] = useState<any[]>([]);
+  
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const checkActiveShift = async () => {
+    try {
+      const shift = await api.getActiveSettlement(userProfile.company_id!, userProfile.id!);
+      if (shift) {
+        setActiveShift(shift);
+      } else {
+        setIsOpeningShiftModalOpen(true);
+      }
+    } catch (e) {
+      console.error('Gagal mengecek shift aktif', e);
+      setIsOpeningShiftModalOpen(true);
+    }
+  };
+
+  const handleStartShift = async () => {
+    const startingCash = Number(startingCashInput) || 0;
+    if (startingCash < 0) {
+      toast.error('Modal awal tidak boleh negatif');
+      return;
+    }
+    
+    setIsProcessing(true);
+    try {
+      const newShift = await api.createSettlement({
+        company_id: userProfile.company_id,
+        cashier_id: userProfile.id || null,
+        cashier_name: userProfile?.nickname || userProfile?.username || 'Kasir',
+        starting_cash: startingCash,
+        expected_cash: startingCash,
+        status: 'open'
+      });
+      
+      setActiveShift(newShift);
+      setIsOpeningShiftModalOpen(false);
+      setStartingCashInput('');
+      toast.success('Shift kasir berhasil dibuka!');
+    } catch (e) {
+      toast.error('Gagal membuka shift');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleOpenClosingModal = async () => {
+    if (!activeShift) return;
+    setIsLoading(true);
+    try {
+      const sales = await api.getSales(userProfile.company_id!);
+      setAllRecentSales(sales);
+      
+      const shiftStartTime = new Date(activeShift.created_at).getTime();
+      const shiftSales = sales.filter((sale: any) => {
+        const saleTime = new Date(sale.created_at).getTime();
+        if (saleTime < shiftStartTime) return false;
+        
+        const cashierMeta = sale.items?.find((i: any) => i.is_metadata);
+        const saleCashierId = cashierMeta?.cashier_id;
+        const saleCashierName = cashierMeta?.cashier_name;
+        const currentCashierName = userProfile?.nickname || userProfile?.username || 'Kasir';
+        
+        return (saleCashierId && saleCashierId === userProfile.id) || 
+               (saleCashierName === currentCashierName);
+      });
+      
+      let cashSales = 0;
+      let qrisSales = 0;
+      let debitSales = 0;
+      let totalSales = 0;
+      
+      shiftSales.forEach((sale: any) => {
+        totalSales += (sale.total_amount || 0);
+        if (sale.payment_method === 'cash') {
+          cashSales += (sale.total_amount || 0);
+        } else if (sale.payment_method === 'qris') {
+          qrisSales += (sale.total_amount || 0);
+        } else if (sale.payment_method === 'debit') {
+          debitSales += (sale.total_amount || 0);
+        }
+      });
+      
+      const startingCash = Number(activeShift.starting_cash || 0);
+      const expectedCash = startingCash + cashSales;
+      
+      setShiftSummary({
+        shiftSalesCount: shiftSales.length,
+        startingCash,
+        cashSales,
+        qrisSales,
+        debitSales,
+        expectedCash,
+        totalSales,
+      });
+      
+      setActualCashInput(String(expectedCash));
+      setShiftNotes('');
+      setIsClosingShiftModalOpen(true);
+    } catch (e) {
+      toast.error('Gagal memuat rekap penjualan shift');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCloseShiftSubmit = async () => {
+    if (!activeShift || !shiftSummary) return;
+    
+    const actualCash = Number(actualCashInput) || 0;
+    if (actualCash < 0) {
+      toast.error('Uang aktual tidak boleh negatif');
+      return;
+    }
+    
+    const expectedCash = shiftSummary.expectedCash;
+    const difference = actualCash - expectedCash;
+    
+    setIsProcessing(true);
+    try {
+      const closingData = {
+        expected_cash: expectedCash,
+        actual_cash: actualCash,
+        difference: difference,
+        total_sales: shiftSummary.totalSales,
+        cash_sales: shiftSummary.cashSales,
+        qris_sales: shiftSummary.qrisSales,
+        debit_sales: shiftSummary.debitSales,
+        notes: shiftNotes
+      };
+      
+      const closedShift = await api.closeSettlement(activeShift.id, closingData);
+      
+      setPrintedShiftReceipt({
+        ...closedShift,
+        ...shiftSummary,
+        actual_cash: actualCash,
+        difference: difference,
+        notes: shiftNotes
+      });
+      
+      setActiveShift(null);
+      setShiftSummary(null);
+      setIsClosingShiftModalOpen(false);
+      
+      toast.success('Shift kasir ditutup & diselesaikan!');
+    } catch (e) {
+      toast.error('Gagal menutup shift');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   useEffect(() => {
     fetchProducts();
     fetchActiveCampaign();
+    checkActiveShift();
     const timer = setTimeout(() => searchInputRef.current?.focus(), 500);
     const savedBrand = localStorage.getItem('pos_branding_settings');
     if (savedBrand) {
@@ -412,15 +574,25 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
             <User className="w-4 h-4" />
           </div>
 
+          {activeShift && (
+            <button
+              onClick={handleOpenClosingModal}
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors no-print"
+              title="Tutup Shift Kasir"
+            >
+              🔐 Tutup Shift
+            </button>
+          )}
+
           <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+            className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors no-print"
             title="Pengaturan Struk"
           >
              <SettingsIcon className="w-4 h-4" />
           </button>
 
-          <button onClick={() => { fetchProducts(); fetchActiveCampaign(); }} className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors">
+          <button onClick={() => { fetchProducts(); fetchActiveCampaign(); }} className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors no-print">
              <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
           </button>
         </div>
@@ -850,7 +1022,7 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.15 }}
-              className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10 ReceiptArea"
+              className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-none shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10 ReceiptArea"
             >
               <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between no-print">
                 <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Detail Transaksi</h3>
@@ -1215,6 +1387,311 @@ export default function POS({ onNavigate, userProfile }: { onNavigate: (page: an
           );
         })()}
       </AnimatePresence>
+
+      {/* --- OPEN SHIFT MODAL --- */}
+      <AnimatePresence>
+        {isOpeningShiftModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/60 dark:bg-stone-950/85 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-800 z-10 overflow-hidden"
+            >
+              <div className="p-6 border-b border-stone-150 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/50">
+                <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-500 mb-4">
+                  <Calculator className="w-6 h-6" />
+                </div>
+                <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Buka Shift Kasir</h2>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Harap input uang modal awal di laci kasir untuk mulai bertransaksi.</p>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2">Modal Tunai Awal (Rp)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400 dark:text-stone-500 font-medium">Rp</span>
+                    <input
+                      autoFocus
+                      type="number"
+                      value={startingCashInput}
+                      onChange={e => setStartingCashInput(e.target.value)}
+                      placeholder="0"
+                      className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 font-medium"
+                    />
+                  </div>
+                  <p className="text-[10px] text-stone-400 mt-2">Gunakan uang pas atau uang kembalian standar laci Anda (misal: Rp 100.000).</p>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-stone-150 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/50 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('dashboard')}
+                  className="flex-1 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-lg text-sm font-semibold hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+                >
+                  Dashboard
+                </button>
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleStartShift}
+                  className="flex-1 py-2.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {isProcessing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Buka Kasir'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- CLOSE SHIFT MODAL --- */}
+      <AnimatePresence>
+        {isClosingShiftModalOpen && shiftSummary && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsClosingShiftModalOpen(false)} className="absolute inset-0 bg-black/40" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-lg bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-800 z-10 overflow-hidden"
+            >
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-stone-900/50">
+                <div>
+                  <h2 className="text-base font-bold text-stone-900 dark:text-stone-100">Settlement & Tutup Shift</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Lakukan rekonsiliasi laci uang kasir saat ini.</p>
+                </div>
+                <button onClick={() => setIsClosingShiftModalOpen(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-stone-50 dark:bg-stone-850 rounded-lg border border-stone-100 dark:border-stone-800">
+                    <span className="text-[10px] font-semibold text-stone-400 block mb-1">Mulai Shift</span>
+                    <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">
+                      {new Date(activeShift.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(activeShift.created_at).toLocaleDateString()})
+                    </span>
+                  </div>
+                  <div className="p-3 bg-stone-50 dark:bg-stone-850 rounded-lg border border-stone-100 dark:border-stone-800">
+                    <span className="text-[10px] font-semibold text-stone-400 block mb-1">Kasir</span>
+                    <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 truncate block">
+                      {activeShift.cashier_name}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden divide-y divide-stone-150 dark:divide-stone-800">
+                  <div className="px-4 py-2.5 bg-stone-50 dark:bg-stone-900/30 flex justify-between text-xs font-semibold text-stone-600 dark:text-stone-400">
+                    <span>Metode</span>
+                    <span>Penjualan Sistem</span>
+                  </div>
+                  <div className="px-4 py-2 flex justify-between text-xs text-stone-700 dark:text-stone-300">
+                    <span>Modal Awal (Tunai)</span>
+                    <span className="font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {shiftSummary.startingCash.toLocaleString()}</span>
+                  </div>
+                  <div className="px-4 py-2 flex justify-between text-xs text-stone-700 dark:text-stone-300">
+                    <span>Transaksi Tunai</span>
+                    <span className="font-medium text-stone-900 dark:text-stone-100 tabular-nums">+ Rp {shiftSummary.cashSales.toLocaleString()}</span>
+                  </div>
+                  <div className="px-4 py-2.5 bg-amber-500/5 dark:bg-amber-500/10 flex justify-between text-xs font-bold text-stone-800 dark:text-amber-400">
+                    <span>Ekspektasi Uang Tunai di Laci</span>
+                    <span className="tabular-nums">Rp {shiftSummary.expectedCash.toLocaleString()}</span>
+                  </div>
+                  <div className="px-4 py-2 flex justify-between text-xs text-stone-700 dark:text-stone-300">
+                    <span>Transaksi QRIS</span>
+                    <span className="font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {shiftSummary.qrisSales.toLocaleString()}</span>
+                  </div>
+                  <div className="px-4 py-2 flex justify-between text-xs text-stone-700 dark:text-stone-300">
+                    <span>Transaksi Debit</span>
+                    <span className="font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {shiftSummary.debitSales.toLocaleString()}</span>
+                  </div>
+                  <div className="px-4 py-3 bg-stone-50 dark:bg-stone-900/50 flex justify-between text-sm font-bold text-stone-800 dark:text-stone-200">
+                    <span>Total Omzet Penjualan (Shift)</span>
+                    <span className="text-base text-stone-900 dark:text-stone-100 tabular-nums">Rp {shiftSummary.totalSales.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1.5">Uang Tunai Riil di Laci (Uang Fisik Akhir)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400 dark:text-stone-500 font-semibold">Rp</span>
+                      <input
+                        autoFocus
+                        type="number"
+                        value={actualCashInput}
+                        onChange={e => setActualCashInput(e.target.value)}
+                        placeholder="0"
+                        className="w-full pl-9 pr-4 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 font-bold tabular-nums"
+                      />
+                    </div>
+                  </div>
+
+                  {Number(actualCashInput) !== shiftSummary.expectedCash && (
+                    <div className={cn(
+                      "p-3 rounded-lg border text-xs flex justify-between items-center font-semibold",
+                      Number(actualCashInput) > shiftSummary.expectedCash
+                        ? "bg-emerald-50 border-emerald-250 text-emerald-850 dark:bg-emerald-950/20 dark:border-emerald-900 dark:text-emerald-400"
+                        : "bg-rose-50 border-rose-250 text-rose-850 dark:bg-rose-950/20 dark:border-rose-900 dark:text-rose-400"
+                    )}>
+                      <span>{Number(actualCashInput) > shiftSummary.expectedCash ? "Selisih Lebih (Surplus)" : "Selisih Kurang (Shortage/Tekor)"}</span>
+                      <span className="tabular-nums">
+                        {Number(actualCashInput) > shiftSummary.expectedCash ? "+" : ""}
+                        Rp {(Number(actualCashInput) - shiftSummary.expectedCash).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1.5">Catatan / Keterangan Shift</label>
+                    <textarea
+                      rows={2}
+                      value={shiftNotes}
+                      onChange={e => setShiftNotes(e.target.value)}
+                      placeholder="Contoh: Selisih Rp 5.000 karena pembulatan atau tidak ada pecahan kembalian."
+                      className="w-full p-2.5 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10 resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 bg-stone-50 dark:bg-stone-900/50">
+                <button
+                  type="button"
+                  onClick={() => setIsClosingShiftModalOpen(false)}
+                  className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-lg text-sm font-semibold hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleCloseShiftSubmit}
+                  className="flex-[2] py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {isProcessing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Receipt className="w-3.5 h-3.5" />}
+                  Tutup Kasir & Selesai
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- SHIFT SETTLEMENT RECEIPT MODAL --- */}
+      <AnimatePresence>
+        {printedShiftReceipt && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPrintedShiftReceipt(null)} className="absolute inset-0 bg-black/40 no-print" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-none shadow-2xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10 ShiftReceiptPrintArea"
+            >
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between no-print bg-stone-50 dark:bg-stone-900/50">
+                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">Struk Laporan Shift</h3>
+                <button onClick={() => setPrintedShiftReceipt(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-5 text-stone-850 dark:text-stone-200">
+                <div className="text-center mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-750">
+                  <h2 className="text-base font-bold text-stone-950 dark:text-white uppercase">{posSettings.storeName}</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{posSettings.address}</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-300 font-bold mt-3">LAPORAN TUTUP SHIFT KASIR</p>
+                </div>
+                
+                <div className="space-y-1.5 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-750 text-xs">
+                  <div className="flex justify-between"><span>Kasir</span><span className="font-semibold">{printedShiftReceipt.cashier_name}</span></div>
+                  <div className="flex justify-between"><span>Buka Shift</span><span>{new Date(printedShiftReceipt.created_at).toLocaleString('id-ID')}</span></div>
+                  <div className="flex justify-between"><span>Tutup Shift</span><span>{new Date(printedShiftReceipt.closed_at || new Date()).toLocaleString('id-ID')}</span></div>
+                  <div className="flex justify-between"><span>Status</span><span className="font-semibold text-red-600 uppercase">CLOSED</span></div>
+                </div>
+
+                <div className="space-y-2 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-750 text-xs">
+                  <div className="flex justify-between"><span>Modal Awal</span><span className="font-semibold tabular-nums">Rp {printedShiftReceipt.startingCash.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>Penjualan Tunai</span><span className="font-semibold tabular-nums">+ Rp {printedShiftReceipt.cashSales.toLocaleString()}</span></div>
+                  <div className="flex justify-between font-bold border-t border-stone-100 dark:border-stone-800 pt-1.5 text-stone-950 dark:text-white">
+                    <span>Ekspektasi Uang Tunai</span>
+                    <span className="tabular-nums">Rp {printedShiftReceipt.expectedCash.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-stone-950 dark:text-white">
+                    <span>Aktual Uang Fisik</span>
+                    <span className="tabular-nums">Rp {printedShiftReceipt.actual_cash.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t border-dashed border-stone-200 dark:border-stone-750 pt-1.5">
+                    <span>Selisih</span>
+                    <span className={cn("tabular-nums", printedShiftReceipt.difference < 0 ? "text-red-600 font-bold" : printedShiftReceipt.difference > 0 ? "text-emerald-600 font-bold" : "text-stone-500")}>
+                      {printedShiftReceipt.difference > 0 ? "+" : ""}
+                      Rp {printedShiftReceipt.difference.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-750 text-xs">
+                  <div className="flex justify-between"><span>Penjualan QRIS</span><span className="font-semibold tabular-nums">Rp {printedShiftReceipt.qrisSales.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>Penjualan Debit</span><span className="font-semibold tabular-nums">Rp {printedShiftReceipt.debitSales.toLocaleString()}</span></div>
+                  <div className="flex justify-between font-bold border-t border-stone-100 dark:border-stone-800 pt-1.5 text-stone-950 dark:text-white">
+                    <span>Total Omzet Penjualan</span>
+                    <span className="tabular-nums">Rp {printedShiftReceipt.totalSales.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {printedShiftReceipt.notes && (
+                  <div className="text-xs mb-4">
+                    <p className="font-semibold text-stone-500 mb-1">Catatan:</p>
+                    <p className="bg-stone-50 dark:bg-stone-850 p-2.5 rounded text-stone-700 dark:text-stone-300 italic border border-stone-100 dark:border-stone-800">{printedShiftReceipt.notes}</p>
+                  </div>
+                )}
+
+                <div className="text-center pt-2 text-[10px] text-stone-400">
+                  Laporan ini di-generate secara otomatis oleh sistem kasir.
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 no-print bg-stone-50 dark:bg-stone-900/50">
+                <button
+                  type="button"
+                  onClick={() => { window.print(); }}
+                  className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-lg text-sm font-semibold hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Cetak Laporan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrintedShiftReceipt(null)}
+                  className="flex-1 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <style>{`
+        @media print {
+          body > * { visibility: hidden !important; }
+          .ShiftReceiptPrintArea, .ShiftReceiptPrintArea * { visibility: visible !important; }
+          .ShiftReceiptPrintArea {
+            position: fixed !important;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 24px !important;
+            background: white !important;
+            color: black !important;
+          }
+          .no-print { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, ShoppingBag, CreditCard, 
   Banknote, Search, Download,
-  ChevronRight, Package, Clock, X, FileText, Gift, Printer
+  ChevronRight, Package, Clock, X, FileText, Gift, Printer, Receipt, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
@@ -51,16 +51,36 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
   const [campaignProducts, setCampaignProducts] = useState<any[]>([]);
   const [posSettings, setPosSettings] = useState({ storeName: 'LILY MART', slogan: 'Layanan Terbaik dari Kami', address: 'GROGOL, KEDIRI', phone: '0812-3456-7890' });
 
+  // Cashier Settlement audit states
+  const [activeTab, setActiveTab] = useState<'sales' | 'settlements'>('sales');
+  const [settlements, setSettlements] = useState<any[]>([]);
+  const [selectedSettlement, setSelectedSettlement] = useState<any>(null);
+  const [isLoadingSettlements, setIsLoadingSettlements] = useState(false);
+
   useEffect(() => {
     const saved = localStorage.getItem('pos_branding_settings');
     if (saved) setPosSettings(JSON.parse(saved));
     fetchSales(); fetchStoreSettings(); fetchProducts(); fetchCampaignData();
+    fetchSettlements();
   }, []);
 
   const fetchCampaignData = async () => { try { const c = await api.getActiveCampaign(userProfile.company_id!); if (c) { setActiveCampaign(c); setCampaignProducts(await api.getCampaignProducts(c.id)); } } catch {} };
   const fetchProducts = async () => { try { setAvailableProducts(await api.getProducts(userProfile.company_id!)); } catch {} };
   const fetchStoreSettings = async () => { try { const s = await api.getStoreSettings(userProfile.company_id!); if (s.daily_sales_target) setDailyTargetAmount(s.daily_sales_target.amount || 5000000); if (s.focus_items) setFocusItemsConfig(s.focus_items); } catch {} };
   const saveStoreSettings = async () => { setIsSavingTargets(true); try { await api.updateStoreSetting(userProfile.company_id!, 'daily_sales_target', { amount: dailyTargetAmount }); await api.updateStoreSetting(userProfile.company_id!, 'focus_items', focusItemsConfig); toast.success('Target diperbarui'); setIsTargetModalOpen(false); } catch { toast.error('Gagal menyimpan'); } finally { setIsSavingTargets(false); } };
+
+  const fetchSettlements = async () => {
+    setIsLoadingSettlements(true);
+    try {
+      const data = await api.getSettlements(userProfile.company_id!);
+      setSettlements(data);
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat data settlement');
+    } finally {
+      setIsLoadingSettlements(false);
+    }
+  };
 
   useEffect(() => { setCurrentPage(1); }, [selectedDate, searchQuery, filterMethod]);
   const fetchSales = async () => { setIsLoading(true); try { setSales(await api.getSales(userProfile.company_id!)); } catch { toast.error('Gagal memuat penjualan'); } finally { setIsLoading(false); } };
@@ -189,63 +209,187 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
           </div>
         )}
 
-        {/* Transactions Table */}
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
-              <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Cari ID transaksi..." className="w-full pl-9 pr-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
-            </div>
-            <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg">
-              {(['all', 'cash', 'debit', 'qris'] as const).map((m) => (
-                <button key={m} onClick={() => setFilterMethod(m)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors", filterMethod === m ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm" : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200")}>
-                  {m === 'all' ? 'Semua' : m.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Tab Selector */}
+        <div className="flex gap-4 border-b border-stone-200 dark:border-stone-800 mb-5 no-print">
+          <button
+            onClick={() => setActiveTab('sales')}
+            className={cn(
+              "pb-2.5 text-sm font-semibold border-b-2 transition-all px-1",
+              activeTab === 'sales'
+                ? "border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100"
+                : "border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+            )}
+          >
+            Laporan Transaksi
+          </button>
+          <button
+            onClick={() => { setActiveTab('settlements'); fetchSettlements(); }}
+            className={cn(
+              "pb-2.5 text-sm font-semibold border-b-2 transition-all px-1",
+              activeTab === 'settlements'
+                ? "border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100"
+                : "border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+            )}
+          >
+            Settlement Shift Kasir
+          </button>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800">
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">ID</th>
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Waktu</th>
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Metode</th>
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Item</th>
-                  <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                {isLoading ? [...Array(5)].map((_, i) => (<tr key={i}><td colSpan={5} className="px-5 py-4"><div className="h-4 bg-stone-100 dark:bg-stone-800 rounded animate-pulse" /></td></tr>)) : paginatedSales.length === 0 ? (
-                  <tr><td colSpan={5} className="px-5 py-12 text-center"><ShoppingBag className="w-6 h-6 mx-auto mb-2 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-400 dark:text-stone-500">Tidak ada transaksi</p></td></tr>
-                ) : paginatedSales.map((sale) => (
-                  <tr key={sale.id} onClick={() => setSelectedSale(sale)} className="hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors cursor-pointer">
-                    <td className="px-5 py-3.5"><span className="font-mono text-xs text-stone-700 dark:text-stone-300">#{sale.id.toString().slice(-6).toUpperCase()}</span></td>
-                    <td className="px-5 py-3.5"><div className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400"><Clock className="w-3 h-3" />{new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></td>
-                    <td className="px-5 py-3.5"><span className={cn("text-xs font-medium px-2 py-0.5 rounded", sale.payment_method === 'cash' ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" : "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400")}>{sale.payment_method === 'cash' ? 'Tunai' : sale.payment_method.toUpperCase()}</span></td>
-                    <td className="px-5 py-3.5 text-right"><span className="text-xs text-stone-600 dark:text-stone-400 tabular-nums">{sale.items?.reduce((a: number, i: any) => i.is_metadata ? a : a + (i.qty || i.quantity || 0), 0) || 0}</span></td>
-                    <td className="px-5 py-3.5 text-right"><span className="text-sm font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {sale.total_amount.toLocaleString()}</span></td>
-                  </tr>
+        {activeTab === 'sales' ? (
+          /* Transactions Table */
+          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
+                <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Cari ID transaksi..." className="w-full pl-9 pr-3 py-2 bg-stone-100 dark:bg-stone-800 border-none rounded-lg text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-stone-100/10" />
+              </div>
+              <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg">
+                {(['all', 'cash', 'debit', 'qris'] as const).map((m) => (
+                  <button key={m} onClick={() => setFilterMethod(m)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors", filterMethod === m ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm" : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200")}>
+                    {m === 'all' ? 'Semua' : m.toUpperCase()}
+                  </button>
                 ))}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between">
-              <p className="text-xs text-stone-500 dark:text-stone-400">{filteredSales.length} transaksi · Hal {currentPage}/{totalPages}</p>
-              <div className="flex items-center gap-1">
-                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 transition-colors"><ChevronRight className="w-4 h-4 rotate-180" /></button>
-                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 transition-colors"><ChevronRight className="w-4 h-4" /></button>
               </div>
             </div>
-          )}
 
-          <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex justify-end">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"><Download className="w-3.5 h-3.5" /> Export CSV</button>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800">
+                    <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">ID</th>
+                    <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Waktu</th>
+                    <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400">Metode</th>
+                    <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Item</th>
+                    <th className="px-5 py-3 text-xs font-medium text-stone-500 dark:text-stone-400 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                  {isLoading ? [...Array(5)].map((_, i) => (<tr key={i}><td colSpan={5} className="px-5 py-4"><div className="h-4 bg-stone-100 dark:bg-stone-800 rounded animate-pulse" /></td></tr>)) : paginatedSales.length === 0 ? (
+                    <tr><td colSpan={5} className="px-5 py-12 text-center"><ShoppingBag className="w-6 h-6 mx-auto mb-2 text-stone-300 dark:text-stone-600" /><p className="text-sm text-stone-400 dark:text-stone-500">Tidak ada transaksi</p></td></tr>
+                  ) : paginatedSales.map((sale) => (
+                    <tr key={sale.id} onClick={() => setSelectedSale(sale)} className="hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors cursor-pointer">
+                      <td className="px-5 py-3.5"><span className="font-mono text-xs text-stone-700 dark:text-stone-300">#{sale.id.toString().slice(-6).toUpperCase()}</span></td>
+                      <td className="px-5 py-3.5"><div className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400"><Clock className="w-3 h-3" />{new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></td>
+                      <td className="px-5 py-3.5"><span className={cn("text-xs font-medium px-2 py-0.5 rounded", sale.payment_method === 'cash' ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" : "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400")}>{sale.payment_method === 'cash' ? 'Tunai' : sale.payment_method.toUpperCase()}</span></td>
+                      <td className="px-5 py-3.5 text-right"><span className="text-xs text-stone-600 dark:text-stone-400 tabular-nums">{sale.items?.reduce((a: number, i: any) => i.is_metadata ? a : a + (i.qty || i.quantity || 0), 0) || 0}</span></td>
+                      <td className="px-5 py-3.5 text-right"><span className="text-sm font-medium text-stone-900 dark:text-stone-100 tabular-nums">Rp {sale.total_amount.toLocaleString()}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between">
+                <p className="text-xs text-stone-500 dark:text-stone-400">{filteredSales.length} transaksi · Hal {currentPage}/{totalPages}</p>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 transition-colors"><ChevronRight className="w-4 h-4 rotate-180" /></button>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex justify-end">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"><Download className="w-3.5 h-3.5" /> Export CSV</button>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Cashier Settlements Table */
+          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex justify-between items-center gap-3">
+              <h3 className="text-sm font-semibold text-stone-850 dark:text-stone-250">Audit Tutup Shift Kasir</h3>
+              <button 
+                onClick={fetchSettlements} 
+                className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-lg text-xs font-semibold hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center gap-1.5"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", isLoadingSettlements && "animate-spin")} /> Refresh
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-800 font-semibold text-stone-500 dark:text-stone-400">
+                    <th className="px-5 py-3">Kasir</th>
+                    <th className="px-5 py-3">Waktu Shift</th>
+                    <th className="px-5 py-3 text-right">Modal Awal</th>
+                    <th className="px-5 py-3 text-right">Omzet</th>
+                    <th className="px-5 py-3 text-right">Uang Laci</th>
+                    <th className="px-5 py-3 text-right">Selisih</th>
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3">Notes</th>
+                    <th className="px-5 py-3 text-center no-print">Struk</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                  {isLoadingSettlements ? (
+                    [...Array(3)].map((_, i) => (
+                      <tr key={i}><td colSpan={9} className="px-5 py-4"><div className="h-4 bg-stone-100 dark:bg-stone-800 rounded animate-pulse" /></td></tr>
+                    ))
+                  ) : settlements.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-5 py-10 text-center text-stone-400 italic">
+                        Belum ada riwayat settlement kasir.
+                      </td>
+                    </tr>
+                  ) : (
+                    settlements.map((item) => (
+                      <tr key={item.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors">
+                        <td className="px-5 py-3.5 font-medium text-stone-900 dark:text-stone-100">{item.cashier_name}</td>
+                        <td className="px-5 py-3.5 text-stone-500 dark:text-stone-400 whitespace-nowrap">
+                          <div>Buka: {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          {item.closed_at && (
+                            <div className="text-[10px] text-stone-400">Tutup: {new Date(item.closed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-right tabular-nums text-stone-600 dark:text-stone-300">Rp {Number(item.starting_cash).toLocaleString()}</td>
+                        <td className="px-5 py-3.5 text-right tabular-nums text-stone-750 dark:text-stone-200">Rp {Number(item.total_sales).toLocaleString()}</td>
+                        <td className="px-5 py-3.5 text-right tabular-nums text-stone-900 dark:text-stone-100 font-semibold">Rp {Number(item.actual_cash).toLocaleString()}</td>
+                        <td className="px-5 py-3.5 text-right font-bold tabular-nums">
+                          {item.status === 'open' ? (
+                            <span className="text-stone-400">-</span>
+                          ) : (
+                            <span className={cn(
+                              item.difference < 0 ? "text-red-650 dark:text-red-400" : item.difference > 0 ? "text-emerald-650 dark:text-emerald-400" : "text-stone-500"
+                            )}>
+                              {item.difference > 0 ? "+" : ""}
+                              Rp {Number(item.difference).toLocaleString()}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-semibold",
+                            item.status === 'open' 
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400" 
+                              : "bg-stone-150 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
+                          )}>
+                            {item.status === 'open' ? 'BUKA' : 'SELESAI'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-stone-500 dark:text-stone-400 max-w-[150px] truncate" title={item.notes}>
+                          {item.notes || '-'}
+                        </td>
+                        <td className="px-5 py-3.5 text-center no-print">
+                          {item.status === 'closed' && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSettlement(item)}
+                              className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 rounded-md transition-all"
+                              title="Lihat Struk Laporan"
+                            >
+                              <Receipt className="w-4 h-4 mx-auto" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Report Modal */}
@@ -373,7 +517,7 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
           return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedSale(null)} className="absolute inset-0 bg-black/40 no-print" />
-            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10 ReceiptPrintArea">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-none shadow-xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10 ReceiptPrintArea">
               <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between no-print">
                 <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Detail Transaksi</h3>
                 <button onClick={() => setSelectedSale(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
@@ -433,6 +577,95 @@ export default function SalesRevenue({ userProfile }: { userProfile: UserProfile
           </div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* Reprint Settlement Modal */}
+      <AnimatePresence>
+        {selectedSettlement && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedSettlement(null)} className="absolute inset-0 bg-black/40 no-print" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-sm bg-white dark:bg-stone-900 rounded-none shadow-2xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[85vh] z-10 ReceiptPrintArea"
+            >
+              <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between no-print bg-stone-50 dark:bg-stone-900/50">
+                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">Detail Laporan Shift</h3>
+                <button onClick={() => setSelectedSettlement(null)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md text-stone-400 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-5 text-stone-850 dark:text-stone-200">
+                <div className="text-center mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700">
+                  <h2 className="text-base font-bold text-stone-950 dark:text-white uppercase">{posSettings.storeName}</h2>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{posSettings.address}</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-300 font-bold mt-3">LAPORAN TUTUP SHIFT KASIR</p>
+                </div>
+                
+                <div className="space-y-1.5 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700 text-xs font-semibold">
+                  <div className="flex justify-between"><span>Kasir</span><span className="font-semibold text-stone-900 dark:text-stone-100">{selectedSettlement.cashier_name}</span></div>
+                  <div className="flex justify-between"><span>Buka Shift</span><span>{new Date(selectedSettlement.created_at).toLocaleString('id-ID')}</span></div>
+                  <div className="flex justify-between"><span>Tutup Shift</span><span>{new Date(selectedSettlement.closed_at || new Date()).toLocaleString('id-ID')}</span></div>
+                  <div className="flex justify-between"><span>Status</span><span className="text-red-600 uppercase">CLOSED</span></div>
+                </div>
+
+                <div className="space-y-2 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700 text-xs">
+                  <div className="flex justify-between"><span>Modal Awal</span><span className="font-semibold tabular-nums">Rp {Number(selectedSettlement.starting_cash).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>Penjualan Tunai</span><span className="font-semibold tabular-nums">+ Rp {Number(selectedSettlement.cash_sales).toLocaleString()}</span></div>
+                  <div className="flex justify-between font-bold border-t border-stone-100 dark:border-stone-800 pt-1.5 text-stone-950 dark:text-white">
+                    <span>Ekspektasi Uang Tunai</span>
+                    <span className="tabular-nums">Rp {Number(selectedSettlement.expected_cash).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-stone-950 dark:text-white">
+                    <span>Aktual Uang Fisik</span>
+                    <span className="tabular-nums">Rp {Number(selectedSettlement.actual_cash).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t border-dashed border-stone-200 dark:border-stone-700 pt-1.5">
+                    <span>Selisih</span>
+                    <span className={cn("tabular-nums", selectedSettlement.difference < 0 ? "text-red-650 font-bold" : selectedSettlement.difference > 0 ? "text-emerald-650 font-bold" : "text-stone-500")}>
+                      {selectedSettlement.difference > 0 ? "+" : ""}
+                      Rp {Number(selectedSettlement.difference).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mb-4 pb-4 border-b border-dashed border-stone-200 dark:border-stone-700 text-xs">
+                  <div className="flex justify-between"><span>Penjualan QRIS</span><span className="font-semibold tabular-nums">Rp {Number(selectedSettlement.qris_sales).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>Penjualan Debit</span><span className="font-semibold tabular-nums">Rp {Number(selectedSettlement.debit_sales).toLocaleString()}</span></div>
+                  <div className="flex justify-between font-bold border-t border-stone-100 dark:border-stone-800 pt-1.5 text-stone-950 dark:text-white">
+                    <span>Total Omzet Penjualan</span>
+                    <span className="tabular-nums">Rp {Number(selectedSettlement.total_sales).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {selectedSettlement.notes && (
+                  <div className="text-xs mb-4">
+                    <p className="font-semibold text-stone-500 mb-1">Catatan Kasir:</p>
+                    <p className="bg-stone-50 dark:bg-stone-850 p-2.5 rounded text-stone-700 dark:text-stone-300 italic border border-stone-100 dark:border-stone-800">{selectedSettlement.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2 no-print bg-stone-50 dark:bg-stone-900/50">
+                <button
+                  type="button"
+                  onClick={() => { document.title = `Laporan_Shift_${selectedSettlement.id}`; window.print(); setTimeout(() => { document.title = 'myStore Studio'; }, 100); }}
+                  className="flex-1 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-sm font-semibold hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Cetak
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSettlement(null)}
+                  className="flex-1 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-sm font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </div>
   );

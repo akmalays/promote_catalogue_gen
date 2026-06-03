@@ -932,7 +932,143 @@ export const api = {
       .select();
     if (error) throw error;
     return data || [];
+  },
+
+  // ===== CASHIER SETTLEMENTS =====
+  async getActiveSettlement(companyId: string, cashierId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('cashier_settlements')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('cashier_id', cashierId)
+        .eq('status', 'open')
+        .maybeSingle();
+      if (error) {
+        if (error.message.includes('relation "cashier_settlements" does not exist') || error.code === '42P01') {
+          return getActiveSettlementLocal(companyId, cashierId);
+        }
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      return getActiveSettlementLocal(companyId, cashierId);
+    }
+  },
+
+  async createSettlement(settlement: any) {
+    try {
+      const { data, error } = await supabase
+        .from('cashier_settlements')
+        .insert([settlement])
+        .select()
+        .single();
+      if (error) {
+        if (error.message.includes('relation "cashier_settlements" does not exist') || error.code === '42P01') {
+          return createSettlementLocal(settlement);
+        }
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      return createSettlementLocal(settlement);
+    }
+  },
+
+  async closeSettlement(id: string | number, closingData: any) {
+    if (typeof id === 'string' && id.startsWith('local_')) {
+      return closeSettlementLocal(id, closingData);
+    }
+    try {
+      const { data, error } = await supabase
+        .from('cashier_settlements')
+        .update({ ...closingData, status: 'closed', closed_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) {
+        if (error.message.includes('relation "cashier_settlements" does not exist') || error.code === '42P01') {
+          return closeSettlementLocal(String(id), closingData);
+        }
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      return closeSettlementLocal(String(id), closingData);
+    }
+  },
+
+  async getSettlements(companyId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('cashier_settlements')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        if (error.message.includes('relation "cashier_settlements" does not exist') || error.code === '42P01') {
+          return getSettlementsLocal(companyId);
+        }
+        throw error;
+      }
+      const localClosed = getSettlementsLocal(companyId);
+      return [...(data || []), ...localClosed].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } catch (err) {
+      return getSettlementsLocal(companyId);
+    }
   }
+};
+
+// Local storage helpers for Cashier Settlements fallback
+const getLocalSettlements = (): any[] => {
+  const saved = localStorage.getItem('local_cashier_settlements');
+  if (saved) {
+    try { return JSON.parse(saved); } catch (e) {}
+  }
+  return [];
+};
+
+const saveLocalSettlements = (list: any[]) => {
+  localStorage.setItem('local_cashier_settlements', JSON.stringify(list));
+};
+
+const getActiveSettlementLocal = (companyId: string, cashierId: string) => {
+  const list = getLocalSettlements();
+  return list.find(s => s.company_id === companyId && s.cashier_id === cashierId && s.status === 'open') || null;
+};
+
+const createSettlementLocal = (settlement: any) => {
+  const list = getLocalSettlements();
+  const newS = {
+    ...settlement,
+    id: 'local_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    created_at: new Date().toISOString(),
+    status: 'open'
+  };
+  list.push(newS);
+  saveLocalSettlements(list);
+  return newS;
+};
+
+const closeSettlementLocal = (id: string, closingData: any) => {
+  const list = getLocalSettlements();
+  const idx = list.findIndex(s => s.id === id);
+  if (idx !== -1) {
+    list[idx] = {
+      ...list[idx],
+      ...closingData,
+      status: 'closed',
+      closed_at: new Date().toISOString()
+    };
+    saveLocalSettlements(list);
+    return list[idx];
+  }
+  throw new Error('Settlement tidak ditemukan secara lokal');
+};
+
+const getSettlementsLocal = (companyId: string) => {
+  const list = getLocalSettlements();
+  return list.filter(s => s.company_id === companyId && s.status === 'closed');
 };
 
 
