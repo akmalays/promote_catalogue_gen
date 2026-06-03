@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-plus: "Plus Jakarta Sans", sans-serif;
-  --font-display: "Plus Jakarta Sans", sans-serif;
-  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-plus: "Outfit", sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-sans: "Outfit", sans-serif;
   
   --color-indomaret-blue: #0054a6;
   --color-indomaret-yellow: #ffcc00;
@@ -20,12 +20,12 @@
 
   html, body {
     @apply bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100;
-    font-family: "Plus Jakarta Sans", sans-serif !important;
+    font-family: "Outfit", sans-serif !important;
   }
   
   h1, h2, h3, h4, h5, h6, .display-font, .font-display {
     @apply tracking-tight font-bold;
-    font-family: "Plus Jakarta Sans", sans-serif !important;
+    font-family: "Outfit", sans-serif !important;
   }
 }
 
