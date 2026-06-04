@@ -542,7 +542,7 @@ function AppScreenshot({
   const showPlaceholder = !src || error || !loaded;
 
   return (
-    <div className="relative w-full bg-stone-50 dark:bg-stone-900" style={{ aspectRatio }}>
+    <div className="relative w-full bg-white dark:bg-stone-950" style={{ aspectRatio }}>
       {showPlaceholder && (
         <div className="absolute inset-0 bg-stone-100 dark:bg-stone-900 flex flex-col items-center justify-center gap-2 rounded-lg">
           <div className="w-10 h-10 rounded-lg bg-stone-200 dark:bg-stone-800 dark:border dark:border-stone-700 flex items-center justify-center">
@@ -562,7 +562,7 @@ function AppScreenshot({
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
           className={cn(
-            'w-full h-full object-cover object-top rounded-lg transition-opacity duration-300',
+            'w-full h-full object-contain rounded-lg transition-opacity duration-300',
             loaded ? 'opacity-100' : 'opacity-0',
           )}
         />
