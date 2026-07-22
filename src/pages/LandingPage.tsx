@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingCart, BarChart3, Package, Megaphone, ClipboardCheck,
   Truck, Tag, Users, ArrowRight, Monitor, Smartphone, Moon,
-  ImageIcon, ChevronRight,
+  ImageIcon, ChevronRight, Calculator, ChefHat, Boxes, Receipt,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import logoAsset from '../assets/img/pcs_logo.png';
@@ -58,6 +59,39 @@ const HIGHLIGHTS = [
   { icon: <Monitor className="w-4 h-4" />, text: 'Bisa diakses dari laptop atau tablet' },
   { icon: <Smartphone className="w-4 h-4" />, text: 'Responsive di layar kecil' },
   { icon: <Moon className="w-4 h-4" />, text: 'Mode gelap tersedia' },
+];
+
+const UMKM_FEATURES = [
+  {
+    icon: <Receipt className="w-5 h-5" />,
+    title: 'Kasir / POS UMKM',
+    desc: 'Catat transaksi produk buatan sendiri dengan cepat. Cocok untuk warung, kafe rumahan, atau kerajinan tangan.',
+  },
+  {
+    icon: <Calculator className="w-5 h-5" />,
+    title: 'Kalkulator HPP',
+    desc: 'Hitung Harga Pokok Produksi secara akurat — bahan baku, tenaga kerja, overhead, semua terhitung otomatis.',
+  },
+  {
+    icon: <Boxes className="w-5 h-5" />,
+    title: 'Stok Bahan Baku',
+    desc: 'Pantau sisa stok bahan baku yang dipakai untuk produksi. Notifikasi saat bahan hampir habis.',
+  },
+  {
+    icon: <ChefHat className="w-5 h-5" />,
+    title: 'Resep & Formula',
+    desc: 'Simpan resep atau formula produk untuk menghitung biaya produksi per batch secara konsisten.',
+  },
+  {
+    icon: <TrendingUp className="w-5 h-5" />,
+    title: 'Laporan Sederhana',
+    desc: 'Lihat omzet, laba bersih setelah HPP, dan produk terlaris dalam tampilan yang mudah dibaca.',
+  },
+  {
+    icon: <Tag className="w-5 h-5" />,
+    title: 'Harga Jual Otomatis',
+    desc: 'Tentukan target margin keuntungan, dan sistem akan rekomendasikan harga jual yang tepat.',
+  },
 ];
 
 export default function LandingPage() {
@@ -257,6 +291,47 @@ export default function LandingPage() {
                 className="bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 rounded-xl p-5 hover:border-stone-300 dark:hover:border-stone-700 hover:shadow-sm dark:hover:bg-stone-900/80 transition-all"
               >
                 <div className="w-9 h-9 rounded-lg bg-stone-100 dark:bg-stone-800/80 dark:border dark:border-stone-700/60 text-stone-600 dark:text-stone-300 flex items-center justify-center mb-3">
+                  {f.icon}
+                </div>
+                <h3 className="text-sm font-semibold text-stone-900 dark:text-white mb-1">{f.title}</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* UMKM Section */}
+      <section className="py-20 md:py-28 relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 relative">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900 dark:text-white mb-2">
+              POS untuk UMKM &amp; Produsen Kecil
+            </h2>
+            <p className="text-stone-500 dark:text-stone-400 text-sm md:text-base max-w-xl mx-auto">
+              Solusi lengkap untuk bisnis yang memproduksi barang sendiri. Hitung HPP dengan presisi, pantau pemakaian bahan baku, dan pastikan setiap produk dijual dengan margin keuntungan yang tepat.
+            </p>
+          </motion.div>
+
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {UMKM_FEATURES.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.35, delay: i * 0.06 }}
+                className="group bg-white dark:bg-stone-900/50 dark:backdrop-blur-sm border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 rounded-xl p-5 hover:shadow-sm dark:hover:bg-stone-900/80 transition-all"
+              >
+                <div className="w-9 h-9 rounded-lg bg-stone-100 dark:bg-stone-800/80 dark:border dark:border-stone-700/60 text-stone-600 dark:text-stone-300 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                   {f.icon}
                 </div>
                 <h3 className="text-sm font-semibold text-stone-900 dark:text-white mb-1">{f.title}</h3>

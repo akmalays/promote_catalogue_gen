@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { TrendingUp, ArrowUpRight, CreditCard, DollarSign, Package, Calendar, Download } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import LoadingScreen from '../components/LoadingScreen';
-import { api } from '../lib/api';
-import { cn } from '../lib/utils';
-import { UserProfile } from '../types';
+import LoadingScreen from '../../../components/LoadingScreen';
+import { api } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
+import { UserProfile } from '../../../types';
 
 export default function Analytics({ userProfile }: { userProfile: UserProfile }) {
   const [sales, setSales] = useState<any[]>([]);

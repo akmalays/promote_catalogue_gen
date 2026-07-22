@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Truck, Search, Plus, Minus, User, Calendar, Package, History, X, Trash2, Camera, Building2, FileText, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { api } from '../lib/api';
-import { cn } from '../lib/utils';
+import { api } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
 import toast from 'react-hot-toast';
-import LoadingScreen from '../components/LoadingScreen';
-import DatePicker from '../components/ui/DatePicker';
-import { UserProfile } from '../types';
+import LoadingScreen from '../../../components/LoadingScreen';
+import DatePicker from '../../../components/ui/DatePicker';
+import { UserProfile } from '../../../types';
 
 interface Product { id: string; plu: string; name: string; brand: string; stock: number; unit: string; price: number; cost_price: number; image_url?: string; }
 interface CartItem { product: Product; quantity: number; purchase_price: number; }

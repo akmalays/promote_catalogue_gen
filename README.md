@@ -48,14 +48,14 @@ Ikuti langkah-langkah berikut untuk menjalankan project di komputer Anda:
 
 Untuk mempermudah migrasi atau setup database baru, seluruh skema database (SQL) telah disediakan di folder migrations:
 
-📂 **Lokasi:** `supabase/migrations/`
+📂 **Lokasi:** `supabase/retail/migrations/` (Retail) dan `supabase/umkm/migrations/` (UMKM)
 
-Daftar file migrasi (jalankan berurutan di SQL Editor Supabase):
-1. `00_init_notifications.sql` - Tabel Notifikasi.
-2. `00_store_settings.sql` - Target Omzet & Item Fokus.
-3. `01_auth_and_users.sql` - Tabel User & Login.
-4. `02_core_business.sql` - Tabel Produk, Katalog, & Pelanggan.
-5. `03_transactions_and_logs.sql` - Tabel Sales, Stok, & Blast History.
+Daftar file migrasi retail (jalankan berurutan di SQL Editor Supabase):
+1. `20240403000000_init_notifications.sql` - Tabel Notifikasi.
+2. `20240403000050_store_settings.sql` - Target Omzet & Item Fokus.
+3. `20240403000100_auth_and_users.sql` - Tabel User & Login.
+4. `20240403000200_core_business.sql` - Tabel Produk, Katalog, & Pelanggan.
+5. `20240403000300_transactions_and_logs.sql` - Tabel Sales, Stok, & Blast History.
 
 ---
 

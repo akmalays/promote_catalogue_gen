@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Send, Phone, User, Search, CheckSquare, Square, X, Edit2, Check, ArrowDown, Image as ImageIcon, Paperclip, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
-import { api } from '../lib/api';
+import { cn } from '../../../lib/utils';
+import { api } from '../../../lib/api';
 import toast from 'react-hot-toast';
-import { UserProfile } from '../types';
+import { UserProfile } from '../../../types';
 
 interface Visitor { id: string; name: string; phone: string; selected: boolean; }
 

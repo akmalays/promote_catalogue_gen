@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Printer, Package, Plus, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
-import { api } from '../lib/api';
-import { CampaignProduct, UserProfile } from '../types';
+import { cn } from '../../../lib/utils';
+import { api } from '../../../lib/api';
+import { CampaignProduct, UserProfile } from '../../../types';
 import JsBarcode from 'jsbarcode';
 
 interface Product {

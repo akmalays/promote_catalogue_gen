@@ -4,14 +4,14 @@ import {
   Tag, Activity, Pencil, Copy, CheckSquare, Square,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { api } from '../lib/api';
-import { cn } from '../lib/utils';
-import { PromoCampaign, CampaignProduct, UserProfile, CampaignMetric } from '../types';
+import { api } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
+import { PromoCampaign, CampaignProduct, UserProfile, CampaignMetric } from '../../../types';
 import toast from 'react-hot-toast';
-import DatePicker from '../components/ui/DatePicker';
-import Select from '../components/ui/Select';
-import Toggle from '../components/ui/Toggle';
-import { stockDaysLabel, stockDaysTone } from '../lib/promo';
+import DatePicker from '../../../components/ui/DatePicker';
+import Select from '../../../components/ui/Select';
+import Toggle from '../../../components/ui/Toggle';
+import { stockDaysLabel, stockDaysTone } from '../../../lib/promo';
 
 const PROMO_TYPE_OPTIONS = [
   { value: 'price_cut', label: 'Potong harga' },

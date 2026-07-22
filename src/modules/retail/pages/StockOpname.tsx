@@ -6,12 +6,12 @@ import {
   ShieldCheck, PlayCircle, Zap, X, ArrowRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { api } from '../lib/api';
+import { api } from '../../../lib/api';
 import toast from 'react-hot-toast';
-import { cn } from '../lib/utils';
-import LoadingScreen from '../components/LoadingScreen';
-import Select from '../components/ui/Select';
-import DatePicker from '../components/ui/DatePicker';
+import { cn } from '../../../lib/utils';
+import LoadingScreen from '../../../components/LoadingScreen';
+import Select from '../../../components/ui/Select';
+import DatePicker from '../../../components/ui/DatePicker';
 
 interface Product {
   id: string;
@@ -37,7 +37,7 @@ interface OpnameItem {
   status: 'pending' | 'warning' | 'ok' | 'success';
 }
 
-import { UserProfile } from '../types';
+import { UserProfile } from '../../../types';
 
 const TIME_RANGE_OPTIONS = [
   { value: 'daily', label: 'Hari' },

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { History, User, ChevronLeft, ChevronRight, X, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
-import LoadingScreen from '../components/LoadingScreen';
-import { api } from '../lib/api';
+import { cn } from '../../../lib/utils';
+import LoadingScreen from '../../../components/LoadingScreen';
+import { api } from '../../../lib/api';
 import toast from 'react-hot-toast';
-import { UserProfile } from '../types';
+import { UserProfile } from '../../../types';
 
 interface BlastLog {
   id: string;

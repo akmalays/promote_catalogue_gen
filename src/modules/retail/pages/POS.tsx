@@ -7,12 +7,12 @@ import {
   Menu, LayoutDashboard, Truck, Megaphone, Settings as SettingsIcon, Gift, Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { api } from '../lib/api';
-import { cn } from '../lib/utils';
+import { api } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
 import toast from 'react-hot-toast';
-import LoadingScreen from '../components/LoadingScreen';
-import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../lib/promo';
-import { PromoCampaign } from '../types';
+import LoadingScreen from '../../../components/LoadingScreen';
+import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer } from '../../../lib/promo';
+import { PromoCampaign } from '../../../types';
 
 interface Product {
   id: string;
@@ -40,7 +40,7 @@ interface CartItem {
   campaignName?: string | null;
 }
 
-import { UserProfile } from '../types';
+import { UserProfile } from '../../../types';
 
 export default function POS({ onNavigate, userProfile }: { onNavigate: (page: any) => void, userProfile: UserProfile }) {
   const [products, setProducts] = useState<Product[]>([]);

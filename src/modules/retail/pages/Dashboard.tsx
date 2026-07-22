@@ -3,10 +3,10 @@ import { AlertTriangle, Users, TrendingUp, Send, ShoppingCart, ArrowUpRight } fr
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { api } from '../lib/api';
-import { cn } from '../lib/utils';
-import LoadingScreen from '../components/LoadingScreen';
-import { UserProfile } from '../types';
+import { api } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
+import LoadingScreen from '../../../components/LoadingScreen';
+import { UserProfile } from '../../../types';
 
 interface DashboardProps {
   onNavigate: (page: any) => void;

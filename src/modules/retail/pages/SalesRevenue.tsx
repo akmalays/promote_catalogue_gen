@@ -5,11 +5,11 @@ import {
   ChevronRight, Package, Clock, X, FileText, Gift, Printer, Receipt, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { api } from '../lib/api';
-import { cn } from '../lib/utils';
+import { api } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
 import toast from 'react-hot-toast';
-import LoadingScreen from '../components/LoadingScreen';
-import DatePicker from '../components/ui/DatePicker';
+import LoadingScreen from '../../../components/LoadingScreen';
+import DatePicker from '../../../components/ui/DatePicker';
 
 interface Sale {
   id: string | number;
@@ -22,7 +22,7 @@ interface Sale {
   created_at: string;
 }
 
-import { UserProfile } from '../types';
+import { UserProfile } from '../../../types';
 
 export default function SalesRevenue({ userProfile }: { userProfile: UserProfile }) {
   const isAdmin = userProfile?.role === 'admin' || (userProfile?.role as string) === 'owner';

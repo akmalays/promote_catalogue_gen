@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Plus, Search, Trash2, User, Calendar, X, Edit, Eye } from 'lucide-react';
-import { SavedCatalogue, UserProfile } from '../types';
-import LoadingScreen from '../components/LoadingScreen';
-import { api } from '../lib/api';
+import { SavedCatalogue, UserProfile } from '../../../types';
+import LoadingScreen from '../../../components/LoadingScreen';
+import { api } from '../../../lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 

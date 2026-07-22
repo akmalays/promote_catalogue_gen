@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
-import { cn } from '../lib/utils';
-import { CatalogData, CatalogItem, CatalogRow, DEFAULT_CATALOG, DEFAULT_ITEMS, SavedCatalogue, UserProfile } from '../types';
-import { api } from '../lib/api';
+import { cn } from '../../../lib/utils';
+import { CatalogData, CatalogItem, CatalogRow, DEFAULT_CATALOG, DEFAULT_ITEMS, SavedCatalogue, UserProfile } from '../../../types';
+import { api } from '../../../lib/api';
 import SaveDraftModal from './SaveDraftModal';
-import Select from './ui/Select';
+import Select from '../../../components/ui/Select';
 
 const HEADER_FONT_OPTIONS = [
   { value: 'font-display font-black', label: 'Jakarta Black (Modern)' },

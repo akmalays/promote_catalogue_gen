@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Search, Plus, Edit2, Trash2, X, AlertCircle, Truck, ChevronDown, ChevronUp, Layers, Printer, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { api } from '../lib/api';
-import { cn } from '../lib/utils';
-import LoadingScreen from '../components/LoadingScreen';
+import { api } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
+import LoadingScreen from '../../../components/LoadingScreen';
 import toast from 'react-hot-toast';
-import { UserProfile } from '../types';
+import { UserProfile } from '../../../types';
 import PriceTagDrawer from '../components/PriceTagDrawer';
-import Select from '../components/ui/Select';
-import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer, projectStockDays, stockDaysLabel, stockDaysTone } from '../lib/promo';
+import Select from '../../../components/ui/Select';
+import { buildOffersForProduct, filterLiveCampaigns, offerLabel, PromoOffer, projectStockDays, stockDaysLabel, stockDaysTone } from '../../../lib/promo';
 
 interface Product {
   id: string; name: string; brand: string; description: string; price: number; category: string; image_url: string; unit: string; plu: string; cost_price: number; stock?: number;
