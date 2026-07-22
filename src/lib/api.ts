@@ -44,8 +44,11 @@ export const api = {
     return { success: true, user: userProfile };
   },
   resetPassword: async (email: string) => {
+    const origin = typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'https://promote-catalogue-gen.vercel.app';
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/reset-password',
+      redirectTo: `${origin}/reset-password`,
     });
     if (error) throw error;
     return { success: true };
